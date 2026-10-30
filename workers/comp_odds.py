@@ -164,7 +164,7 @@ MANUAL = (r"(?i)in[- ]store|stores?'s?\b|outlet|venue|retailer|receipt|scan|barc
           r"post|page)|install|"
           r"\bsms\b|text (?:the|your|a) |by (?:tele)?phone|phone (?:us|the|our)|call (?:us|the|our|\d)|by post|"
           r"mail (?:in|your)|post (?:your|the) entry|download the "
-          r"app|via the app|\bapp\b|upload|comment|\blike\b|follow|\btag\b|share (?:the|this) post|direct message|"
+          r"app|via the app|\bapp\b|upload|comment|\blike\b|follow(?:ing)? (?:us|@|on |our |the (?:brand|page|account))|\btag\b|share (?:the|this) post|direct message|"
           r"\bDM\b|container|refund point|click the button in the email|loyalty card|swipe|membership card")
 BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|third[- ]party|agent)[^.]{0,80}(?:invalid|void|not (?:be )?"
           r"(?:accepted|permitted|valid)|prohibit|disqualif|ineligible|rejected)|(?:entries|entry) (?:made|submitted|"
@@ -181,7 +181,7 @@ def entry_route(sec, desc, platform, buy):
     if not t:
         return "unknown"
     if re.search(r"(?i)online|website|entry form|form on|web ?page|complete (?:the|an|their)|submit|register|"
-                 r"subscrib|sign(?:ing)? up|newsletter|email list|mailing list", t):
+                 r"subscrib|sign(?:ing)? up|newsletter|email list|mailing list|official competition page", t):
         return "agent_assist" if buy == "yes" else "agent_ok"
     return "unknown"
 

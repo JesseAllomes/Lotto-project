@@ -75,5 +75,28 @@ class Store(unittest.TestCase):
             self.assertEqual(comps.run(store, max_new=0, fetch=fetch, delay=0), 0)
 
 
+
+class AusComps(unittest.TestCase):
+    def test_page_becomes_a_register_record(self):
+        from workers import comp_odds, source_auscomps
+        r = source_auscomps.parse(page("auscomps_page.html"), "https://auscomps.au/competition/x/")
+        self.assertEqual((r["id"], r["prize_pool"], r["open_to_vic"]), (10_007_590, 500.0, True))
+        self.assertEqual((r["closes"][:10], r["entry_url"], r["brand"]), ("2026-12-09", "https://wn.nr/HCX5mHn", "Charlesworth Nuts"))
+        a = comp_odds.assess(r)
+        self.assertEqual((a["purchase"], a["entry_limit"], a["entry_route"]), ("no", "once", "agent_ok"))
+
+    def test_duplicates_of_stored_listings_are_skipped(self):
+        from workers import source_auscomps
+        r = {"title": "Win the Grand Majestic Gift Hamper valued at $500 from Charlesworth Nuts",
+             "entry_url": "https://wn.nr/HCX5mHn", "closes": "2026-12-09T23:59:59+11:00"}
+        same_url = [{"title": "Something else", "entry_url": "https://wn.nr/hcx5mhn/", "closes": None}]
+        same_title = [{"title": "Win a Grand Majestic Gift Hamper from Charlesworth Nuts", "entry_url": "https://x.example/",
+                       "closes": "2026-12-08T23:59:59+10:00"}]
+        other = [{"title": "Win a car", "entry_url": "https://y.example/", "closes": "2026-12-09T00:00:00+10:00"}]
+        self.assertTrue(source_auscomps.duplicate(r, same_url))
+        self.assertTrue(source_auscomps.duplicate(r, same_title))
+        self.assertFalse(source_auscomps.duplicate(r, other))
+
+
 if __name__ == "__main__":
     unittest.main()
