@@ -1,5 +1,5 @@
 # DrainClamp resume capsule
-Done: none
+Done: m1
 In progress: none
-Next: m1: Winning-numbers register: full draw history for The Lott draw games, backfilled, updated by a scheduled worker
-Generation: 6
+Next: m2: Lucky Lotteries Mega and Super jackpot tracker with history and alerts at $30M and $23M
+Generation: 8

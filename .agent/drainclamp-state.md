@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=6 -->
+<!-- drainclamp-build: state; schema=1; generation=8 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -23,7 +23,7 @@
 
 <!-- DC:ROADMAP -->
 | id | goal | files | status | deps |
-| m1 | Winning-numbers register: full draw history for The Lott draw games, backfilled, updated by a scheduled worker | workers/lott.py; workers/draws.py; data/draws/; .github/workflows/draws.yml; tests/test_draws.py | pending | |
+| m1 | Winning-numbers register: full draw history for The Lott draw games, backfilled, updated by a scheduled worker | workers/lott.py; workers/draws.py; data/draws/; .github/workflows/draws.yml; tests/test_draws.py | done | |
 | m2 | Lucky Lotteries Mega and Super jackpot tracker with history and alerts at $30M and $23M | workers/jackpots.py; data/jackpots/; .github/workflows/jackpots.yml; tests/test_jackpots.py | pending | m1 |
 | m3 | Competition register: competitions enterable from Victoria (prize homes, art unions, membership draws, trade promotions), scraped from public pages | workers/comps.py; data/comps/; .github/workflows/comps.yml; tests/test_comps.py | pending | |
 | m4 | Analysis: draw fairness tests on the register; odds and value per entry for competitions; plain report | analysis/fairness.py; analysis/comps_value.py; REPORT.md | pending | m1;m3 |
@@ -36,4 +36,5 @@
 <!-- /DC:VERIFY -->
 
 <!-- DC:LOG -->
+- 2026-10-30T11:46:36+00:00 cca33c7c m1 done: winning-numbers register of 10,157 Lott draws (1996/97 to now), daily token-free workflow verified on GitHub
 <!-- /DC:LOG -->

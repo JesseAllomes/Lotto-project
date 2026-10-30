@@ -15,12 +15,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T11:46:27+00:00",
         "est_min": 20,
         "goal": "Scheduled GitHub Actions workflow; run the full backfill and commit the register",
         "id": "c2",
-        "note": "",
+        "note": "daily draws workflow; backfill 10,157 draws committed; workflow run 41049817652 succeeded",
         "targets": [
           ".github/workflows/draws.yml",
           "data/draws/"
@@ -29,11 +29,11 @@
     ]
   },
   "errors": [],
-  "rev": 3,
+  "rev": 4,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T11:33:56+00:00",
+      "end": "2026-10-30T11:46:27+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

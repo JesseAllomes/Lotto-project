@@ -1,0 +1,16 @@
+{
+  "tier:milestone": {
+    "digest": "tier",
+    "tree": "sha256:747dd460a65681dd",
+    "status": "fail",
+    "when": "2026-10-30T11:46:27+00:00",
+    "log": "verify.log"
+  },
+  "unit": {
+    "digest": "sha256:da7336251cf3",
+    "tree": "sha256:747dd460a65681dd",
+    "status": "pass",
+    "when": "2026-10-30T11:46:36+00:00",
+    "log": ".agent/verify-unit.log"
+  }
+}
