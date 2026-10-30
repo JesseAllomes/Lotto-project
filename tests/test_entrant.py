@@ -58,6 +58,25 @@ class Limits(unittest.TestCase):
         self.assertFalse(ex("You may enter as many times as you like."))
 
 
+class Retries(unittest.TestCase):
+    def test_two_failures_block_and_already_entered_stops_repeats(self):
+        with tempfile.TemporaryDirectory() as d:
+            store, entries = Path(d) / "comps", Path(d) / "entries"
+            comps.append(store, [rec(1, desc=FORM + " Multiple entries are permitted."), rec(2), rec(3)], "t")
+            (store / "terms.jsonl").write_text("".join(json.dumps({"id": i, "tried": ["x"], "terms_read": True}) + "\n"
+                                                       for i in (1, 2, 3)))
+            entries.mkdir()
+            log = [{"id": 1, "time_utc": "2026-10-30T00:05:00Z", "mode": "live", "result": "entered",
+                    "reason": "already entered"},
+                   {"id": 2, "time_utc": "2026-10-30T17:05:00Z", "mode": "live", "result": "failed", "reason": "x"},
+                   {"id": 2, "time_utc": "2026-10-30T17:10:00Z", "mode": "live", "result": "failed", "reason": "x"},
+                   {"id": 3, "time_utc": "2026-10-30T17:05:00Z", "mode": "live", "result": "failed", "reason": "x"}]
+            (entries / "log.jsonl").write_text("".join(json.dumps(x) + "\n" for x in log))
+            queue, manual = entry_queue.build(store, entries, dt.datetime(2026, 10, 30, 18, 30, tzinfo=dt.timezone.utc))
+            self.assertEqual([q["id"] for q in queue], [3])                 # one failure: try again
+            self.assertEqual({m["id"]: m["reason"] for m in manual}, {2: "entrant blocked: failing (x)"})
+
+
 class TermsLimit(unittest.TestCase):
     def test_explicit_wording_only(self):
         from workers import comp_odds

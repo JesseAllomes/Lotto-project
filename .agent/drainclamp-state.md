@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=36 -->
+<!-- drainclamp-build: state; schema=1; generation=37 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -66,4 +66,5 @@
 - 2026-10-30T13:38:28+00:00 a85a45b2 m7 blind tests: re-picked each draw 0/90, fixed sets 0/40 beat chance (BLIND.md, BLIND_FIXED.md); no pattern edge
 - 2026-10-30T13:50:15+00:00 c0f3592f every-line search: registered z invalid (overlapping lines); draw-level correction: no game beats chance (SfL p=0.059)
 - 2026-10-30T13:57:04+00:00 9d6b30d9 Fable opportunity hunt: OPPORTUNITIES.md; top: Endeavour $200 book + one-time doubling (~170% of face after haircut, unverified offer); Superdraw RTP drifting up (watch); RSL/Mater/yourtown ruled out; proposed workers/sellthrough.py
+- 2026-10-30T16:17:34+00:00 f420b599 m9 live: first live run 9 entered / 70 unconfirmed; entrant fixes (form choice, JS buttons, overlays, confirmation, retry rules)
 <!-- /DC:LOG -->

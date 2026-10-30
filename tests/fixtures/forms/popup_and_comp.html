@@ -1,0 +1,9 @@
+<html><body>
+<div id="pop" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:9">
+  <p>UNLOCK 10% OFF your first order</p><form onsubmit="event.preventDefault(); document.body.innerHTML='<p>Code: SAVE10</p>';"><input type="email" name="pop_email"><button type="submit">Unlock 10% off</button></form>
+  <button onclick="document.getElementById('pop').remove()">No thanks</button></div>
+<h1>Win a trip</h1><form id="comp"><p>Enter the competition for your chance to win</p>
+<input type="email" name="email" required><input name="first_name" placeholder="First name" required>
+<button type="button" onclick="if(document.getElementById('comp').checkValidity()){document.getElementById('comp').style.display='none'}">Sign me up</button></form>
+<footer><form><input type="email" name="footer_email"><button type="submit">Subscribe</button></form></footer>
+</body></html>

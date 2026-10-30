@@ -25,6 +25,21 @@ const EMAIL = ["input[type=email]", "input[name*=mail i]", "input[id*=mail i]", 
                "input[autocomplete=email]", "input[aria-label*=mail i]"].map((s) => s + ":visible").join(", ");
 const OPEN = /^\s*(enter( now| here| today| the (competition|draw|giveaway)| to win)?|click here to enter|get started|start( now)?|join now|i want to win)\s*[!>→]*\s*$/i;
 
+// The form's submit control: a button or link whose text reads like entering, else a submit-type button.
+async function submitButton(scope) {
+  const cands = scope.locator("button:visible, input[type=submit]:visible, input[type=button]:visible, [role=button]:visible, a.button:visible, a.btn:visible");
+  const n = Math.min(await cands.count(), 20);
+  let fallback = null;
+  for (let i = 0; i < n; i++) {
+    const c = cands.nth(i);
+    const label = ((await c.innerText().catch(() => "")) || (await c.getAttribute("value")) || (await c.getAttribute("aria-label")) || "").trim();
+    if (NOT_SUBMIT.test(label)) continue;
+    if (SUBMIT.test(label)) return c;
+    if (!fallback && /submit/i.test((await c.getAttribute("type")) || "")) fallback = c;
+  }
+  return fallback;
+}
+
 // Tick a checkbox; styled checkboxes that swallow clicks are set directly, with the events a form listens for.
 async function tick(el) {
   try {
@@ -39,19 +54,48 @@ async function tick(el) {
 }
 
 // The first frame (the page itself, then embedded frames such as UpViral or Wayin) holding a visible email box.
+// When a page has several (a newsletter pop-up, a footer sign-up), the one whose form reads like the competition wins.
 async function findEmail(page) {
+  let best = null;
   for (const f of page.frames()) {
     try {
-      const box = f.locator(EMAIL).first();
-      if (await box.count()) return { root: f, box };
+      const boxes = f.locator(EMAIL);
+      const n = Math.min(await boxes.count(), 6);
+      for (let i = 0; i < n; i++) {
+        const box = boxes.nth(i);
+        const ctx = await box.evaluate((e) => {
+          const area = e.closest("form") || e.parentElement?.parentElement?.parentElement || e;
+          return { text: (area.innerText || "").slice(0, 2000), footer: !!e.closest("footer"),
+                   inputs: area.querySelectorAll("input:not([type=hidden]), select, textarea").length };
+        });
+        let score = 0;
+        if (COMP_WORDS.test(ctx.text)) score += 3;
+        if (POPUP_WORDS.test(ctx.text)) score -= 3;
+        if (ctx.footer) score -= 2;
+        if (ctx.inputs > 2) score += 1;
+        if (!best || score > best.score) best = { root: f, box, score };
+      }
     } catch { /* frame went away */ }
   }
-  return null;
+  return best;
+}
+
+// Close cookie banners and pop-ups that sit over the form.
+async function dismissOverlays(page) {
+  await page.keyboard.press("Escape").catch(() => {});
+  const btns = page.locator("button:visible, a:visible, [role=button]:visible").filter({ hasText: DISMISS });
+  const n = Math.min(await btns.count().catch(() => 0), 3);
+  for (let i = 0; i < n; i++) await btns.nth(0).click({ timeout: 2000 }).catch(() => {});
 }
 const MARKETING = /newsletter|marketing|offers|subscribe|updates|promotion(al)?|special deals|news and|e-?news|sms (me|updates)/i;
 const CONSENT = /terms|conditions|agree|accept|privacy|over 18|18 years|aged? 18|eligib|i confirm|i am/i;
-const SUBMIT = /enter|submit|send|go|win|register|join|i'?m in|count me in/i;
-const SUCCESS = /thank|thanks|you'?re in|entered|entry (has been )?(received|submitted|confirmed)|success|good luck|confirm/i;
+const SUBMIT = /enter|submit|send|\bgo\b|win|register|join|sign ?(me )?up|subscribe|count me in|i'?m in|claim|let'?s go|get started/i;
+const NOT_SUBMIT = /terms|conditions|privacy|no,? thanks|close|cancel|log ?in|sign ?in|\bnext\b|unlock|% ?off/i;
+const SUCCESS = /thank|thanks|you'?re in|you are in|entered|entry (has been )?(received|submitted|confirmed)|success|good luck|confirm|in the draw|we'?ve got your|see you/i;
+const ERROR = /already (been )?(entered|subscribed|registered|signed up)|error|invalid|is required|required field|please (enter|provide|select|check|complete|fill)|try again|not valid/i;
+const COMP_WORDS = /enter|competition|giveaway|win|draw|prize|promotion|sweepstake/i;
+const POPUP_WORDS = /% ?off|discount|newsletter|unlock|first order|exclusive offers|vip list/i;
+const DISMISS = /^\s*(accept( all)?( cookies)?|allow all|i agree|agree|got it|ok|okay|no,? thanks|close|dismiss|×|✕)\s*$/i;
 
 // The owner's number in the four shapes Australian forms ask for: 0412345678, +61412345678, 412345678 and
 // 61412345678, whatever shape the secret was typed in.
@@ -119,6 +163,7 @@ export async function fillForm(page, item, who, live) {
   if (await page.locator("input[autocomplete^=cc-]:visible, input[name*=card i]:visible, input[id*=cardnumber i]:visible").count()) {
     return { result: "skipped", reason: "payment", fields: [] };
   }
+  await dismissOverlays(page);
   let found = await findEmail(page);
   if (!found) {                                   // late-loading forms
     await page.waitForTimeout(5000);
@@ -213,18 +258,41 @@ export async function fillForm(page, item, who, live) {
     }
   }
   if (!filled.has("email")) return { result: "skipped", reason: "unfillable", fields: ["email"] };
-  if (!live) return { result: "dry_ok", reason: "", fields: [...filled] };
+  if (!live) {
+    const t = await submitButton(scope);
+    const label = t ? ((await t.innerText().catch(() => "")) || (await t.getAttribute("value")) || "submit").trim().slice(0, 30) : "";
+    return { result: "dry_ok", reason: t ? `would click "${label}"` : "no submit button", fields: [...filled] };
+  }
   const before = page.url();
-  const button = scope.locator("button:visible, input[type=submit]:visible").filter({ hasText: SUBMIT }).first();
-  const target = (await button.count()) ? button : scope.locator("button[type=submit]:visible, input[type=submit]:visible").first();
-  if (!(await target.count())) return { result: "skipped", reason: "no_submit", fields: [...filled] };
-  await target.click();
+  const textNow = async () => (await page.locator("body").innerText().catch(() => "")) +
+    (root !== page.mainFrame() ? " " + (await root.locator("body").innerText().catch(() => "")) : "");
+  const count = (re, t) => (t.match(new RegExp(re.source, "gi")) || []).length;
+  const pre = await textNow();
+  const target = await submitButton(scope);
+  if (target) {
+    try {
+      await target.click({ timeout: 8000 });
+    } catch {
+      await dismissOverlays(page);
+      try { await target.click({ timeout: 5000 }); } catch { await target.evaluate((e) => e.click()); }
+    }
+  } else {
+    const formEl = scope.locator("xpath=self::form");
+    if (!(await formEl.count())) return { result: "skipped", reason: "no_submit", fields: [...filled] };
+    await formEl.evaluate((f) => (f.requestSubmit ? f.requestSubmit() : f.submit()));
+  }
   await page.waitForTimeout(8000);
-  let after = await page.locator("body").innerText().catch(() => "");
-  if (root !== page.mainFrame()) after += " " + (await root.locator("body").innerText().catch(() => ""));
+  const post = await textNow();
   if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" "))) return { result: "skipped", reason: "captcha", fields: [...filled] };
-  const ok = page.url() !== before || SUCCESS.test(after);
-  return { result: ok ? "entered" : "failed", reason: ok ? "" : "no confirmation seen", fields: [...filled] };
+  const err = post.match(new RegExp(ERROR.source, "i"));
+  if (err && /already/i.test(err[0])) return { result: "entered", reason: "already entered", fields: [...filled] };
+  if (page.url() !== before || count(SUCCESS, post) > count(SUCCESS, pre)) return { result: "entered", reason: "", fields: [...filled] };
+  if (err && count(ERROR, post) > count(ERROR, pre)) {
+    return { result: "failed", reason: `form said: ${err[0].toLowerCase()}`, fields: [...filled] };
+  }
+  const gone = !(await emailBox.isVisible().catch(() => false)) || !(await emailBox.inputValue().catch(() => ""));
+  if (gone) return { result: "entered", reason: "form cleared", fields: [...filled] };
+  return { result: "failed", reason: "no confirmation seen", fields: [...filled] };
 }
 
 export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max = 40, shots = process.env.ENTRANT_SHOTS,

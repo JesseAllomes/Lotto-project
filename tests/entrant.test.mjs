@@ -31,6 +31,7 @@ test("dry run fills a plain form, ticks consent, leaves marketing, never submits
   const logPath = tmpLog();
   const [r] = await run({ queue: [{ id: 1, entry_url: url("simple.html") }], live: false, logPath });
   assert.equal(r.result, "dry_ok");
+  assert.equal(r.reason, 'would click "Enter now"');
   assert.deepEqual([...r.fields].sort(), ["consent", "email", "first", "last", "phone", "postcode", "state"]);
   const log = fs.readFileSync(logPath, "utf8");
   assert.ok(!log.includes("example.com") && !log.includes("0400000000") && !log.includes("Person"));
@@ -73,4 +74,14 @@ test("forms inside frames and behind an Enter button are found", async () => {
   const out = await run({ queue: [{ id: 20, entry_url: url("iframe_outer.html") }, { id: 21, entry_url: url("behind_button.html") }],
                           live: true, logPath: tmpLog() });
   assert.deepEqual(out.map((r) => r.result), ["entered", "entered"]);
+});
+
+test("picks the competition form over a discount pop-up and a footer sign-up; JS button; form hides on success", async () => {
+  const [r] = await run({ queue: [{ id: 30, entry_url: url("popup_and_comp.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["entered", "form cleared"]);
+});
+
+test("an 'already entered' reply counts as entered once", async () => {
+  const [r] = await run({ queue: [{ id: 31, entry_url: url("already.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["entered", "already entered"]);
 });

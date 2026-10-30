@@ -23,15 +23,17 @@
 **Competitions extra (2026-10-30)**: odds.csv / skill lists carry entry_route (agent_ok 149, agent_assist 33,
 manual 288, unknown 42) and automation_banned (from full terms when fetched). Decision stands: the owner enters.
 
-**m9 auto-entry (in progress)**: decisions in DC:DECISIONS (free web-form comps only; owner's details from
-GitHub secrets; skip bans/captcha/login; skill answers approved via issues; dry run until ENTRANT_LIVE=1).
-- c1 done `workers/entry_queue.py` (queue.csv/queue.json/manual.csv); c2 done `workers/entrant.mjs` (Playwright,
-  tests/entrant.test.mjs on tests/fixtures/forms); c3 done `.github/workflows/entries.yml` (22:47 UTC).
-- Owner to do: add Actions secrets ENTRANT_FIRST_NAME, ENTRANT_LAST_NAME, ENTRANT_EMAIL, ENTRANT_PHONE,
-  ENTRANT_POSTCODE, ENTRANT_SUBURB, ENTRANT_STATE, ENTRANT_ADDRESS, ENTRANT_DOB; check a dry run; then set the
-  repository variable ENTRANT_LIVE=1. Until the secrets exist the browser steps are skipped (untested on GitHub).
-- c4 next: skill answers (issue per agent_ok skill comp with question + drafted answer; owner approves; write
-  data/entries/answers.json).
+**m9 auto-entry (LIVE since 2026-10-30 14:39 UTC)**: decisions in DC:DECISIONS. Repo is PUBLIC (unlimited minutes).
+- `entries.yml` every 3 h (UTC :05): up to 5 rounds ~5 min apart; live unless var ENTRANT_LIVE=0; ENTER_BANNED=0 stops
+  entering comps whose terms ban automation. Owner's 9 ENTRANT_* secrets are set. No screenshots (public repo).
+- Pacing (entry_queue.may_enter): no stated limit/unlimited -> bursts of 5 per UTC 3-hour window, 5 min apart; terms
+  flag excessive/bulk or ban automation -> 4 a day, 5 h apart; daily/weekly/capped/once as stated (full terms win).
+- First live run 41073527299: 9 entered (4 comps), 70 "no confirmation", 27 no_submit, 23 click timeouts, 17 captcha.
+  Fixed 2026-10-30 ~16:30 UTC: competition form preferred over discount pop-ups/footer sign-ups, JS buttons and
+  "Sign up"/"Subscribe" labels, overlays dismissed + JS-click fallback, success = new thank-you text, URL change or
+  form cleared; "already entered" = one entry; two failures in a row -> manual list; pre-fix failures reset
+  (RETRY_FROM). Dry re-check on the 30 failing pages: 23 pick the right button. Next: check the 18:05 UTC run.
+- Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
 chance, skill and overall; lotto: analyse the data for optimised opportunities.

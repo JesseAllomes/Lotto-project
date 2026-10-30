@@ -40,6 +40,9 @@ EXCESSIVE_GAP_HOURS = 5
 # Owner's call (2026-10-30, "enter everything"): comps whose terms ban automated entry are entered too, at the
 # cautious excessive-entry pace. Repository variable ENTER_BANNED=0 puts them back on the manual list.
 ENTER_BANNED = os.environ.get("ENTER_BANNED", "1") != "0"
+# Failures logged before the entrant fixes of 30 Oct 2026 (popup forms, JS buttons, overlays, confirmation) get a
+# clean slate: they say nothing about the fixed entrant.
+RETRY_FROM = "2026-10-30T16:30:00Z"
 BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form"}
 
 
@@ -74,14 +77,22 @@ def build(store=STORE, entries=ENTRIES, now=None):
     terms = comp_terms.history(store)
     log = read_jsonl(entries / "log.jsonl")
     answers = json.loads((entries / "answers.json").read_text()) if (entries / "answers.json").exists() else {}
-    entered, blocked = {}, {}
+    entered, blocked, fails, done_once = {}, {}, {}, set()
     for e in log:
         if e.get("mode") == "live" and e.get("result") == "entered":
             entered.setdefault(e["id"], []).append(
                 dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
+        if e.get("time_utc", "") < RETRY_FROM and (e.get("result") == "failed" or
+                                                  e.get("reason") in ("no_submit", "unfillable")):
+            continue
         if e.get("result") in ("skipped", "failed", "entered", "dry_ok"):   # the latest attempt decides
+            fails[e["id"]] = fails.get(e["id"], 0) + 1 if e.get("result") == "failed" else 0
             if e.get("result") == "skipped" and e.get("reason") in BLOCKING:
                 blocked[e["id"]] = e["reason"]
+            elif fails[e["id"]] >= 2:                         # two failures in a row: stop retrying, list it
+                blocked[e["id"]] = f"failing ({e.get('reason', '')[:40]})"
+            elif e.get("result") == "entered" and e.get("reason") == "already entered":
+                done_once.add(e["id"])                        # the form keeps one entry per email: no more
             else:
                 blocked.pop(e["id"], None)
     queue, manual = [], []
@@ -111,7 +122,7 @@ def build(store=STORE, entries=ENTRIES, now=None):
         n = stated.get("entry_limit_terms_n") if stated else a["entry_limit_n"]
         row["entry_limit"] = limit
         excessive = banned or any(h.get("excessive_clause") for h in terms[r["id"]])
-        if not may_enter(limit, entered.get(r["id"], []), now, n, excessive):
+        if r["id"] in done_once or not may_enter(limit, entered.get(r["id"], []), now, n, excessive):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)
