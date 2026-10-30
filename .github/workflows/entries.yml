@@ -1,7 +1,8 @@
 # Auto-entry of free web-form competitions (m9): workers/entry_queue.py picks what may be entered today,
 # workers/entrant.mjs fills each form with the owner's details from secrets. Four runs a day, six hours apart
-# (about 9:47am, 3:47pm, 9:47pm, 3:47am Melbourne in summer), so comps with no stated limit get up to
-# ENTRIES_PER_DAY entries (repository variable, default 4) spread across the day. About 5 runner minutes a run. Submits only when the repository variable ENTRANT_LIVE is 1; otherwise a
+# (about 9:47am, 3:47pm, 9:47pm, 3:47am Melbourne in summer): about 5 runner minutes a run, inside the free
+# allowance. The queue allows bursts (5 per 3 hours, 5 minutes apart) for comps with no stated limit, but these
+# runs only reach one entry per comp per run; a host running the entrant every 5 minutes gets the full pattern. Submits only when the repository variable ENTRANT_LIVE is 1; otherwise a
 # dry run. Token-free. The log in data/entries/ holds no personal details; screenshots (which do) are kept 3 days
 # as a run artifact only.
 name: entries
@@ -29,7 +30,7 @@ jobs:
       ENTRANT_ADDRESS: ${{ secrets.ENTRANT_ADDRESS }}
       ENTRANT_DOB: ${{ secrets.ENTRANT_DOB }}
       ENTRANT_LIVE: ${{ vars.ENTRANT_LIVE }}
-      ENTRIES_PER_DAY: ${{ vars.ENTRIES_PER_DAY }}
+      ENTRY_BURST: ${{ vars.ENTRY_BURST }}
     steps:
       - uses: actions/checkout@v4
       - name: Build today's queue and the manual list

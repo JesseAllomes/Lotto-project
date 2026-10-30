@@ -7,8 +7,10 @@ A listing joins the queue when it is open, a Victorian can enter, entry is free,
 entry limit allows another entry now (log.jsonl). The limit comes from the full terms when they state one
 (comp_terms), else from the listing summary: once -> one entry ever; daily -> one per Melbourne day; weekly -> one
 a week; capped N -> N in total; unlimited, or no limit stated anywhere (owner's call: an unstated limit is no limit)
--> up to ENTRIES_PER_DAY a Melbourne day (repository variable, default 4), one per entrant run, so the entries are
-spread across the day by the runs in entries.yml. Skill competitions also need an answer the
+-> bursts: up to BURST entries in each BURST_HOURS window of the Melbourne day, at least GAP_MINUTES apart (owner:
+5 every 3 hours, 5 minutes apart); but where the terms say the promoter may act on excessive or bulk entries, at
+most EXCESSIVE_PER_DAY a day, at least EXCESSIVE_GAP_HOURS apart. The queue only says whether a listing is due now;
+how often the entrant runs (entries.yml, or a machine running it every 5 minutes) sets the actual pace. Skill competitions also need an answer the
 owner has approved (data/entries/answers.json, filled from the approval issues).
 Every other open, Victorian, free competition goes on manual.csv with the reason, as does any listing the entrant
 had to skip (CAPTCHA, login, human check, a required field it could not fill).
@@ -30,7 +32,11 @@ QUEUE_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "en
                 "question", "terms_checked", "entry_url"]
 MANUAL_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "reason", "entry_platform", "entry_url"]
 MELB = ZoneInfo("Australia/Melbourne")
-PER_DAY = int(os.environ.get("ENTRIES_PER_DAY") or 4)
+BURST = int(os.environ.get("ENTRY_BURST") or 5)
+BURST_HOURS = 3
+GAP_MINUTES = 5
+EXCESSIVE_PER_DAY = 4
+EXCESSIVE_GAP_HOURS = 5
 BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed"}
 
 
@@ -38,20 +44,23 @@ def read_jsonl(path):
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()] if path.exists() else []
 
 
-def may_enter(limit, entered, now, n=None, per_day=None):
+def may_enter(limit, entered, now, n=None, excessive=False):
     """Whether the entry limit allows another entry now, given the UTC datetimes of past successful entries."""
-    per_day = PER_DAY if per_day is None else per_day
-    day = now.astimezone(MELB).date()
-    today = [t for t in entered if t.astimezone(MELB).date() == day]
+    local = now.astimezone(MELB)
+    today = [t for t in entered if t.astimezone(MELB).date() == local.date()]
+    last = max(entered) if entered else None
     if limit == "once":
         return not entered
     if limit == "daily":
         return len(today) < (n or 1)
     if limit == "weekly":
         return not entered or (now - max(entered)).days >= 7
-    if limit == "capped":
-        return len(entered) < (n or 1) and len(today) < per_day
-    return len(today) < per_day                       # unlimited, unknown (no stated limit)
+    if excessive:
+        ok = len(today) < EXCESSIVE_PER_DAY and (last is None or now - last >= dt.timedelta(hours=EXCESSIVE_GAP_HOURS))
+        return ok and (limit != "capped" or len(entered) < (n or 1))
+    window = [t for t in today if t.astimezone(MELB).hour // BURST_HOURS == local.hour // BURST_HOURS]
+    ok = len(window) < BURST and (last is None or now - last >= dt.timedelta(minutes=GAP_MINUTES))
+    return ok and (limit != "capped" or len(entered) < (n or 1))     # unlimited, unknown, capped
 
 
 def build(store=STORE, entries=ENTRIES, now=None):
@@ -94,7 +103,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
         limit = stated["entry_limit_terms"] if stated else a["entry_limit"]
         n = stated.get("entry_limit_terms_n") if stated else a["entry_limit_n"]
         row["entry_limit"] = limit
-        if not may_enter(limit, entered.get(r["id"], []), now, n):
+        excessive = any(h.get("excessive_clause") for h in terms[r["id"]])
+        if not may_enter(limit, entered.get(r["id"], []), now, n, excessive):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)

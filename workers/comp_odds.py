@@ -127,6 +127,10 @@ def entry_limit(sec, desc):
     return "unknown", None
 
 
+EXCESSIVE = (r"(?i)(?:excessive|bulk|multiple|repeated)[^.]{0,60}entr[^.]{0,120}(?:discretion|may|reserves?|deem|"
+             r"consider)|(?:discretion|reserves? the right)[^.]{0,120}(?:excessive|bulk)[^.]{0,40}entr")
+
+
 def terms_limit(text):
     """(limit, n) from explicit entry-limit wording in full terms, or (None, None) when the terms set none.
     Stricter than entry_limit: only sentences about entries per person, day or week count."""

@@ -33,10 +33,27 @@ class Limits(unittest.TestCase):
         self.assertFalse(may("weekly", [yesterday], now))
         self.assertTrue(may("capped", [yesterday], now, n=2))
         self.assertFalse(may("capped", [yesterday, earlier_today], now, n=2))
-        for limit in ("unlimited", "unknown"):                                 # no limit: up to PER_DAY a day
-            self.assertTrue(may(limit, [earlier_today] * 3, now, per_day=4))
-            self.assertFalse(may(limit, [earlier_today] * 4, now, per_day=4))
-            self.assertTrue(may(limit, [yesterday] * 9, now, per_day=4))
+        mins = lambda m: now - dt.timedelta(minutes=m)
+        for limit in ("unlimited", "unknown"):                    # no limit: bursts of 5 per 3-hour window, 5 min apart
+            self.assertTrue(may(limit, [mins(5), mins(10), mins(15), mins(20)], now))
+            self.assertFalse(may(limit, [mins(5), mins(10), mins(15), mins(20), mins(25)], now))
+            self.assertFalse(may(limit, [mins(3)], now))
+            self.assertTrue(may(limit, [mins(181), mins(186), mins(191), mins(196), mins(201)], now))
+        hrs = lambda h: now - dt.timedelta(hours=h)
+        self.assertTrue(may("unknown", [hrs(5)], now, excessive=True))     # excessive clause: 4 a day, 5 h apart
+        self.assertFalse(may("unknown", [hrs(2)], now, excessive=True))
+        many = [now.replace(hour=0) - dt.timedelta(hours=10) + dt.timedelta(minutes=k) for k in range(4)]
+        self.assertTrue(all(t.astimezone(entry_queue.MELB).date() == now.astimezone(entry_queue.MELB).date()
+                            for t in many))
+        self.assertFalse(may("unknown", many, now, excessive=True))
+
+    def test_excessive_wording(self):
+        from workers import comp_odds
+        ex = lambda t: bool(comp_odds.re.search(comp_odds.EXCESSIVE, t))
+        self.assertTrue(ex("The Promoter may, in its discretion, disqualify excessive entries."))
+        self.assertTrue(ex("Multiple entries deemed excessive by the Promoter will be removed."))
+        self.assertTrue(ex("The Promoter reserves the right to exclude bulk entries."))
+        self.assertFalse(ex("You may enter as many times as you like."))
 
 
 class TermsLimit(unittest.TestCase):

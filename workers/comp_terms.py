@@ -124,7 +124,7 @@ def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
     """Fetch the draw page, then up to MAX_TERMS_PAGES terms pages, until a cap is found."""
     rec = {"cap": None, "cap_paid": None, "cap_text": None, "source": None, "per_ticket": [], "prices": [],
            "permit_vic": None, "automation_banned": False, "terms_read": False, "entry_limit_terms": None,
-           "entry_limit_terms_n": None, "tried": []}
+           "entry_limit_terms_n": None, "excessive_clause": False, "tried": []}
     queue, seen = [entry_url], set()
     while queue and len(rec["tried"]) < 1 + MAX_TERMS_PAGES:
         url = queue.pop(0)
@@ -148,6 +148,8 @@ def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
             rec["per_ticket"] = sorted({float(m.group("p").replace(",", "")) for m in re.finditer(PER_TICKET, text, re.I)})
         if re.search(comp_odds.BANNED, text):
             rec["automation_banned"] = True
+        if re.search(comp_odds.EXCESSIVE, text):
+            rec["excessive_clause"] = True
         if not rec["entry_limit_terms"]:
             rec["entry_limit_terms"], rec["entry_limit_terms_n"] = comp_odds.terms_limit(text)
         permit = re.search(PERMIT, text)
@@ -197,7 +199,7 @@ def done(r, hist):
     h = hist.get(r["id"], [])
     if any(x.get("cap") for x in h) or len(h) >= MAX_TRIES:
         return True
-    return bool(r.get("_free")) and any(len(x.get("tried") or []) and "entry_limit_terms" in x for x in h)
+    return bool(r.get("_free")) and any(len(x.get("tried") or []) and "excessive_clause" in x for x in h)
 
 
 def run(store=STORE, max_new=None, fetch=fetch_bytes, delay=comps.DELAY_S, today=None):
