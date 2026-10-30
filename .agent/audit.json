@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "root": "/home/user/lotto-project",
+  "head": "c40a1b8b21c5dfc07f7d33247e62bbce0376f8bb",
+  "dirty_fingerprint": "b9a8816e585d5eaae36410a797c929afa619999265d5b3e4b5cebab270c98a51",
+  "dirty_files": 0,
+  "verify_config_fingerprint": "00ce9ee58ad8770625f9898500af160bb6ba911f48358a89368194ce77da1176",
+  "verify_block_fingerprint": "absent",
+  "verify_entries": 0,
+  "config_files": [],
+  "generated": "2026-10-30T11:24:38+00:00",
+  "scan": {
+    "files": 1,
+    "lines": 308,
+    "depth2": [
+      {
+        "path": "work/scripts",
+        "files": 1,
+        "lines": 308
+      }
+    ],
+    "skipped_links": []
+  },
+  "stack": [
+    "unknown(no recognised manifest)"
+  ],
+  "languages": [
+    "python(inferred: 1/1 indexed file(s))"
+  ],
+  "dead_code_candidates": [],
+  "gate3_required": true
+}

@@ -1,0 +1,11 @@
+# schema=2
+# root=/home/user/lotto-project
+# generated=2026-10-30T11:24:38+00:00
+# COVERAGE: partial
+# engine=python:ast; javascript:regex(partial); others=UNSUPPORTED
+work/scripts/ev_models.py	1793358502796792563:20588	OK	say	29	31
+work/scripts/ev_models.py	1793358502796792563:20588	OK	share_factor	34	37
+work/scripts/ev_models.py	1793358502796792563:20588	OK	hyper	41	42
+work/scripts/ev_models.py	1793358502796792563:20588	OK	keno_ev	61	70
+work/scripts/ev_models.py	1793358502796792563:20588	OK	infer	224	236
+work/scripts/ev_models.py	1793358502796792563:20588	OK	ev_jackpot_game	239	244
