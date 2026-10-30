@@ -1,0 +1,45 @@
+{
+  "chunks": {
+    "m1": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T11:33:56+00:00",
+        "est_min": 25,
+        "goal": "Lott API client and draws worker: backfill by date range, append-only JSONL plus CSV register, offline tests",
+        "id": "c1",
+        "note": "workers/lott.py client (90-day windows, retries) and workers/draws.py (append-only JSONL plus CSV register); 4 offline tests pass",
+        "targets": [
+          "workers/lott.py",
+          "workers/draws.py",
+          "tests/test_draws.py"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 20,
+        "goal": "Scheduled GitHub Actions workflow; run the full backfill and commit the register",
+        "id": "c2",
+        "note": "",
+        "targets": [
+          ".github/workflows/draws.yml",
+          "data/draws/"
+        ]
+      }
+    ]
+  },
+  "errors": [],
+  "rev": 3,
+  "schema": 1,
+  "time": [
+    {
+      "end": "2026-10-30T11:33:56+00:00",
+      "id": "s1",
+      "note": "",
+      "source": "auto",
+      "start": "2026-10-30T11:33:56+00:00"
+    }
+  ],
+  "todos": [],
+  "tokens": null
+}
