@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=5 -->
+<!-- drainclamp-build: state; schema=1; generation=6 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -13,7 +13,7 @@
 <!-- DC:DECISIONS -->
 - Keno in the winning-numbers register? -> deferred; v1 covers The Lott draw games (Saturday, Monday and Wednesday Lotto, Oz Lotto, Powerball, Set for Life) (source: default, owner may change)
 - Which competitions? -> any competition the owner can legally enter from Victoria, monetary or not (prize homes, art unions, LMCT+-style membership draws, trade promotions, free-entry and skill comps) (source: user)
-- How is competition data collected? -> public pages only; no accounts, no entries on the owner's behalf; the owner enters (source: default boundary)
+- How is competition data collected? -> public pages first; accounts are fine where they are worth it (owner creates them; logins live in environment secrets, never in the repository); no entries on the owner's behalf; the owner enters (source: user, 2026-10-30)
 - How are alerts sent? -> GitHub issues in this repository, which email the owner (source: default)
 - How is data collected and collated? -> token-free scripts and GitHub Actions only; Fable only on request, with scripts doing collection (source: user, CLAUDE.md)
 - Legality -> only legal play within published game rules; no fraud, tampering or terms-of-service breaches (source: user)
