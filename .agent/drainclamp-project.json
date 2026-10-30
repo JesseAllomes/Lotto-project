@@ -79,14 +79,41 @@
           ".github/workflows/comps.yml"
         ]
       }
+    ],
+    "m5": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T12:48:17+00:00",
+        "est_min": 25,
+        "goal": "workers/comp_odds.py: split each stored description into its Q&A sections; classify draw type (skill/chance/instant), purchase, entry limit, prizes; write odds.csv and skill.csv; tests",
+        "id": "c1",
+        "note": "comp_odds: 512 listings -> chance 353, skill 74, instant 20, unknown 55, unclear 10; 72 open skill comps for Vic; bonus entries 46",
+        "targets": [
+          "workers/comp_odds.py",
+          "tests/test_comp_odds.py",
+          "data/comps/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 15,
+        "goal": "entry-type tags from competitions.com.au type pages (append-only tags.jsonl) folded into odds.csv; run in comps.yml",
+        "id": "c2",
+        "note": "",
+        "targets": [
+          "workers/comp_odds.py",
+          ".github/workflows/comps.yml"
+        ]
+      }
     ]
   },
   "errors": [],
-  "rev": 14,
+  "rev": 17,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T12:33:21+00:00",
+      "end": "2026-10-30T12:48:17+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

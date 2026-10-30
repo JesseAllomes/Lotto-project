@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=14 -->
+<!-- drainclamp-build: state; schema=1; generation=17 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -21,6 +21,9 @@
 - Legality -> only legal play within published game rules; no fraud, tampering or terms-of-service breaches (source: user)
 - Registers -> append-only, every record carries its source URL and fetch time (source: repo convention from melbcup live collector)
 - Push -> git push origin main (source: user)
+- Odds variables? -> record every variable that moves the chance of winning: ticket or entry cap, entries sold where published, entry limit per person, purchase needed, number of prizes, draw type (chance, skill, instant win) (source: user, 2026-10-30)
+- Skill competitions? -> a separate list (data/comps/skill.csv), judged on merit, kept apart from games of chance (source: user, 2026-10-30)
+- Facebook? -> only via aggregator listings; no direct scraping (Meta terms) (source: default, owner told)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->
@@ -29,7 +32,9 @@
 | m1 | Winning-numbers register: full draw history for The Lott draw games, backfilled, updated by a scheduled worker | workers/lott.py;workers/draws.py;data/draws/;.github/workflows/draws.yml;tests/test_draws.py | done |  |
 | m2 | Lucky Lotteries Mega and Super jackpot tracker with history and alerts at $30M and $23M | workers/jackpots.py;data/jackpots/;.github/workflows/jackpots.yml;tests/test_jackpots.py | done | m1 |
 | m3 | Competition register: competitions enterable from Victoria (prize homes, art unions, membership draws, trade promotions), scraped from public pages | workers/comps.py;data/comps/;.github/workflows/comps.yml;tests/test_comps.py | done |  |
-| m4 | Analysis: draw fairness tests on the register; odds and value per entry for competitions; plain report | analysis/fairness.py;analysis/comps_value.py;REPORT.md | pending | m1;m3 |
+| m5 | Odds variables per competition (chance or skill, purchase needed, entry limit, number of prizes, entry types) and a separate skill-competition list | workers/comp_odds.py;data/comps/odds.csv;data/comps/skill.csv;tests/test_comp_odds.py | pending | m3 |
+| m6 | Ticket and entry caps from promoters' own terms (charity lotteries and art unions first): cap, ticket price, prize value, permit, evidence | workers/comp_terms.py;data/comps/terms.jsonl;.github/workflows/comps.yml;tests/test_comp_terms.py | pending | m3 |
+| m4 | Analysis: draw fairness tests on the register; odds and value per entry for competitions; plain report | analysis/fairness.py;analysis/comps_value.py;REPORT.md | pending | m1;m3;m5;m6 |
 <!-- /DC:ROADMAP -->
 
 <!-- DC:VERIFY -->

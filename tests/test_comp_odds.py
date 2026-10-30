@@ -1,0 +1,83 @@
+"""Offline tests for the competition odds variables and the skill list."""
+import datetime as dt
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from workers import comp_odds, comps
+
+FIX = Path(__file__).resolve().parent / "fixtures"
+
+
+def desc(enter, select, prize=""):
+    return (f"**What are the prizes?**  \r\n{prize}\r\n**How do I enter the competition?**  \r\n{enter}\r\n"
+            f"**How is the winner selected?**  \r\n{select}\r\n**When does the competition close?**  \r\nSoon.")
+
+
+def rec(i, title, d, brand="Promoter", closes="2026-12-01T23:59:59+10:00", vic=True):
+    return {"id": i, "title": title, "brand": brand, "prize_pool": 100.0, "closes": closes, "open_to_vic": vic,
+            "entry_url": "https://www.facebook.com/p/1", "url": f"https://www.competitions.com.au/x/{i}/",
+            "description": d}
+
+
+SKILL = desc('Answer, in 25 words or less, "Why do you love camping?" Limited to one entry per person.',
+             "Entries are judged on creativity and literary merit. This is a game of skill and chance plays no part.")
+CHANCE = desc("Like our page and comment. Additional entries can be earned by referring a friend.",
+              "The winner will be randomly drawn on 2 December.", prize="There are 5 prizes of $20 vouchers.")
+
+
+class Classify(unittest.TestCase):
+    def test_sections_split_on_the_question_headings(self):
+        s = comp_odds.sections(SKILL)
+        self.assertIn("25 words or less", s["enter"])
+        self.assertIn("judged", s["select"])
+
+    def test_skill_competition(self):
+        a = comp_odds.assess(rec(1, "Win a Tent", SKILL))
+        self.assertEqual((a["draw_type"], a["entry_limit"], a["task"]), ("skill", "once", "25 words or less"))
+        self.assertEqual(a["question"], "Why do you love camping?")
+
+    def test_chance_competition_with_bonus_entries(self):
+        a = comp_odds.assess(rec(2, "Win a Voucher", CHANCE))
+        self.assertEqual((a["draw_type"], a["purchase"], a["bonus"], a["prizes"]), ("chance", "no", "yes", 5))
+        self.assertEqual(a["entry_platform"], "facebook")
+
+    def test_entry_limits(self):
+        lim = lambda t: comp_odds.entry_limit({"enter": t}, "")
+        self.assertEqual(lim("You may enter once per day."), ("daily", None))
+        self.assertEqual(lim("Maximum of 3 entries per person."), ("capped", 3))
+        self.assertEqual(lim("One entry for every eligible purchase over $20."), ("per_purchase", None))
+        self.assertEqual(lim("Multiple entries are allowed."), ("unlimited", None))
+        self.assertEqual(lim("Fill in the form."), ("unknown", None))
+
+    def test_raffle_brand_means_purchase_and_title_gives_prize_count(self):
+        a = comp_odds.assess(rec(3, "Win 1 of 12 Cars", desc("Buy a ticket.", "Drawn at random."),
+                                 brand="Mater Home Lottery"))
+        self.assertEqual((a["purchase"], a["prizes"], a["draw_type"]), ("yes", 12, "chance"))
+
+    def test_saved_listing_is_a_chance_raffle(self):
+        r = comps.parse((FIX / "comp_76171.html").read_text(), 76171, "u")
+        a = comp_odds.assess(r)
+        self.assertEqual((a["draw_type"], a["purchase"]), ("chance", "yes"))
+
+
+class Files(unittest.TestCase):
+    def test_skill_list_holds_open_victorian_skill_competitions_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d)
+            recs = [rec(1, "Win a Tent", SKILL), rec(2, "Win a Voucher", CHANCE),
+                    rec(3, "Closed", SKILL, closes="2026-01-01T00:00:00+10:00"), rec(4, "WA only", SKILL, vic=False)]
+            comps.append(store, recs, "t")
+            (store / "terms.jsonl").write_text(json.dumps({"id": 2, "cap": 5000, "source": "terms-url"}) + "\n")
+            (store / "tags.jsonl").write_text(json.dumps({"id": 2, "entry_type": "daily-entry"}) + "\n")
+            rows = comp_odds.run(store, today=dt.date(2026, 10, 30))
+            self.assertEqual({r["id"]: r["cap"] for r in rows}[2], 5000)
+            skill = (store / "skill.csv").read_text().splitlines()
+            self.assertEqual([l.split(",")[0] for l in skill[1:]], ["1"])
+            odds = (store / "odds.csv").read_text()
+            self.assertIn("daily-entry", odds)
+
+
+if __name__ == "__main__":
+    unittest.main()
