@@ -1,0 +1,34 @@
+# Development aid: fetch pages this repo's workers might read, from GitHub's network (some sites are not reachable
+# from the development container), and save the raw HTML to the `probe` branch for building parsers. Manual only.
+name: probe
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Space-separated URLs to fetch"
+        required: true
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fetch the pages
+        env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          mkdir -p out
+          for u in $URLS; do
+            f=$(echo "$u" | sed -E 's#https?://##; s#[^A-Za-z0-9._-]+#_#g' | cut -c1-120)
+            code=$(curl -s -L -m 30 -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36" -o "out/$f.html" -w "%{http_code}" "$u" || echo 000)
+            echo "$code $(wc -c < "out/$f.html" 2>/dev/null || echo 0) $u" | tee -a out/INDEX.txt
+          done
+      - name: Save to the probe branch
+        run: |
+          cd out
+          git init -q -b probe
+          git config user.name "lotto-probe"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "probe: $(date -u +%F' '%H:%M)"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" probe
