@@ -95,25 +95,51 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T13:01:15+00:00",
         "est_min": 15,
         "goal": "entry-type tags from competitions.com.au type pages (append-only tags.jsonl) folded into odds.csv; run in comps.yml",
         "id": "c2",
-        "note": "",
+        "note": "tags.jsonl 524 tags; comps.yml odds step",
         "targets": [
           "workers/comp_odds.py",
+          ".github/workflows/comps.yml"
+        ]
+      }
+    ],
+    "m6": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T13:01:15+00:00",
+        "est_min": 25,
+        "goal": "workers/comp_terms.py: for open Vic purchase-entry listings fetch the draw page, then its terms links (HTML/PDF); extract ticket cap, ticket prices, permit, with evidence snippet; append-only terms.jsonl; tests with saved fixtures",
+        "id": "c1",
+        "note": "comp_terms: live sample 40 -> 8 caps (RSL 10.76M, Mater 30.1M, Endeavour 1.5M/1.35M, yourtown 500k/180k, Mater cars 90k/85k)",
+        "targets": [
+          "workers/comp_terms.py",
+          "tests/test_comp_terms.py",
+          "tests/fixtures/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 15,
+        "goal": "run comp_terms in comps.yml (poppler for PDFs); verify on GitHub; report caps found vs listings",
+        "id": "c2",
+        "note": "",
+        "targets": [
           ".github/workflows/comps.yml"
         ]
       }
     ]
   },
   "errors": [],
-  "rev": 17,
+  "rev": 21,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T12:48:17+00:00",
+      "end": "2026-10-30T13:01:15+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

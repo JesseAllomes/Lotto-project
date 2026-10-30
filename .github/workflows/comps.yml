@@ -1,5 +1,6 @@
 # Competition register (workers/comps.py): adds each new open listing from competitions.com.au, then
-# rebuilds the odds variables and the skill list (workers/comp_odds.py).
+# looks up ticket caps in promoters' terms (workers/comp_terms.py) and rebuilds the odds variables and the
+# skill list (workers/comp_odds.py).
 # Daily at 21:17 UTC (about 8:17am Melbourne in summer). Token-free; about one page a second.
 name: comps
 on:
@@ -14,11 +15,15 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Fetch new listings
         run: python3 -m workers.comps
+      - name: Ticket and entry caps from promoters' pages and terms
+        run: |
+          sudo apt-get install -y -qq poppler-utils > /dev/null || true
+          python3 -m workers.comp_terms
       - name: Entry types, odds variables and the skill list
         run: python3 -m workers.comp_odds --tags
       - name: Commit the register

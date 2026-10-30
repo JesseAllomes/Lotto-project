@@ -1,6 +1,8 @@
 ......comp_odds: 4 listings {'skill': 3, 'chance': 1}; 1 open skill competitions for Victoria
 .comp_odds: 3 new entry-type tags
 comp_odds: 0 new entry-type tags
+.......comp_terms: 1 listings looked up, 1 caps found
+comp_terms: 0 listings looked up, 0 caps found
 ......skip https://www.competitions.com.au/win-40k-prizes-weekly/76170/: not saved
 comps: 2 new listings (2 open to Victoria), 1 failed, 2 in register
 skip https://www.competitions.com.au/win-40k-prizes-weekly/76170/: not saved
@@ -8,6 +10,6 @@ comps: 0 new listings (0 open to Victoria), 1 failed, 2 in register
 comps: 0 new listings (0 open to Victoria), 0 failed, 2 in register
 ...........
 ----------------------------------------------------------------------
-Ran 24 tests in 0.014s
+Ran 31 tests in 0.020s
 
 OK
