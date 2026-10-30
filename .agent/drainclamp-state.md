@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=27 -->
+<!-- drainclamp-build: state; schema=1; generation=28 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -28,6 +28,8 @@
 - Lotto analysis? -> analyse the draw data for optimised opportunities (value per ticket by draw, less-shared numbers, timing), separate from the competition work (source: user, 2026-10-30)
 - Auto-entry? -> the agent enters free competitions that take a web form, with the owner's real details from GitHub secrets (never in the repo or chat); never paid entries; respects each comp's entry limit; skips any whose terms ban automated or third-party entry, and any with a CAPTCHA, login or human check (those go to the owner's manual list); leaves optional marketing boxes unticked; dry run first, live only once the owner switches it on (source: user, 2026-10-30)
 - Skill-comp answers? -> drafted per competition and posted as a GitHub issue; submitted only after the owner approves or edits it (source: user, 2026-10-30)
+- Approval? -> free chance comps are entered automatically, re-entered as often as each allows (daily, weekly, one-off); only skill comps wait for the owner's tick on a daily GitHub-issue checklist with the drafted answer (source: user, 2026-10-30)
+- Pattern numbers? -> build pattern-based number sets and test them blind: methods fixed and pre-registered before scoring, scored only on held-out draws, against the exact random expectation; both 24 games per draw and one System 24 (source: user, 2026-10-30)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->

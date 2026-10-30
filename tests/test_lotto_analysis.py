@@ -1,12 +1,13 @@
 """Offline tests for the lotto analysis."""
 import unittest
+from pathlib import Path
 
 import math
 import random
 
 import numpy as np
 
-from analysis import lotto_games, lotto_numbers
+from analysis import lotto_blind, lotto_games, lotto_numbers
 
 
 class Odds(unittest.TestCase):
@@ -57,6 +58,43 @@ class Numbers(unittest.TestCase):
         beta, *_ = lotto_numbers.fit(product, draws, rows)
         self.assertLess(np.abs(beta - true).max(), 1e-6)
         self.assertTrue(all(n > 31 for n in sorted(range(1, 46), key=lambda n: beta[n - 1])[:6]))
+
+
+
+class Blind(unittest.TestCase):
+    def test_exact_expectation_and_variance_match_simulation(self):
+        rng = random.Random(3)
+        lines = [rng.sample(range(1, 13), 6) for _ in range(24)]
+        sims = [lotto_blind.score_games(lines, set(rng.sample(range(1, 46), 6)), 45, 6)[0] for _ in range(20000)]
+        _, mean, var = lotto_blind.score_games(lines, set(), 45, 6)
+        self.assertAlmostEqual(np.mean(sims), mean, delta=4 * math.sqrt(var / len(sims)))
+        self.assertAlmostEqual(np.var(sims), var, delta=var * 0.05)
+        sims = [lotto_blind.score_system(list(range(1, 25)), set(rng.sample(range(1, 46), 6)), 45, 6)[0]
+                for _ in range(20000)]
+        _, mean, var = lotto_blind.score_system(list(range(1, 25)), set(), 45, 6)
+        self.assertAlmostEqual(np.mean(sims), mean, delta=4 * math.sqrt(var / len(sims)))
+        self.assertAlmostEqual(np.var(sims), var, delta=var * 0.05)
+
+    def test_rankings_use_only_the_history_given(self):
+        history = [[1, 2, 3, 4, 5, 6], [1, 2, 3, 7, 8, 9], [1, 10, 11, 12, 13, 14]]
+        self.assertEqual(lotto_blind.ranking("hot_all", history, 45)[:3], [1, 2, 3])
+        self.assertEqual(lotto_blind.ranking("cold_all", history, 45)[0], 15)
+        self.assertEqual(lotto_blind.ranking("overdue", history, 45)[0], 15)
+        self.assertEqual(set(lotto_blind.ranking("repeat_last", history, 45)[:6]), {1, 10, 11, 12, 13, 14})
+        for m in lotto_blind.METHODS:
+            order = lotto_blind.ranking(m, history, 45, np.zeros(45))
+            self.assertEqual(sorted(order), list(range(1, 46)))
+
+    def test_scoring_refuses_without_a_matching_preregistration(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            old = lotto_blind.PREREG
+            try:
+                lotto_blind.PREREG = Path(d) / "none.md"
+                with self.assertRaises(SystemExit):
+                    lotto_blind.score(Path(d))
+            finally:
+                lotto_blind.PREREG = old
 
 
 if __name__ == "__main__":

@@ -198,6 +198,20 @@
           "analysis/lotto_ev.py",
           "data/analysis/LOTTO.md"
         ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "analysis/lotto_blind.py: pattern methods (hot, cold/overdue, recency, pairs, repeats, least-popular reference) picking 24 games and a System 24 from past draws only; pre-registration committed before scoring; walk-forward on the last 25% of draws (blind), z-tests vs exact hypergeometric expectation, Bonferroni; data/analysis/BLIND.md",
+        "id": "c5",
+        "note": "",
+        "targets": [
+          "analysis/lotto_blind.py",
+          "data/analysis/BLIND_PREREG.md",
+          "data/analysis/BLIND.md",
+          "tests/test_lotto_analysis.py"
+        ]
       }
     ],
     "m9": [
@@ -254,7 +268,7 @@
     ]
   },
   "errors": [],
-  "rev": 38,
+  "rev": 39,
   "schema": 1,
   "time": [
     {
