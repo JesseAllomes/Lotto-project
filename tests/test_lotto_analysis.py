@@ -7,7 +7,7 @@ import random
 
 import numpy as np
 
-from analysis import lotto_blind, lotto_games, lotto_numbers
+from analysis import lotto_blind, lotto_blind_fixed, lotto_games, lotto_numbers
 
 
 class Odds(unittest.TestCase):
@@ -95,6 +95,25 @@ class Blind(unittest.TestCase):
                     lotto_blind.score(Path(d))
             finally:
                 lotto_blind.PREREG = old
+
+
+
+class BlindFixed(unittest.TestCase):
+    def test_sets_come_from_development_draws_only(self):
+        dev = [("d", "p", i, [1, 2, 3, 4, 5, 6]) for i in range(40)]
+        system, games = lotto_blind_fixed.choose("fixed_hot", dev, 45, 6, 6, np.zeros(45))
+        self.assertEqual(system[:6], [1, 2, 3, 4, 5, 6])
+        self.assertEqual(len(games), 24)
+        cold, _ = lotto_blind_fixed.choose("fixed_cold", dev, 45, 6, 6, np.zeros(45))
+        self.assertNotIn(1, cold)
+
+    def test_same_set_is_scored_on_every_blind_draw(self):
+        rows = [("d", "p", i, [1, 2, 3, 4, 5, 6]) for i in range(40)] + [("d", "p", 40 + i, [7, 8, 9, 10, 11, 12])
+                                                                         for i in range(10)]
+        res = lotto_blind_fixed.evaluate(rows, 40, 45, 6, 6, np.zeros(45))
+        o, x, v, n, system = res[("fixed_hot", "system_24")]
+        self.assertEqual(n, 10)
+        self.assertEqual(o, sum(len(set(system) & {7, 8, 9, 10, 11, 12}) for _ in range(10)))
 
 
 if __name__ == "__main__":
