@@ -42,6 +42,16 @@ class Parse(unittest.TestCase):
         self.assertFalse(comps.parse(html, 76174, CASH_URL)["open_to_vic"])
 
 
+class Platform(unittest.TestCase):
+    def test_entry_platform_comes_from_the_entry_host(self):
+        self.assertEqual(comps.platform("https://www.facebook.com/ReviewBrisbane/posts/x"), "facebook")
+        self.assertEqual(comps.platform("https://m.facebook.com/x"), "facebook")
+        self.assertEqual(comps.platform("https://www.instagram.com/p/x/"), "instagram")
+        self.assertEqual(comps.platform("https://notfacebook.com/x"), "web")
+        self.assertEqual(comps.platform("https://www.yarn.com.au/pages/win"), "web")
+        self.assertIsNone(comps.platform(None))
+
+
 class Store(unittest.TestCase):
     def test_run_adds_only_new_listings_and_keeps_the_first_fetch(self):
         pages = {comps.SITEMAP: page("comps_sitemap.xml"), RAFFLE_URL: page("comp_76171.html"),
@@ -61,6 +71,7 @@ class Store(unittest.TestCase):
             rows = (store / "comps.csv").read_text().splitlines()
             self.assertTrue(rows[0].startswith("id,title,category,brand,prize_pool,states,open_to_vic"))
             self.assertNotIn("description", rows[0])
+            self.assertIn("entry_platform", rows[0])
             self.assertEqual(comps.run(store, max_new=0, fetch=fetch, delay=0), 0)
 
 

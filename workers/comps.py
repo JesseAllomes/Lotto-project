@@ -31,7 +31,11 @@ SITEMAP = "https://www.competitions.com.au/sitemap_files.cfm?part=competitions&s
 UA = "lotto-project-register/1.0 (+https://github.com/JesseAllomes/Lotto-project)"
 DELAY_S = 1.0
 FIELDS = ["id", "title", "category", "brand", "prize_pool", "states", "open_to_vic", "opens", "closes",
-          "entry_url", "url"]
+          "entry_platform", "entry_url", "url"]
+# Where you enter, from the entry page's host. Facebook and Instagram are not scraped directly (Meta's terms
+# forbid automated collection); their competitions arrive through the aggregator's listings.
+PLATFORMS = {"facebook.com": "facebook", "fb.com": "facebook", "fb.me": "facebook", "instagram.com": "instagram",
+             "tiktok.com": "tiktok", "x.com": "x", "twitter.com": "x", "youtube.com": "youtube"}
 
 
 def get(url, tries=4):
@@ -79,6 +83,16 @@ def _entry_url(url):
         return None
     q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
     return q.get("Url", q.get("url", [url]))[0]
+
+
+def platform(entry_url):
+    host = (urllib.parse.urlparse(entry_url or "").hostname or "").lower()
+    if not host:
+        return None
+    for domain, name in PLATFORMS.items():
+        if host == domain or host.endswith("." + domain):
+            return name
+    return "web"
 
 
 def parse(page, comp_id, url):
@@ -138,7 +152,7 @@ def write_csv(store):
         w = csv.DictWriter(fh, FIELDS, extrasaction="ignore")
         w.writeheader()
         for r in recs:
-            w.writerow(r)
+            w.writerow(dict(r, entry_platform=platform(r.get("entry_url"))))
     return len(recs)
 
 
