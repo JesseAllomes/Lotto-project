@@ -62,6 +62,20 @@ class Classify(unittest.TestCase):
         self.assertEqual((a["draw_type"], a["purchase"]), ("chance", "yes"))
 
 
+class Tags(unittest.TestCase):
+    def test_crawl_walks_pages_until_nothing_new_and_never_repeats_a_tag(self):
+        card = lambda *ids: "".join(f'<a data-comp-id="{i}">' for i in ids)
+        pages = {comp_odds.TYPE_PAGE.format("daily-entry", 1): card(1, 2),
+                 comp_odds.TYPE_PAGE.format("daily-entry", 2): card(3),
+                 comp_odds.TYPE_PAGE.format("daily-entry", 3): card(3)}
+        fetch = lambda url: pages.get(url, "")
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d)
+            self.assertEqual(comp_odds.crawl_tags(store, fetch=fetch, delay=0), 3)
+            self.assertEqual(comp_odds.crawl_tags(store, fetch=fetch, delay=0), 0)
+            self.assertEqual(comp_odds.tags(store), {1: ["daily-entry"], 2: ["daily-entry"], 3: ["daily-entry"]})
+
+
 class Files(unittest.TestCase):
     def test_skill_list_holds_open_victorian_skill_competitions_only(self):
         with tempfile.TemporaryDirectory() as d:

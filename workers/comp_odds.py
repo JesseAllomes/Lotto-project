@@ -1,6 +1,7 @@
 """Odds variables for each competition in the register, and the separate list of skill competitions.
 
-    python3 -m workers.comp_odds        # rebuild data/comps/odds.csv and data/comps/skill.csv from comps.jsonl
+    python3 -m workers.comp_odds         # rebuild data/comps/odds.csv and data/comps/skill.csv from comps.jsonl
+    python3 -m workers.comp_odds --tags  # first record each open listing's entry types (competitions.com.au type pages)
 
 The source is the promoter's terms as summarised on each listing: question-and-answer sections such as
 "How do I enter the competition?" and "How is the winner selected?". From these it records what moves the
@@ -14,12 +15,14 @@ chance of winning:
 The summaries are the aggregator's, not the promoter's wording: evidence columns quote them so a row can be
 checked against the full terms before entering.
 """
+import argparse
 import csv
 import datetime as dt
 import html
 import json
 import re
 import sys
+import time
 from pathlib import Path
 
 from workers import comps
@@ -31,6 +34,12 @@ ODDS_FIELDS = ["id", "title", "brand", "prize_pool", "prizes", "closes", "open_t
 SKILL_FIELDS = ["id", "title", "brand", "prize_pool", "prizes", "closes", "task", "question", "entry_limit",
                 "entry_limit_n", "bonus", "purchase", "judging", "entry_platform", "entry_url", "url"]
 SKILL_ENTRY_TYPES = {"25-words-or-less", "creative-competitions", "quiz-competitions"}
+ENTRY_TYPES = ["25-words-or-less", "codeword-entry", "creative-competitions", "daily-entry", "facebook-competitions",
+               "free-entry", "instagram-competitions", "instant-win", "interactive-games", "kids-competitions",
+               "quick-entry", "quiz-competitions", "recurring-competitions", "registration-required", "shop-scan-win",
+               "sms-entry", "survey-competitions", "twitter-competitions", "voting-competitions"]
+TYPE_PAGE = "https://www.competitions.com.au/{}/?page={}"
+MAX_PAGES = 40
 RAFFLE_BRAND = re.compile(r"(?i)lotter|art union|raffle|prize home")
 NUM = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
 
@@ -141,6 +150,39 @@ def question(sec):
     return m.group(1) if m else None
 
 
+def type_ids(page_html):
+    return {int(x) for x in re.findall(r'data-comp-id="(\d+)"', page_html)}
+
+
+def crawl_tags(store=STORE, fetch=comps.get, delay=comps.DELAY_S):
+    """Append (listing id, entry type) pairs not yet recorded, walking each type's pages until one adds nothing."""
+    fetched = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    have = {(i, t) for i, ts in tags(store).items() for t in ts}
+    new = []
+    for t in ENTRY_TYPES:
+        seen = set()
+        for n in range(1, MAX_PAGES + 1):
+            url = TYPE_PAGE.format(t, n)
+            try:
+                ids = type_ids(fetch(url))
+            except (OSError, ValueError) as exc:
+                print(f"skip {url}: {exc}", flush=True)
+                break
+            time.sleep(delay)
+            if not ids - seen:
+                break
+            for i in sorted(ids - seen):
+                if (i, t) not in have:
+                    new.append({"fetched_utc": fetched, "source": url, "id": i, "entry_type": t})
+            seen |= ids
+    store.mkdir(parents=True, exist_ok=True)
+    with open(store / "tags.jsonl", "a") as fh:
+        for r in new:
+            fh.write(json.dumps(r, separators=(",", ":")) + "\n")
+    print(f"comp_odds: {len(new)} new entry-type tags", flush=True)
+    return len(new)
+
+
 def tags(store):
     """{listing id: sorted entry-type slugs} from tags.jsonl, if present."""
     path = store / "tags.jsonl"
@@ -173,11 +215,16 @@ def assess(r, entry_types=(), cap=None):
     if dtype in ("unknown", "unclear") and SKILL_ENTRY_TYPES & set(entry_types):
         dtype = "skill"
     limit, n = entry_limit(sec, desc)
+    buy = purchase(sec, desc, r.get("brand"))
+    if buy == "unknown" and "shop-scan-win" in entry_types:
+        buy = "yes"
+    elif buy == "unknown" and "free-entry" in entry_types:
+        buy = "no"
     return {
         "id": r["id"], "title": r["title"], "brand": r.get("brand"), "prize_pool": r.get("prize_pool"),
         "prizes": prizes(r["title"], sec), "closes": r.get("closes"), "open_to_vic": r.get("open_to_vic"),
         "entry_platform": comps.platform(r.get("entry_url")), "draw_type": dtype,
-        "purchase": purchase(sec, desc, r.get("brand")), "entry_limit": limit, "entry_limit_n": n,
+        "purchase": buy, "entry_limit": limit, "entry_limit_n": n,
         "bonus": bonus(sec, desc),
         "entry_types": " ".join(entry_types), "cap": cap[0] if cap else None, "cap_source": cap[1] if cap else None,
         "evidence_selection": (sec.get("select") or "")[:300], "evidence_entry": (sec.get("enter") or "")[:300],
@@ -212,6 +259,11 @@ def run(store=STORE, today=None):
 
 
 def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--tags", action="store_true", help="record entry types from the type pages first")
+    a = ap.parse_args(argv)
+    if a.tags:
+        crawl_tags()
     run()
 
 
