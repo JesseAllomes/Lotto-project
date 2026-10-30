@@ -126,9 +126,10 @@ class LastDay(unittest.TestCase):
     def test_unknown_result_counts_against_stated_limits_only(self):
         with tempfile.TemporaryDirectory() as d:
             store, entries = Path(d) / "comps", Path(d) / "entries"
-            comps.append(store, [rec(1, desc=FORM + " Only one entry per person."), rec(2)], "t")
-            (store / "terms.jsonl").write_text("".join(json.dumps({"id": i, "tried": ["x"], "terms_read": True}) + "\n"
-                                                       for i in (1, 2)))
+            comps.append(store, [rec(1), rec(2)], "t")
+            (store / "terms.jsonl").write_text("".join(json.dumps({"id": i, "tried": ["x"], "terms_read": True,
+                                                                   "entry_limit_terms": "once" if i == 1 else None})
+                                                       + "\n" for i in (1, 2)))
             entries.mkdir()
             (entries / "log.jsonl").write_text("".join(json.dumps({"id": i, "time_utc": "2026-10-30T17:00:00Z",
                                                                    "mode": "live", "result": "unknown"}) + "\n"
