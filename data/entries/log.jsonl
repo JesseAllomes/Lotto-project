@@ -324,3 +324,56 @@
 {"time_utc":"2026-10-30T22:14:00Z","id":75662,"mode":"live","result":"unknown","reason":"run 41135966222: log lost (commit conflict)","fields":[]}
 {"time_utc":"2026-10-30T22:14:00Z","id":70434,"mode":"live","result":"unknown","reason":"run 41135966222: log lost (commit conflict)","fields":[]}
 {"time_utc":"2026-10-30T22:14:00Z","id":75893,"mode":"live","result":"unknown","reason":"run 41135966222: log lost (commit conflict)","fields":[]}
+{"time_utc":"2026-10-30T22:57:05Z","id":75891,"mode":"live","result":"skipped","reason":"captcha","fields":["first","last","email","phone","postcode"],"said":"captcha: reCAPTCHA v2 checkbox"}
+{"time_utc":"2026-10-30T22:57:07Z","id":75889,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-30T22:57:09Z","id":75764,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:14Z","id":75926,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:20Z","id":76107,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T22:57:20Z","id":75546,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:20Z","id":75784,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T22:57:20Z","id":75557,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:21Z","id":75677,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T22:57:24Z","id":75545,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:33Z","id":75544,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:35Z","id":75543,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:57:39Z","id":75327,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone"]}
+{"time_utc":"2026-10-30T22:57:40Z","id":75328,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","dob","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T22:57:43Z","id":76174,"mode":"live","result":"skipped","reason":"captcha","fields":["email"],"said":"captcha: challenge opened after submit"}
+{"time_utc":"2026-10-30T22:57:47Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-30T22:57:52Z","id":76110,"mode":"live","result":"failed","reason":"form said: try again","fields":["first","last","email"],"said":"Captcha validation failed. Please try again."}
+{"time_utc":"2026-10-30T22:57:55Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-30T22:57:56Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-30T22:57:57Z","id":76050,"mode":"live","result":"skipped","reason":"captcha","fields":["email"],"said":"captcha: challenge opened after submit"}
+{"time_utc":"2026-10-30T22:57:59Z","id":76112,"mode":"live","result":"skipped","reason":"captcha","fields":["email"],"said":"captcha: Turnstile awaiting interaction"}
+{"time_utc":"2026-10-30T22:58:00Z","id":75739,"mode":"live","result":"entered","reason":"already entered","fields":["email"]}
+{"time_utc":"2026-10-30T22:58:05Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-30T22:58:07Z","id":76051,"mode":"live","result":"skipped","reason":"captcha","fields":["email"],"said":"captcha: security-code field"}
+{"time_utc":"2026-10-30T22:58:10Z","id":76161,"mode":"live","result":"skipped","reason":"captcha","fields":["full","email","phone","postcode"],"said":"captcha: challenge opened after submit"}
+{"time_utc":"2026-10-30T22:58:11Z","id":76049,"mode":"live","result":"skipped","reason":"captcha","fields":["email"],"said":"captcha: challenge opened after submit"}
+{"time_utc":"2026-10-30T22:58:16Z","id":75548,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T22:58:18Z","id":76026,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T22:58:20Z","id":74216,"mode":"live","result":"entered","reason":"","fields":["email"]}
+{"time_utc":"2026-10-30T22:58:21Z","id":76136,"mode":"live","result":"failed","reason":"form said: try again","fields":["email","phone","required_marketing"],"said":"Something went wrong. Please try again."}
+{"time_utc":"2026-10-30T22:58:22Z","id":74311,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T22:58:26Z","id":70434,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-30T22:58:29Z","id":75662,"mode":"live","result":"skipped","reason":"captcha","fields":["first","last","phone","email"],"said":"captcha: Turnstile awaiting interaction"}
+{"time_utc":"2026-10-30T23:02:11Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-30T23:02:16Z","id":76110,"mode":"live","result":"failed","reason":"form said: try again","fields":["email"],"said":"Captcha validation failed. Please try again."}
+{"time_utc":"2026-10-30T23:02:19Z","id":75677,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T23:02:20Z","id":75328,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","dob","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T23:02:20Z","id":76107,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T23:02:22Z","id":75784,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T23:02:28Z","id":76136,"mode":"live","result":"failed","reason":"form said: try again","fields":["email","phone","required_marketing"],"said":"Something went wrong. Please try again."}
+{"time_utc":"2026-10-30T23:02:30Z","id":76026,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T23:02:31Z","id":74311,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T23:07:09Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-30T23:07:12Z","id":74216,"mode":"live","result":"entered","reason":"","fields":["email"]}
+{"time_utc":"2026-10-30T23:07:12Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-30T23:07:13Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-30T23:07:16Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-30T23:12:04Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-30T23:17:09Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-30T23:17:12Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-30T23:17:12Z","id":74216,"mode":"live","result":"entered","reason":"","fields":["email"]}
+{"time_utc":"2026-10-30T23:17:13Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-30T23:17:15Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
