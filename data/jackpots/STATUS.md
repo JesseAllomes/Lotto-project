@@ -1,6 +1,6 @@
 # Lucky Lotteries jackpots
 
-Updated 2026-10-30T12:02:00Z by workers/jackpots.py.
+Updated 2026-10-30T12:05:40Z by workers/jackpots.py.
 
 | Game | Open draw | Jackpot | Alert at | Break-even | % of break-even | Draws this cycle | Growth per draw | Draws to break-even |
 |---|---|---|---|---|---|---|---|---|
