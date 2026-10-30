@@ -42,12 +42,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T12:11:00+00:00",
         "est_min": 15,
         "goal": ".github/workflows/jackpots.yml: daily run, commit data/jackpots, open one GitHub issue per alert key (no duplicates); verify on GitHub",
         "id": "c2",
-        "note": "",
+        "note": "jackpots.yml run 41052762530 succeeded on GitHub; issue dedup dry-run passed",
         "targets": [
           ".github/workflows/jackpots.yml"
         ]
@@ -55,11 +55,11 @@
     ]
   },
   "errors": [],
-  "rev": 7,
+  "rev": 8,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T12:05:24+00:00",
+      "end": "2026-10-30T12:11:00+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",
