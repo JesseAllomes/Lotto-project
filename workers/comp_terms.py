@@ -57,7 +57,8 @@ PRICE_PATTERNS = [
 PER_TICKET = r"\$(?P<p>\d[\d,]*(?:\.\d\d)?) (?:per|each|a|/) ?ticket"
 JSON_PRICE = r'"numTickets":(?P<n>\d+),"price":\{[^}]*?"amount":"(?P<p>\d+(?:\.\d+)?)"'
 PERMIT = r"(?:VIC|Vic\.?|Victorian?) (?:Permit|Licence|License)(?: No\.?| Number)?:? ?(?P<v>[A-Z0-9][A-Z0-9/.-]{3,})"
-TERMS_LINK = r"""(?:href=["']|["'])(?P<u>(?:https?://[^"'\s]+|/[^"'\s]*)(?:terms|conditions|rules)[^"'\s]*)["']"""
+TERMS_LINK = (r"""(?:href=["']|["'])(?P<u>(?:https?://[^"'\s]+|/[^"'\s]*)(?:terms|conditions|rules|[-_]t-?(?:&|and)?-?cs?\b)"""
+              r"""[^"'\s]*)["']""")                    # "...-Competition-TCs.pdf", "/t-and-cs/"
 
 
 def text_of(body, content_type=""):
@@ -195,11 +196,12 @@ def targets(store, today):
 
 
 def done(r, hist):
-    """Paid listings are retried until a cap is found (MAX_TRIES); a free listing needs one successful read."""
+    """Paid listings are retried until a cap is found (MAX_TRIES); a free listing is done once its terms have been
+    read (or after MAX_TRIES attempts that found no terms link)."""
     h = hist.get(r["id"], [])
     if any(x.get("cap") for x in h) or len(h) >= MAX_TRIES:
         return True
-    return bool(r.get("_free")) and any(len(x.get("tried") or []) and "excessive_clause" in x for x in h)
+    return bool(r.get("_free")) and any(x.get("terms_read") and "excessive_clause" in x for x in h)
 
 
 def run(store=STORE, max_new=None, fetch=fetch_bytes, delay=comps.DELAY_S, today=None):
