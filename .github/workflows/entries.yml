@@ -68,6 +68,11 @@ jobs:
           git diff --cached --quiet || git commit -m "entries: $(date -u +%F' '%H:%M)"
           git pull --rebase origin main
           git push
+      - name: Refresh the website with the new entries
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run site.yml --ref main || true
       - name: Wait for the next 3-hour window, then start the next run
         if: always()
         env:

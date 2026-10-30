@@ -50,6 +50,29 @@ def read_jsonl(path):
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()] if path.exists() else []
 
 
+REGISTER_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "entries", "first_entered_utc", "last_entered_utc",
+                   "entry_url"]
+
+
+def write_register(store, entries, entered):
+    """data/entries/register.csv: every competition the entrant has entered, with how many times and when."""
+    recs = {r["id"]: r for r in (json.loads(l)["comp"] for l in comps.stored(store).values())}
+    rows = []
+    for i, times in entered.items():
+        r = recs.get(i, {})
+        rows.append({"id": i, "title": r.get("title", ""), "brand": r.get("brand", ""),
+                     "prize_pool": r.get("prize_pool"), "closes": (r.get("closes") or "")[:10], "entries": len(times),
+                     "first_entered_utc": min(times).strftime("%Y-%m-%d %H:%M"),
+                     "last_entered_utc": max(times).strftime("%Y-%m-%d %H:%M"), "entry_url": r.get("entry_url", "")})
+    rows.sort(key=lambda x: (-x["entries"], x["title"]))
+    entries.mkdir(parents=True, exist_ok=True)
+    with open(entries / "register.csv", "w", newline="") as fh:
+        w = csv.DictWriter(fh, REGISTER_FIELDS)
+        w.writeheader()
+        w.writerows(rows)
+    return rows
+
+
 def may_enter(limit, entered, now, n=None, excessive=False):
     """Whether the entry limit allows another entry now, given the UTC datetimes of past successful entries."""
     local = now.astimezone(MELB)
@@ -128,6 +151,7 @@ def build(store=STORE, entries=ENTRIES, now=None):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)
+    write_register(store, entries, entered)
     queue.sort(key=lambda x: (x["needs_answer"], x["closes"] or "9"))
     manual.sort(key=lambda x: x["closes"] or "9")
     entries.mkdir(parents=True, exist_ok=True)

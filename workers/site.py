@@ -47,8 +47,14 @@ def why(reason):
                                                                           "the auto-entrant failed here")
 
 
+def load_answers(entries=ENTRIES):
+    path = entries / "answers.json"
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
 def items(entries=ENTRIES, today=None):
     today = (today or dt.date.today()).isoformat()
+    ans = load_answers(entries)
     path = entries / "manual.csv"
     rows = list(csv.DictReader(open(path))) if path.exists() else []
     out = []
@@ -59,7 +65,8 @@ def items(entries=ENTRIES, today=None):
         out.append({"id": r["id"], "title": r["title"], "brand": r.get("brand") or "",
                     "prize": float(r["prize_pool"]) if r.get("prize_pool") else 0.0, "closes": closes,
                     "url": r["entry_url"], "why": why(r.get("reason") or ""),
-                    "group": group_of(r.get("reason") or "", r.get("entry_platform") or "", r["entry_url"])})
+                    "group": group_of(r.get("reason") or "", r.get("entry_platform") or "", r["entry_url"]),
+                    "answer": ans.get(str(r["id"]))})
     out.sort(key=lambda x: (x["closes"] or "9999", -x["prize"]))
     return out
 
@@ -71,11 +78,23 @@ def stats(entries=ENTRIES):
     return {"entries": len(live), "comps": len({x["id"] for x in live})}
 
 
-def answers(entries=ENTRIES):
-    path = entries / "answers.json"
-    a = json.loads(path.read_text()) if path.exists() else {}
-    titles = {r["id"]: r["title"] for r in (json.loads(l)["comp"] for l in comps.stored(comps.STORE).values())}
-    return [{"title": titles.get(int(k), k), "answer": v} for k, v in a.items()]
+def register(entries=ENTRIES):
+    path = entries / "register.csv"
+    return list(csv.DictReader(open(path))) if path.exists() else []
+
+
+def melb(utc_text):
+    """'2026-10-30 19:31' (UTC) as Melbourne time, e.g. 'Sat 31 Oct, 6:31am'."""
+    from zoneinfo import ZoneInfo
+    t = dt.datetime.strptime(utc_text, "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc).astimezone(
+        ZoneInfo("Australia/Melbourne"))
+    return t.strftime("%a %d %b, %I:%M%p").replace(" 0", " ").replace("AM", "am").replace("PM", "pm")
+
+
+def answer_block(text):
+    e = html.escape
+    return (f'<div class="ans"><p class="answer">{e(text)}</p>'
+            f'<button class="copy" data-copy="{e(text)}">Copy answer</button></div>')
 
 
 def card(x):
@@ -85,12 +104,19 @@ def card(x):
             f'<span class="closes">closes {e(x["closes"] or "?")}</span></div>'
             f'<a class="title" href="{e(x["url"])}" target="_blank" rel="noopener">{e(x["title"])}</a>'
             f'<div class="meta">{e(x["brand"])} · {e(x["why"])}</div>'
+            + (answer_block(x["answer"]) if x.get("answer") else "") +
             f'<div class="row"><a class="go" href="{e(x["url"])}" target="_blank" rel="noopener">Open entry page</a>'
             f'<label class="done"><input type="checkbox"> Done</label></div></li>')
 
 
 def page(entries=ENTRIES, today=None, built=None):
-    it, st, an = items(entries, today), stats(entries), answers(entries)
+    it, st, reg = items(entries, today), stats(entries), register(entries)
+    manual_ids = {x["id"] for x in it}
+    ans = load_answers(entries)
+    recs = {str(r["id"]): r for r in (json.loads(l)["comp"] for l in comps.stored(comps.STORE).values())}
+    entered_ids = {r["id"] for r in reg}
+    queued = [(k, v) for k, v in ans.items() if k not in manual_ids and k not in entered_ids and k in recs
+              and (recs[k].get("closes") or "9")[:10] >= (today or dt.date.today()).isoformat()]
     built = built or dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     sections = []
     for key, name, hint in GROUPS:
@@ -98,8 +124,19 @@ def page(entries=ENTRIES, today=None, built=None):
         if g:
             sections.append(f'<section><h2>{name} <span class="count">{len(g)}</span></h2><p class="hint">{hint}</p>'
                             f'<ul>{"".join(card(x) for x in g)}</ul></section>')
-    ans = "".join(f'<li class="card"><div class="title">{html.escape(a["title"])}</div>'
-                  f'<p class="answer">{html.escape(a["answer"])}</p></li>' for a in an)
+    e = html.escape
+    queued_html = "".join(
+        f'<li class="card"><a class="title" href="{e(recs[k]["entry_url"])}" target="_blank" rel="noopener">'
+        f'{e(recs[k]["title"])}</a><div class="meta">{e(recs[k].get("brand") or "")} · waiting for the auto-entrant</div>'
+        f'{answer_block(v)}<div class="row"><a class="go" href="{e(recs[k]["entry_url"])}" target="_blank" '
+        f'rel="noopener">Open entry page</a></div></li>' for k, v in queued)
+    reg_rows = "".join(
+        f'<tr><td><a href="{e(r["entry_url"])}" target="_blank" rel="noopener">{e(r["title"])}</a>'
+        f'<div class="meta">{e(r["brand"])}' + (f' · ${float(r["prize_pool"]):,.0f}' if r.get("prize_pool") else "")
+        + f' · closes {e(r["closes"] or "?")}</div></td><td class="num">{e(r["entries"])}</td>'
+        f'<td class="when">{e(melb(r["last_entered_utc"]))}' + (f'<div class="meta">answer: {e(ans[r["id"]])}</div>'
+                                                            if r["id"] in ans else "") + '</td></tr>'
+        for r in reg)
     total = sum(x["prize"] for x in it)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -117,6 +154,11 @@ ul{{list-style:none;padding:0;margin:.5rem 0}}.card{{background:var(--card);bord
 .go{{background:var(--accent);color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:600}}
 .done{{display:flex;gap:6px;align-items:center;font-size:.95rem}}.done input{{width:22px;height:22px}}
 .card.is-done{{opacity:.45}}.card.is-done .title{{text-decoration:line-through;color:var(--done)}}
+.ans{{background:var(--bg);border-radius:8px;padding:8px 10px;margin:8px 0}}.answer{{margin:0 0 6px}}
+table{{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}}
+th,td{{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:.95rem}}
+td a{{color:var(--ink);font-weight:600;text-decoration:none}}.num{{font-weight:700;color:var(--accent);text-align:center}}
+.when{{font-size:.85rem;color:var(--muted)}}
 .bar{{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}}.answer{{margin:.3rem 0 0}}
 button{{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}}
 </style></head><body>
@@ -125,9 +167,12 @@ button{{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--l
 {st["entries"]} entries in {st["comps"]} competitions. Updated {built}.</p>
 <div class="bar"><label class="done"><input type="checkbox" id="hide"> Hide done</label>
 <span class="sub" id="left"></span></div></header>
-<main>{"".join(sections)}
-<section><h2>Approved skill answers <span class="count">{len(an)}</span></h2>
-<p class="hint">Entered automatically where the form allows; copy from here if you enter one by hand.</p><ul>{ans}</ul></section>
+<main><section><h2>Auto-entry register <span class="count">{len(reg)}</span></h2>
+<p class="hint">Every competition the auto-entrant has entered, how many times, and the latest entry. Updates after each burst.</p>
+<table><thead><tr><th>Competition</th><th>Entries</th><th>Last entered</th></tr></thead><tbody>{reg_rows}</tbody></table></section>
+<section><h2>Skill answers waiting to go in <span class="count">{len(queued)}</span></h2>
+<p class="hint">Approved answers the auto-entrant will submit; enter by hand with Copy answer if you like.</p><ul>{queued_html}</ul></section>
+{"".join(sections)}
 </main>
 <script>
 const KEY = "comps-done";
@@ -142,6 +187,12 @@ function paint() {{
   }});
   document.getElementById("left").textContent = left + " left to do";
 }}
+document.addEventListener("click", async (e) => {{
+  const b = e.target.closest("button.copy"); if (!b) return;
+  try {{ await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied"; }}
+  catch {{ b.textContent = "Select and copy the text"; }}
+  setTimeout(() => (b.textContent = "Copy answer"), 2000);
+}});
 document.addEventListener("change", (e) => {{
   const li = e.target.closest("li[data-id]");
   if (li) {{ const d = load(); if (e.target.checked) d[li.dataset.id] = Date.now(); else delete d[li.dataset.id]; save(d); }}
