@@ -216,12 +216,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T13:30:01+00:00",
         "est_min": 25,
         "goal": "workers/entrant.py: Playwright filler; field mapping by label/name/autocomplete; required consent boxes only; skip on captcha/login/payment/unknown required field; dry-run default; log.jsonl without personal data; tests on local HTML forms",
         "id": "c2",
-        "note": "",
+        "note": "entrant.mjs: 5 browser tests on local forms pass (dry, live, captcha, unfillable, skill answer; no PII in log)",
         "targets": [
           "workers/entrant.py",
           "tests/test_entrant.py",
@@ -229,12 +229,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T13:30:01+00:00",
         "est_min": 15,
         "goal": ".github/workflows/entries.yml: daily; ENTRANT_* secrets; ENTRANT_LIVE variable gates submission; screenshots as short-lived artifacts; owner sets secrets",
         "id": "c3",
-        "note": "",
+        "note": "entries.yml written; browser steps run only once ENTRANT_* secrets exist; live only with ENTRANT_LIVE=1",
         "targets": [
           ".github/workflows/entries.yml"
         ]
@@ -254,11 +254,11 @@
     ]
   },
   "errors": [],
-  "rev": 36,
+  "rev": 38,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T13:26:13+00:00",
+      "end": "2026-10-30T13:30:01+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

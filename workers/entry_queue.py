@@ -1,6 +1,6 @@
 """Which free competitions the entrant may enter today, and the manual list for the owner.
 
-    python3 -m workers.entry_queue      # writes data/entries/queue.csv and data/entries/manual.csv
+    python3 -m workers.entry_queue      # writes data/entries/queue.csv, queue.json (for workers/entrant.mjs), manual.csv
 
 A listing joins the queue when it is open, a Victorian can enter, entry is free, the entry is a web form
 (entry_route agent_ok), its terms do not ban automated or third-party entry (comp_odds and comp_terms), and its
@@ -89,7 +89,10 @@ def build(store=STORE, entries=ENTRIES, today=None):
             w = csv.DictWriter(fh, fields, extrasaction="ignore")
             w.writeheader()
             w.writerows(rows)
-    ready = sum(1 for q in queue if not q["needs_answer"])
+    ready_items = [{"id": q["id"], "entry_url": q["entry_url"], "answer": answers.get(str(q["id"]))}
+                   for q in queue if not q["needs_answer"]]
+    (entries / "queue.json").write_text(json.dumps(ready_items, indent=1))
+    ready = len(ready_items)
     print(f"entry_queue: {ready} ready to enter, {len(queue) - ready} waiting for an approved answer, "
           f"{len(manual)} on the manual list", flush=True)
     return queue, manual

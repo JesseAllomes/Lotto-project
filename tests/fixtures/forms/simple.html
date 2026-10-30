@@ -1,0 +1,12 @@
+<html><body><h1>Win a grinder</h1>
+<form id="f" onsubmit="event.preventDefault(); document.body.innerHTML='<p>Thanks, you are entered. Good luck!</p>';">
+<label for="fn">First name</label><input id="fn" name="first_name" required>
+<label for="ln">Last name</label><input id="ln" name="last_name" required>
+<label for="em">Email</label><input id="em" type="email" name="email" required>
+<label for="ph">Mobile</label><input id="ph" type="tel" name="phone">
+<label for="pc">Postcode</label><input id="pc" name="postcode" required>
+<label for="st">State</label><select id="st" name="state" required><option value="">Choose</option><option value="NSW">NSW</option><option value="VIC">VIC</option></select>
+<label><input type="checkbox" name="terms" required> I agree to the terms and conditions</label>
+<label><input type="checkbox" name="news"> Send me the newsletter and special offers</label>
+<button type="submit">Enter now</button>
+</form></body></html>

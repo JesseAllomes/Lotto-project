@@ -1,0 +1,60 @@
+# Auto-entry of free web-form competitions (m9): workers/entry_queue.py picks what may be entered today,
+# workers/entrant.mjs fills each form with the owner's details from secrets. Daily at 22:47 UTC (about 9:47am
+# Melbourne in summer), after comps.yml. Submits only when the repository variable ENTRANT_LIVE is 1; otherwise a
+# dry run. Token-free. The log in data/entries/ holds no personal details; screenshots (which do) are kept 3 days
+# as a run artifact only.
+name: entries
+on:
+  schedule:
+    - cron: "47 22 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: entries
+  cancel-in-progress: false
+jobs:
+  enter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ENTRANT_FIRST_NAME: ${{ secrets.ENTRANT_FIRST_NAME }}
+      ENTRANT_LAST_NAME: ${{ secrets.ENTRANT_LAST_NAME }}
+      ENTRANT_EMAIL: ${{ secrets.ENTRANT_EMAIL }}
+      ENTRANT_PHONE: ${{ secrets.ENTRANT_PHONE }}
+      ENTRANT_POSTCODE: ${{ secrets.ENTRANT_POSTCODE }}
+      ENTRANT_SUBURB: ${{ secrets.ENTRANT_SUBURB }}
+      ENTRANT_STATE: ${{ secrets.ENTRANT_STATE }}
+      ENTRANT_ADDRESS: ${{ secrets.ENTRANT_ADDRESS }}
+      ENTRANT_DOB: ${{ secrets.ENTRANT_DOB }}
+      ENTRANT_LIVE: ${{ vars.ENTRANT_LIVE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build today's queue and the manual list
+        run: python3 -m workers.entry_queue
+      - name: Install the browser
+        if: env.ENTRANT_EMAIL != ''
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright@1.63.0 > /dev/null
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium > /dev/null
+      - name: Enter
+        if: env.ENTRANT_EMAIL != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/shots"
+          NODE_PATH="$RUNNER_TEMP/pw/node_modules" ENTRANT_SHOTS="$RUNNER_TEMP/shots" node workers/entrant.mjs
+      - name: Keep the screenshots for 3 days
+        if: always() && env.ENTRANT_EMAIL != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-screenshots
+          path: ${{ runner.temp }}/shots
+          retention-days: 3
+          if-no-files-found: ignore
+      - name: Commit the queue, manual list and log
+        run: |
+          git config user.name "lotto-entries-worker"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/entries
+          git diff --cached --quiet || git commit -m "entries: $(date -u +%F)"
+          git pull --rebase origin main
+          git push

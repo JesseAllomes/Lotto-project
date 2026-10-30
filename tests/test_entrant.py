@@ -1,6 +1,8 @@
 """Offline tests for the auto-entry queue and entrant (no network, no personal details)."""
 import datetime as dt
 import json
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -55,6 +57,20 @@ class Queue(unittest.TestCase):
                              {2: "entry route manual", 3: "terms ban automated entry", 8: "entrant blocked: captcha"})
             text = (entries / "queue.csv").read_text() + (entries / "manual.csv").read_text()
             self.assertNotIn("@", text)
+
+            ready = json.loads((entries / "queue.json").read_text())
+            self.assertEqual(ready, [{"id": 1, "entry_url": "https://shop.example/1", "answer": None}])
+
+
+@unittest.skipUnless(shutil.which("node") and subprocess.run(["node", "-e", "require('playwright')"],
+                                                             capture_output=True).returncode == 0,
+                     "node and playwright not installed")
+class Browser(unittest.TestCase):
+    def test_entrant_on_local_forms(self):
+        root = Path(__file__).resolve().parent.parent
+        out = subprocess.run(["node", "--test", "tests/entrant.test.mjs"], cwd=root, capture_output=True, text=True,
+                             timeout=600)
+        self.assertEqual(out.returncode, 0, out.stdout[-2000:] + out.stderr[-2000:])
 
 
 if __name__ == "__main__":

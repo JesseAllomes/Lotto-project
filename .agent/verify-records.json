@@ -8,16 +8,16 @@
   },
   "unit": {
     "digest": "sha256:da7336251cf3",
-    "tree": "sha256:a58e907c7c8f1bff",
+    "tree": "sha256:ce026088c3962bd4",
     "status": "pass",
-    "when": "2026-10-30T13:26:13+00:00",
+    "when": "2026-10-30T13:30:01+00:00",
     "log": ".agent/verify-unit.log"
   },
   "tier:fast": {
     "digest": "tier",
-    "tree": "sha256:a58e907c7c8f1bff",
+    "tree": "sha256:ce026088c3962bd4",
     "status": "fail",
-    "when": "2026-10-30T13:26:13+00:00",
+    "when": "2026-10-30T13:30:01+00:00",
     "log": "verify.log"
   }
 }
