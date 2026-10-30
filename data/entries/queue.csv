@@ -1,6 +1,7 @@
 id,title,brand,prize_pool,closes,last_day,draw_type,entry_limit,needs_answer,question,terms_checked,entry_url
 76107,Win an AGV Streetmodular Resia + a Motul Care Kit,AGV Helmets,550.0,2026-10-31T23:59:59+10:00,True,chance,unknown,False,,False,https://agvhelmets.com.au/win/
 75952,Win a Luxury Dog Bed + Blanket + Collar + Perfume,The Hersh Bed,449.0,2026-10-31T23:59:59+10:00,True,unknown,once,False,,False,https://www.thehershbed.com/pages/win-a-luxury-hersh-bed
+75926,Win a St John Pocket AED,St John Ambulance,1995.0,2026-10-31T23:59:59+10:00,True,skill,once,False,,True,https://www.stjohnvic.com.au/shocktober-1/
 75891,Win Free Sakana for a Year,PranCentral,780.0,2026-10-31T23:59:59+10:00,True,chance,unknown,False,,False,https://www.prancentral.com.au/whats-on/celebrate-sakanas-20th-birthday/
 75889,Win a Ka-Light-S Kala Light Tone Color-Changing Soprano Ukulele,The Ukulele Trading Co Australia,119.0,2026-10-31T23:59:59+10:00,True,unknown,unknown,False,,False,https://app.viralsweep.com/sweeps/full/6cc368-238259?framed=1
 75784,Win 2 Nights Escape to Victoria Mornington Peninsula for 2,Life Cykel,5287.0,2026-10-31T23:59:59+10:00,True,chance,unknown,False,,False,https://lifecykel.com/pages/win-the-ultimate-reset
@@ -9,6 +10,7 @@ id,title,brand,prize_pool,closes,last_day,draw_type,entry_limit,needs_answer,que
 75677,Win Two $600 Infamous Swim Vouchers,Infamous Swim,1200.0,2026-10-31T23:59:59+10:00,True,unknown,unknown,False,,False,https://infamousswim.com.au/pages/subscribe
 75601,Win a LEGO® Halloween Bundle,LEGO Certified Stores Australia & New Zealand,1049.0,2026-10-31T23:59:59+10:00,True,chance,once,False,,True,https://lego.bricksmegastore.com/account/register
 75590,Win a Masport Pro Power 870 AL 3'N1 Lawnmower,Masport,1049.0,2026-10-31T23:59:59+10:00,True,chance,once,False,,False,https://masport.com/en-au/promotions/win-a-masport-mower/
+75557,Win a Herms Birkin 25 Black Togo PHW Bag,White Fox Boutique,46000.0,2026-10-31T23:59:59+10:00,True,skill,once,False,,True,https://whitefoxboutique.com.au/pages/hermes-birkin-25-giveaway-terms-2026
 75546,Win Magic Natural Laundry Soakers,Australian Made,70.0,2026-10-31T23:59:59+10:00,True,unknown,unknown,False,,True,https://australianmade.com.au/competitions/2610_rubbedin/
 75545,Win Sarah Munnings Jewellery and Go Do Good Haven Earrings,Australian Made,80.0,2026-10-31T23:59:59+10:00,True,unknown,unknown,False,,True,https://australianmade.com.au/competitions/2610-sarah-munnings/
 75544,Win Provex Roo Treats & Nectar Bundle,Australian Made,,2026-10-31T23:59:59+10:00,True,unknown,unknown,False,,True,https://australianmade.com.au/competitions/2610-provex/
@@ -50,8 +52,6 @@ id,title,brand,prize_pool,closes,last_day,draw_type,entry_limit,needs_answer,que
 75662,"Win a $10,000 Bali Escape",TravelOnline,10000.0,2027-01-05T23:59:59+10:00,False,chance,unknown,False,,True,https://www.travelonline.com/competition
 70434,Win an Apple Ipad or a SamSung Tab & $100 in Vouchers,Clickability,600.0,2027-02-15T23:59:59+10:00,False,chance,unknown,False,,False,https://clickability.com.au/ndis-services-giveaway
 75893,Win a $100 Robina Town Centre Gift Card Weekly,Robina Town Centre,42165.0,2027-02-21T23:59:59+10:00,False,chance,once,False,,False,https://robinatowncentre.qicre.com/whats-on/news/play-well/play-well-gift-card-competition/
-75926,Win a St John Pocket AED,St John Ambulance,1995.0,2026-10-31T23:59:59+10:00,True,skill,once,True,,True,https://www.stjohnvic.com.au/shocktober-1/
-75557,Win a Herms Birkin 25 Black Togo PHW Bag,White Fox Boutique,46000.0,2026-10-31T23:59:59+10:00,True,skill,once,True,,True,https://whitefoxboutique.com.au/pages/hermes-birkin-25-giveaway-terms-2026
 75819,Win a 2026 NAB AFLW Grand Final Experience for 2,QBE Insurance Australia,3000.0,2026-11-01T23:59:59+10:00,False,skill,once,True,,True,https://qbeswanshub.com.au/card/019f2179-a2b9-73ea-803e-45b38fd9ebd3
 73713,Win $100K,Beauty Heaven,100000.0,2026-11-01T23:59:59+10:00,False,skill,once,True,,False,https://www.beautyheaven.com.au/competitions-events/chance-to-win-one-hundred-thousand/
 76124,Win a Bucket List Experience to Share with your Grandparent,Omoda Jaecoo Australia,15000.0,2026-11-08T23:59:59+10:00,False,skill,once,True,,True,https://www.omodajaecoo.com.au/campaigns/bucket-list
