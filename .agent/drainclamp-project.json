@@ -268,7 +268,7 @@
     ]
   },
   "errors": [],
-  "rev": 40,
+  "rev": 41,
   "schema": 1,
   "time": [
     {
@@ -295,6 +295,14 @@
       "id": "t2",
       "milestone": "m4",
       "text": "Prize-home value per ticket needs each draw's ticket cap (in the permit T&Cs, not the listing). Charity raffles in comps.jsonl give prize value, price range and dates."
+    },
+    {
+      "at": "2026-10-30T13:57:04+00:00",
+      "done": false,
+      "done_at": null,
+      "id": "t3",
+      "milestone": "",
+      "text": "workers/sellthrough.py (Fable): charity draw sell-through from winning ticket numbers, live book EV, alert when a book > 100% of face or a doubling promo appears; games-sold per Saturday draw, alert when a Superdraw sells under 40M games"
     }
   ],
   "tokens": null
