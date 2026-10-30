@@ -43,10 +43,16 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 75570,Win a copy of Partita by Barbara Kingsolver,Good Reading Magazine,49.0,2026-10-31T23:59:59+10:00,unclear,entry route unknown,web,https://goodreadingmagazine.com.au/competitions/win-partita/
 75569,Win a copy of Hollywood Ending,Good Reading Magazine,17.0,2026-10-31T23:59:59+10:00,unclear,entry route unknown,web,https://goodreadingmagazine.com.au/competitions/win-hollywood-ending/
 75557,Win a Herms Birkin 25 Black Togo PHW Bag,White Fox Boutique,46000.0,2026-10-31T23:59:59+10:00,skill,terms ban automated entry,web,https://whitefoxboutique.com.au/pages/hermes-birkin-25-giveaway-terms-2026
+75546,Win Magic Natural Laundry Soakers,Australian Made,70.0,2026-10-31T23:59:59+10:00,unknown,entrant blocked: captcha,web,https://australianmade.com.au/competitions/2610_rubbedin/
+75545,Win Sarah Munnings Jewellery and Go Do Good Haven Earrings,Australian Made,80.0,2026-10-31T23:59:59+10:00,unknown,entrant blocked: captcha,web,https://australianmade.com.au/competitions/2610-sarah-munnings/
+75544,Win Provex Roo Treats & Nectar Bundle,Australian Made,,2026-10-31T23:59:59+10:00,unknown,entrant blocked: captcha,web,https://australianmade.com.au/competitions/2610-provex/
+75543,Win 1 of 2 the Grain Shop Microwavable Wheat Heat Bags,Australian Made,30.0,2026-10-31T23:59:59+10:00,unknown,entrant blocked: captcha,web,https://australianmade.com.au/competitions/2610-feelgood-australia/
 75542,Win Weekly Prize Packs,Australian Made,,2026-10-31T23:59:59+10:00,unknown,entry route unknown,web,https://australianmade.com.au/competitions/2610-40-years-giveaway/
 75359,Win a $1K Society of Wolves Voucher,Society Of Wolves,1000.0,2026-10-31T23:59:59+10:00,chance,terms ban automated entry,web,https://societyofwolves.com.au/pages/win
 75328,Win a $500 Calexico Voucher,Calexico Australia,500.0,2026-10-31T23:59:59+10:00,chance,entry route manual,web,https://www.calexico.com.au/pages/win-a-wardrobe-competition
 75327,Win a PS5 Disk Edition,Dr. Moose,999.0,2026-10-31T23:59:59+10:00,chance,entry route manual,web,https://drmoose.com.au/pages/sign-up
+75008,Win a La-Z-Boy Arden Power Massage Recliner in Leather,Cove Magazine,3499.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: captcha,web,https://covemagazine.com.au/competitions/
+74891,Win a Luxury Getaway at Andaz Gold Coast,Pacific Fair Shopping Centre,6575.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: captcha,web,https://www.pacificfair.com.au/what-s-happening/summer-staycay-giveaway
 74560,Win One Year of Free Chocolate,Choc'd Full,1000.0,2026-10-31T23:59:59+10:00,chance,terms ban automated entry,web,https://chocdfull.com.au/pages/spin-to-win
 72120,Win a $500 Stan Cash Card or 1 of 10 $20 Stan Cash Cards,Stan Cash,8400.0,2026-10-31T23:59:59+10:00,instant,terms ban automated entry,web,https://www.stancash.com.au/pages/spin-to-win
 76174,Win a $1K Sportscraft Gift Card,Sportscraft,1000.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://sportscraft.com.au/pages/win-a-wardrobe
@@ -56,6 +62,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76118,Win $5K Of Travel Goodies,SnapWireless,5000.0,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://snapwireless.com.au/pages/5k-travel-giveaway
 76112,Win a Dream Playroom,Hipkids,600.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://www.hipkids.com.au/pages/win-a-playroom-competition?srsltid=AYCX9vJIu0qKNf-_oc6AIVI_JhBBHeGABGz5O6y694H5wmiTQ9UAZ2F4
 76111,Win 1 of 6 Annke Security Cameras,ANNKE,512.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://www.annke.com/blogs/giveaways/no-tricks-just-treats-annke-halloween-giveaway
+76110,Win 1 of 5 Digital Passes to see Paw Patrol: the Dino Movie,Popcorn podcast,,2026-11-01T23:59:59+10:00,chance,entrant blocked: captcha,web,https://popcornpodcast.com/giveaways/win-paw-patrol-the-dino-movie-digital-release
 76108,Win 1 of 6 $100 Prime100 Vouchers,Prime100,600.0,2026-11-01T23:59:59+10:00,chance,entry route manual,facebook,https://www.facebook.com/Prime100PetFood/posts/pfbid0dhAUx6RurrcJhbLbGjHjLPf7y3QMP1ddiQabuS1nqYgibozzZFCkEc5sRNHPQ2NUl
 76091,Win 1 of 5 Prize Packs,Rollie Nation,4450.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://www.rollienation.com/pages/friends-of-mine-giveaway
 76075,Win 1 of 5 One of Five Grin DVDs,Switch,,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://www.maketheswitch.com.au/article/win-grin-if-you-have-sinned-dont-let-it-in
@@ -65,6 +72,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76022,Win a Summer Wardrobe,Guillo Clothing,1500.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://guilloclothing.com/pages/summer-wardrobe
 76004,"Win a $3,000 Summer Wardrobe",DECJUBA,3000.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://www.decjuba.com/en-au/pages/win-a-3000-summer-wardrobe
 75981,"Win a $2,000 Azadi Adornments Gift Voucher",Azadi Adornments,2000.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://azadiadornments.com/pages/2000-giveaway
+75967,Win a Special-Edition Polaroid Camera,Beat Magazine,,2026-11-01T23:59:59+10:00,chance,entrant blocked: captcha,web,https://beat.com.au/were-giving-away-a-special-edition-polaroid-camera/
 75958,Win a 2-Person 5-Night Holiday to Patagonia,Westfield,15200.0,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://www.westfield.com.au/offer/1xf9Z7pO2Q8UqxBEvndxQ9/hexed-comp
 75847,Win a 14-Day Ultimate QLD Road Trip,Caravanning Queensland,9000.0,2026-11-01T23:59:59+10:00,unknown,entry route manual,web,https://www.caravanqld.com.au/show/lets-go-explore-caravan-and-rv-expo/
 75822,"Win a $5,000 Holiday Voucher",Black Pepper,5000.0,2026-11-01T23:59:59+10:00,skill,terms ban automated entry,web,https://www.blackpepper.com.au/pages/competition
@@ -72,6 +80,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 75726,Win a Bump & Beyond Curated Prize Pack,Babybee Australia,5839.0,2026-11-01T23:59:59+10:00,chance,terms ban automated entry,web,https://babybeeonline.com/pages/bump-and-beyond-giveaway
 75717,Win Weekly an Evolve Retractable Hose Reel Set-up,Hoselink Australia,1276.0,2026-11-01T23:59:59+10:00,chance,entry route unknown,web,https://www.hoselink.com.au/pages/evolve-giveaway?tw_source=fb
 74441,"Win up to $100,000",Marie Claire Australia,100000.0,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://www.marieclaire.com.au/competitions/chance-to-win-one-hundred-thousand-2/
+73803,"Win $100,000 Cash",Bounty Parents,100000.0,2026-11-01T23:59:59+10:00,chance,entrant blocked: captcha,web,https://www.bountyparents.com.au/for-you/chance-to-win-one-hundred-thousand/
 73712,Win $100K to Make your Biggest Dreams a Reality,Home Beautiful,100000.0,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://www.homebeautiful.com.au/lifestyle/chance-to-win-one-hundred-thousand-2/
 73695,Win a Chance to Win $100K,ELLE,100000.0,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://www.elle.com.au/win/https-www-elle-com-au-win-chance-to-win-one-hundred-thousand/
 73682,"Win $100,000 for your Dream Home",Homes to Love,100000.0,2026-11-01T23:59:59+10:00,chance,entry route manual,web,https://www.homestolove.com.au/competition/chance-to-win-one-hundred-thousand-acs-2/
@@ -82,6 +91,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76080,Win a Revive Sauna + a Years Supply of Elyte,ELYTE Hydration Powder,5000.0,2026-11-02T23:59:59+10:00,unknown,entry route manual,web,https://elytehydration.com/pages/revive-sauna-giveaway
 76020,Win a Year's Worth of Ceremonial Grade Matcha & Oat Milk,Omura Matcha,1120.0,2026-11-02T23:59:59+10:00,chance,entry route manual,web,https://omuramatcha.com/pages/launch-giveaway
 75942,Win an Ultimate Spring BBQ SET-up,Alpha Box & Dice,1235.0,2026-11-02T23:59:59+10:00,chance,entry route manual,web,https://www.alphaboxdice.com/pages/weber-x-alpha-box-dice-giveaway
+75676,Win 1 of 2 Double Passes to Wild Horses Festival,Beat Magazine,,2026-11-02T23:59:59+10:00,unknown,entrant blocked: captcha,web,https://beat.com.au/win-were-giving-away-two-double-passes-to-wild-horses-festival/
 75521,Win an Andy Irons Replica Board + $1K Billabong Voucher,Billabong,2200.0,2026-11-02T23:59:59+10:00,chance,entry route manual,web,https://www.billabong.com.au/pages/mens-contest-1
 75454,Win a Pack of YA New Releases,Hachette,139.0,2026-11-02T23:59:59+10:00,skill,entry route manual,web,https://www.hachette.com.au/win/entryform?id=1506
 76154,Win Tickets to Boots Riley's I Love Boosters Share,Flicks,,2026-11-03T23:59:59+10:00,chance,entry route manual,web,https://www.flicks.com.au/member/rewards-comps/i-love-boosters-au/
@@ -106,6 +116,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76035,Win 1 of 3 copies of '300 Days of War' and 'Vampires of the Velvet Lounge',Eagle Entertainment,,2026-11-06T23:59:59+10:00,chance,entry route unknown,web,https://www.eagleentertainment.com.au/watchandwin
 75769,Win Two Return Business Class Flights to the Maldives,Marie Claire Australia,14000.0,2026-11-06T23:59:59+10:00,skill,entry route manual,web,https://www.marieclaire.com.au/competitions/win-business-class-flights-to-the-maldives-with-malaysia-airlines/
 75687,Win an Unforgettable Walking Adventure,Intrepid Travel,5500.0,2026-11-06T23:59:59+10:00,chance,terms ban automated entry,web,https://impact.intrepidtravel.com/c/1401256/3751827/47461?u=https%3A%2F%2Fwww.intrepidtravel.com%2Fau%2Famble-giveaway
+75903,Win a $1K Olga Joan voucher,Russh Magazine,1000.0,2026-11-07T23:59:59+10:00,chance,entrant blocked: captcha,web,https://www.russh.com/olga-joan-competition-october-november-2027/
 76137,Win the Full Silkyglow Ritual,Aussie Haven,139.0,2026-11-08T23:59:59+10:00,chance,terms ban automated entry,web,https://www.theaussiehaven.com/pages/win
 76121,"Win $10,000 for your Wishlist",Fenton & Fenton,10000.0,2026-11-08T23:59:59+10:00,chance,entry route unknown,web,https://www.fentonandfenton.com.au/pages/wishlist-competition
 76078,Win a $250 NW Gift Card,Nutrition Warehouse,1750.0,2026-11-08T23:59:59+10:00,chance,entry route manual,web,https://www.nutritionwarehouse.com.au/pages/gift-card-promotion
@@ -123,7 +134,9 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76140,Win 1 of 2 Play Gyms from Lovevery Australia,KindiCare,470.0,2026-11-09T23:59:59+10:00,chance,entry route manual,facebook,https://www.facebook.com/KindiCare/posts/pfbid02WrqgidEjDR3HQAsYme8ZXzgGdr97rFrdWWppN8teWCETwrtmvtsyiMfhEDVqopeyl
 76139,Win a Custom Rug from EC Carpets,The Weekend Edition Brisbane,,2026-11-09T23:59:59+10:00,chance,entry route manual,web,https://solsticemedia.com.au/competition/win-a-custom-rug-from-ec-carpets/
 76076,Win a $250 Booktopia Gift Certificate,Booktopia,250.0,2026-11-09T23:59:59+10:00,chance,entry route unknown,web,https://www.booktopia.com.au/booktopia-book-award/promo4387.html
+76051,Win How to Rob a Bank Double Passes,Modmove,,2026-11-09T23:59:59+10:00,chance,entrant blocked: captcha,web,http://modmove.com/competitions/win-tickets-to-how-to-rob-a-bank-coming-to-aussie-cinemas-november-12/
 75904,Win a Z70 Ultra Roller Wet & Dry Robotic Vacuum,JB Hi-Fi,2999.0,2026-11-09T23:59:59+10:00,skill,entry route manual,facebook,https://www.facebook.com/JBHiFi/posts/pfbid0W4kFNrV5vJrENLWPskVU2tQ7DDeKqckRqpxHHuP6xiKBqPFmWGfZA97XgXzT24gal
+75725,Win a Free Trip to Bali or Byron Bay with your Bestie,sunday,3000.0,2026-11-09T23:59:59+10:00,chance,entrant blocked: captcha,web,https://giveaway.sundayaus.com/
 76120,Win an Ultimate Girls Weekend in Sydney,Carolina Lifestyle,,2026-11-10T23:59:59+10:00,chance,terms ban automated entry,web,https://carolina.net.au/pages/black-friday-hype
 76049,Win 1 of 2 Spark Rings,Mr.YouWho,537.0,2026-11-10T23:59:59+10:00,chance,terms ban automated entry,web,https://www.mryouwho.com/pages/win-a-spark-ring
 75839,Win 2 Nights Including Breakfast at Paperbark Camp,Truly Aus,1400.0,2026-11-10T23:59:59+10:00,chance,entry route manual,web,https://rex.trulyaus.com/destinations/giveaways/giveaway-win-2-nights-including-breakfast-at-paperbark-camp-valued-at-1400
@@ -159,6 +172,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 75897,Win 1 of 3 $200 Coles Myer Gift Cards,La Trobe University,600.0,2026-11-30T23:59:59+10:00,chance,entry route manual,web,https://advancement.latrobe.edu.au/alumni-stayconnected
 75872,Win a 10-Night Japan Ski Trip for Two,Lé Bent,11491.0,2026-11-30T23:59:59+10:00,chance,entry route manual,web,https://www.lebent.com.au/pages/japan-giveaway
 75636,Win 1 of 10 KUI Parks 2 Year Digital Memberships,DRIVE STAY PLAY,400.0,2026-11-30T23:59:59+10:00,chance,terms ban automated entry,web,https://drivestayplay.com.au/competitions/win-1-of-10-kui-parks-2-year-digital-memberships
+75548,Win POP Drum Table Paired with Four Milan Chairs,Australian Made,,2026-11-30T23:59:59+10:00,unknown,entrant blocked: captcha,web,https://australianmade.com.au/competitions/2610-workspace/
 75488,Win a Wintec Saddle,Wintec Saddles,2400.0,2026-11-30T23:59:59+10:00,chance,terms ban automated entry,web,https://wintec-saddles.com.au/blogs/news/win
 75415,Win a Loaded Gym Bag,Hercules Supplements Aust,800.0,2026-11-30T23:59:59+10:00,unknown,entry route unknown,web,https://www.herculessupplements.com.au/pages/scan-to-win
 75385,Win a Kleenmaid Built in Microwave Oven,Mouths of Mums,949.0,2026-11-30T23:59:59+10:00,chance,entry route manual,web,https://mouthsofmums.com.au/mom-rewards-prize/win-a-kleenmaid-built-in-microwave-oven-valued-at-949/
@@ -196,8 +210,10 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 72401,Win a $100 Gift Voucher Monthly,Clock Shop Montville,1200.0,2026-12-31T23:59:59+10:00,unknown,entry route manual,web,https://www.clockshop.com.au
 69182,Win a $500 Gift Voucher Every Month,TVC Fine Jewellers,6000.0,2026-12-31T23:59:59+10:00,chance,entry route manual,web,https://tmcfinejewellers.com/pages/500-monthly-ads-giveaway
 68934,Win 1 of 5 Tickets to the Great Gatsby Party Tour,Great Gatsby Boat Party,,2026-12-31T23:59:59+10:00,chance,entry route manual,facebook,https://www.facebook.com/greatgatsbyboatparty/posts/pfbid02aa2WM5B3rX9vnQzoL1P4Q86FD3QUGFLHEMs2rp3PNfFnpQAHoHNhJ35LWrN922JRl
+75662,"Win a $10,000 Bali Escape",TravelOnline,10000.0,2027-01-05T23:59:59+10:00,chance,entrant blocked: captcha,web,https://www.travelonline.com/competition
 71526,Win 1 X 5 Double Passes to the ONE Piece Piano Symphony Australian Tour,EB Games Australia,,2027-01-22T23:59:59+10:00,skill,entry route manual,facebook,https://www.facebook.com/EBGamesAus/posts/pfbid02TBEAZHxQA6rf95TcEW6dC7JDrppwtcv7XQZsWJm3zwxYKgaANuFuDiy2ic3aJjGCl
 75661,Win 1 of 72 Bunnings NBL Courtside Experiences,Bunnings Warehouse Australia,72000.0,2027-01-24T23:59:59+10:00,skill,entry route manual,web,https://www.bunnings.com.au/campaign/courtsideaccess
+76063,Win Two Gold Flexi Memberships for 2027,Netball QLD Firebirds,,2027-01-31T23:59:59+10:00,chance,entrant blocked: unfillable,web,https://tradablebits.com/tb_app/560705791
 74685,Win a $1000 Hampshire Holiday Parks Voucher,Let’s Go Caravan & Campin,1000.0,2027-01-31T23:59:59+10:00,skill,entry route manual,instagram,https://www.instagram.com/letsgocaravancamping/p/DcalWYzlukh
 74662,Win a $1K Hampshire Holiday Voucher,Lets Go Caravan And Camping,1000.0,2027-01-31T23:59:59+10:00,skill,entry route manual,facebook,https://www.facebook.com/LetsGoCaravanCamping/posts/pfbid034YvJ9yT25P9h58cT9Y6XQmRo1boWSr1XvzXd6noRT4Qzr2p33iwXtjBkjdhnA5c9l
 73715,"Win a Share of $120,000 in Modern Group Products/Services",Modern Group,120000.0,2027-01-31T23:59:59+10:00,chance,entry route manual,web,https://winwin.com.au/windowfurnishings/5k-windowfurnishings-comp.aspx?Ad=753-IDqODsIUAA
@@ -205,6 +221,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 75701,Win a California and Las Vegas Exploration Cruise Holiday,My Cruises,21000.0,2027-02-01T23:59:59+10:00,unknown,entry route manual,web,https://mycruises.com.au/cruise-competition/
 74391,Win a Trip to Sri Lanka,My Touring,11498.0,2027-02-01T23:59:59+10:00,chance,entry route manual,web,https://mytouring.com.au/competitions/
 76116,Win Return Flights to Japan,Weekend Notes,,2027-02-06T23:59:59+10:00,chance,entry route unknown,web,https://www.weekendnotes.com/japan-expo-2027-experience-the-magic-of-japan-at-sydney-town-hall/
+70434,Win an Apple Ipad or a SamSung Tab & $100 in Vouchers,Clickability,600.0,2027-02-15T23:59:59+10:00,chance,entrant blocked: captcha,web,https://clickability.com.au/ndis-services-giveaway
 75744,Win a Share of $7K in Prizes,Lets Go Caravan And Camping,7000.0,2027-02-28T23:59:59+10:00,skill,entry route manual,web,https://www.letsgocaravanandcamping.com.au/aus_unfiltered/
 75550,Win a Luxury Escape to Pinetrees Lord Howe Island for Two,Natio,13000.0,2027-03-01T23:59:59+10:00,chance,entry route manual,web,https://www.natio.com.au/pages/win-a-luxury-getaway-for-two-to-lord-howe-island-pinetrees-lodge
 75325,"Win a $1,000 Ester Spirits Gift Card",Ester Spirits,1000.0,2027-03-02T23:59:59+10:00,chance,terms ban automated entry,web,https://esterspirits.com.au/pages/win-1000-to-spend-on-booze
