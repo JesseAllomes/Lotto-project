@@ -123,7 +123,7 @@ def fetch_bytes(url):
 def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
     """Fetch the draw page, then up to MAX_TERMS_PAGES terms pages, until a cap is found."""
     rec = {"cap": None, "cap_paid": None, "cap_text": None, "source": None, "per_ticket": [], "prices": [],
-           "permit_vic": None, "automation_banned": False, "tried": []}
+           "permit_vic": None, "automation_banned": False, "terms_read": False, "tried": []}
     queue, seen = [entry_url], set()
     while queue and len(rec["tried"]) < 1 + MAX_TERMS_PAGES:
         url = queue.pop(0)
@@ -138,6 +138,8 @@ def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
         finally:
             time.sleep(delay)
         rec["tried"].append(url)
+        if url != entry_url:
+            rec["terms_read"] = True
         raw = body.decode("utf-8", "replace") if not body.startswith(b"%PDF-") else ""
         text = text_of(body, ctype)
         rec["prices"] = sorted(set(map(tuple, rec["prices"])) | set(find_prices(raw, text)))
@@ -172,21 +174,34 @@ def history(store):
 
 
 def targets(store, today):
-    """Open listings a Victorian can enter that need a purchase, raffles and lotteries first."""
-    rows = []
+    """Open listings a Victorian can enter: paid ones (for caps; raffles and lotteries first), then free web-form
+    ones (auto-entry candidates, read for an automation ban)."""
+    paid, free = [], []
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
+        if not (r.get("open_to_vic") and r.get("entry_url") and (r.get("closes") or "9")[:10] >= today):
+            continue
         a = comp_odds.assess(r)
-        if a["purchase"] == "yes" and r.get("open_to_vic") and r.get("entry_url") and (r.get("closes") or "9")[:10] >= today:
-            rows.append(r)
-    return sorted(rows, key=lambda r: (not comp_odds.RAFFLE_BRAND.search(r.get("brand") or ""), -(r.get("prize_pool") or 0)))
+        if a["purchase"] == "yes":
+            paid.append(r)
+        elif a["purchase"] == "no" and a["entry_route"] == "agent_ok":
+            free.append(dict(r, _free=True))
+    paid.sort(key=lambda r: (not comp_odds.RAFFLE_BRAND.search(r.get("brand") or ""), -(r.get("prize_pool") or 0)))
+    return paid + free
+
+
+def done(r, hist):
+    """Paid listings are retried until a cap is found (MAX_TRIES); a free listing needs one successful read."""
+    h = hist.get(r["id"], [])
+    if any(x.get("cap") for x in h) or len(h) >= MAX_TRIES:
+        return True
+    return bool(r.get("_free")) and any(len(x.get("tried") or []) for x in h)
 
 
 def run(store=STORE, max_new=None, fetch=fetch_bytes, delay=comps.DELAY_S, today=None):
     today = (today or dt.date.today()).isoformat()
     fetched = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     hist = history(store)
-    todo = [r for r in targets(store, today)
-            if not any(h.get("cap") for h in hist.get(r["id"], [])) and len(hist.get(r["id"], [])) < MAX_TRIES]
+    todo = [r for r in targets(store, today) if not done(r, hist)]
     if max_new is not None:
         todo = todo[:max_new]
     store.mkdir(parents=True, exist_ok=True)

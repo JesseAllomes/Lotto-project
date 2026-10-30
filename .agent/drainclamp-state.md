@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=24 -->
+<!-- drainclamp-build: state; schema=1; generation=26 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -15,7 +15,7 @@
 <!-- DC:DECISIONS -->
 - Keno in the winning-numbers register? -> deferred; v1 covers The Lott draw games (Saturday, Monday and Wednesday Lotto, Oz Lotto, Powerball, Set for Life) (source: default, owner may change)
 - Which competitions? -> any competition the owner can legally enter from Victoria, monetary or not (prize homes, art unions, LMCT+-style membership draws, trade promotions, free-entry and skill comps) (source: user)
-- How is competition data collected? -> public pages first; accounts are fine where they are worth it (owner creates them; logins live in environment secrets, never in the repository); no entries on the owner's behalf; the owner enters (source: user, 2026-10-30)
+- How is competition data collected? -> public pages first; accounts are fine where they are worth it (owner creates them; logins live in environment secrets, never in the repository); the agent enters free web-form competitions for the owner (see auto-entry decision); everything else the owner enters (source: user, 2026-10-30)
 - How are alerts sent? -> GitHub issues in this repository, which email the owner (source: default)
 - How is data collected and collated? -> token-free scripts and GitHub Actions only; Fable only on request, with scripts doing collection (source: user, CLAUDE.md)
 - Legality -> only legal play within published game rules; no fraud, tampering or terms-of-service breaches (source: user)
@@ -26,6 +26,8 @@
 - Facebook? -> only via aggregator listings; no direct scraping (Meta terms) (source: default, owner told)
 - Skill-competition ranking? -> three scores, effort required, chance of winning, skill level required, then an overall score (source: user, 2026-10-30)
 - Lotto analysis? -> analyse the draw data for optimised opportunities (value per ticket by draw, less-shared numbers, timing), separate from the competition work (source: user, 2026-10-30)
+- Auto-entry? -> the agent enters free competitions that take a web form, with the owner's real details from GitHub secrets (never in the repo or chat); never paid entries; respects each comp's entry limit; skips any whose terms ban automated or third-party entry, and any with a CAPTCHA, login or human check (those go to the owner's manual list); leaves optional marketing boxes unticked; dry run first, live only once the owner switches it on (source: user, 2026-10-30)
+- Skill-comp answers? -> drafted per competition and posted as a GitHub issue; submitted only after the owner approves or edits it (source: user, 2026-10-30)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->
@@ -39,6 +41,7 @@
 | m4 | Skill-competition ranking: effort required, chance of winning, skill level required, overall score, for every open skill comp; rebuilt daily | analysis/skill_rank.py;data/comps/skill_ranked.csv;tests/test_skill_rank.py;.github/workflows/comps.yml | done | m5 |
 | m7 | Lotto opportunities from the draw register: sales and prize pools inferred from dividends, ticket value per draw by game and jackpot, number-popularity model (division-1 sharing) to pick less-shared numbers, randomness checks, ranked opportunities | analysis/lotto_ev.py;analysis/popularity.py;analysis/fairness.py;data/analysis/;tests/test_lotto_analysis.py | pending | m1;m2 |
 | m8 | Competition value per entry (prize value against cap and ticket price) and the plain-English REPORT.md over lotto and competitions | analysis/comps_value.py;REPORT.md | pending | m4;m6;m7 |
+| m9 | Auto-entry of free web-form competitions: candidates (free, agent_ok, not banned, within entry limit), Playwright form filler with owner details from secrets, dry run then live, entry log without personal data, manual list for the rest, skill answers approved via GitHub issues | workers/entrant.py;workers/entry_queue.py;data/entries/;.github/workflows/entries.yml;tests/test_entrant.py | pending | m5;m6 |
 <!-- /DC:ROADMAP -->
 
 <!-- DC:VERIFY -->

@@ -199,14 +199,66 @@
           "data/analysis/LOTTO.md"
         ]
       }
+    ],
+    "m9": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T13:26:13+00:00",
+        "est_min": 25,
+        "goal": "workers/entry_queue.py: candidates = open, Vic, free, agent_ok, not automation_banned (terms checked: comp_terms extended to free candidates), within entry limit per log; data/entries/queue.csv and manual.csv; tests",
+        "id": "c1",
+        "note": "entry_queue + comp_terms reads free agent_ok terms for bans; queue waits for a terms read",
+        "targets": [
+          "workers/entry_queue.py",
+          "workers/comp_terms.py",
+          "data/entries/",
+          "tests/test_entrant.py"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "workers/entrant.py: Playwright filler; field mapping by label/name/autocomplete; required consent boxes only; skip on captcha/login/payment/unknown required field; dry-run default; log.jsonl without personal data; tests on local HTML forms",
+        "id": "c2",
+        "note": "",
+        "targets": [
+          "workers/entrant.py",
+          "tests/test_entrant.py",
+          "tests/fixtures/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 15,
+        "goal": ".github/workflows/entries.yml: daily; ENTRANT_* secrets; ENTRANT_LIVE variable gates submission; screenshots as short-lived artifacts; owner sets secrets",
+        "id": "c3",
+        "note": "",
+        "targets": [
+          ".github/workflows/entries.yml"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "skill answers: issue per agent_ok skill comp with question and drafted answer; owner approves/edits; entrant submits approved text",
+        "id": "c4",
+        "note": "",
+        "targets": [
+          "workers/entry_answers.py",
+          ".github/workflows/entries.yml"
+        ]
+      }
     ]
   },
   "errors": [],
-  "rev": 31,
+  "rev": 36,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T13:21:31+00:00",
+      "end": "2026-10-30T13:26:13+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

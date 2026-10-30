@@ -69,13 +69,17 @@ class LookUp(unittest.TestCase):
 
 
 class Run(unittest.TestCase):
-    def test_only_open_purchase_listings_and_no_repeat_once_capped(self):
+    def test_paid_listings_get_caps_free_ones_get_one_terms_read(self):
         listing = {"id": 9, "title": "Win a Prize Home", "brand": "yourtown", "prize_pool": 2_970_000.0,
                    "closes": "2026-11-18T23:59:59+10:00", "open_to_vic": True, "entry_url": YT_DRAW, "url": "u",
                    "description": "**How do I enter the competition?** Buy a ticket. **How is the winner selected?** "
                                   "Random draw."}
-        free = dict(listing, id=10, brand="Shop", description="**How do I enter the competition?** Sign up free.")
-        pages = {YT_DRAW: saved("terms_yourtown_draw.html")}
+        free = dict(listing, id=10, brand="Shop", entry_url="https://shop.example/win",
+                    description="**How do I enter the competition?** Complete the online entry form. No purchase "
+                                "necessary.")
+        pages = {YT_DRAW: saved("terms_yourtown_draw.html"),
+                 "https://shop.example/win": b'<a href="/terms">Terms</a> Fill in the form.',
+                 "https://shop.example/terms": b"Entries made using automated software or bots are invalid."}
         fetch = lambda u: (pages[u], "text/html", u)
         with tempfile.TemporaryDirectory() as d:
             store = Path(d)
@@ -84,7 +88,8 @@ class Run(unittest.TestCase):
             self.assertEqual(comp_terms.run(store, fetch=fetch, delay=0, today=today), 1)
             self.assertEqual(comp_terms.run(store, fetch=fetch, delay=0, today=today), 0)
             lines = [json.loads(l) for l in (store / "terms.jsonl").read_text().splitlines()]
-            self.assertEqual([(l["id"], l["cap"]) for l in lines], [(9, 500_000)])
+            self.assertEqual([(l["id"], l["cap"], l["automation_banned"], l["terms_read"]) for l in lines],
+                             [(9, 500_000, False, False), (10, None, True, True)])
 
 
 if __name__ == "__main__":
