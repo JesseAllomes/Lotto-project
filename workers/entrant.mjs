@@ -26,6 +26,27 @@ const CONSENT = /terms|conditions|agree|accept|privacy|over 18|18 years|aged? 18
 const SUBMIT = /enter|submit|send|go|win|register|join|i'?m in|count me in/i;
 const SUCCESS = /thank|thanks|you'?re in|entered|entry (has been )?(received|submitted|confirmed)|success|good luck|confirm/i;
 
+// The owner's number in the four shapes Australian forms ask for: 0412345678, +61412345678, 412345678 and
+// 61412345678, whatever shape the secret was typed in.
+export function phoneVariants(raw) {
+  if (!raw) return null;
+  let d = String(raw).replace(/[^\d+]/g, "");
+  if (d.startsWith("+61")) d = "0" + d.slice(3);
+  else if (d.startsWith("61") && d.length === 11) d = "0" + d.slice(2);
+  else if (!d.startsWith("0") && d.length === 9) d = "0" + d;
+  const bare = d.replace(/^0/, "");
+  return { local: d, intl: "+61" + bare, bare, plain61: "61" + bare };
+}
+
+function phoneOrder(v, hint, hasCC) {
+  if (hasCC) return [v.bare, v.local, v.intl, v.plain61];
+  if (/\+\s?61|\+\d|international|\\\+/.test(hint)) return [v.intl, v.plain61, v.local, v.bare];
+  return [v.local, v.intl, v.bare, v.plain61];
+}
+
+const COUNTRY = /country|dial|calling|prefix|\bcode\b/i;
+const AUSTRALIA = /^\s*(australia|au|aus)\b|\+\s?61\b|\(61\)/i;
+
 export function profile(env = process.env) {
   const p = {
     first: env.ENTRANT_FIRST_NAME, last: env.ENTRANT_LAST_NAME, email: env.ENTRANT_EMAIL, phone: env.ENTRANT_PHONE,
@@ -76,6 +97,9 @@ export async function fillForm(page, item, who, live) {
   const form = page.locator("form").filter({ has: emailBox }).first();
   const scope = (await form.count()) ? form : page.locator("body");
   const filled = new Set();
+  const hasCC = await scope.locator("select:visible").evaluateAll((els) => els.some((e) =>
+    /country|dial|calling|prefix|code/i.test([e.name, e.id, e.getAttribute("aria-label")].join(" ")) &&
+    [...e.options].some((o) => /\+\s?61\b|\(61\)/.test(o.text + " " + o.value))));
   const controls = scope.locator("input:visible, select:visible, textarea:visible");
   const n = await controls.count();
   for (let i = 0; i < n; i++) {
@@ -87,6 +111,7 @@ export async function fillForm(page, item, who, live) {
         required: e.required || e.getAttribute("aria-required") === "true",
         desc: [e.name, e.id, e.placeholder, e.getAttribute("aria-label"), e.getAttribute("autocomplete"),
                lab ? lab.innerText : ""].filter(Boolean).join(" "),
+        hint: [e.placeholder, e.getAttribute("pattern"), e.getAttribute("title")].filter(Boolean).join(" "),
         options: e.tagName === "SELECT" ? [...e.options].map((o) => o.text + "|" + o.value) : [],
       };
     });
@@ -121,7 +146,20 @@ export async function fillForm(page, item, who, live) {
         const opt = info.options.find((o) => /^(vic|victoria)\b/i.test(o)) ;
         if (opt) { await el.selectOption({ value: opt.split("|")[1] }); filled.add("state"); continue; }
       }
+      if (COUNTRY.test(info.desc) || info.options.filter((o) => AUSTRALIA.test(o)).length) {
+        const opt = info.options.find((o) => AUSTRALIA.test(o.split("|")[0])) || info.options.find((o) => AUSTRALIA.test(o));
+        if (opt) { await el.selectOption({ value: opt.split("|")[1] }); filled.add("country"); continue; }
+      }
       if (info.required) return { result: "skipped", reason: "unfillable", fields: [`select: ${info.desc.slice(0, 60)}`] };
+      continue;
+    }
+    if (kind === "phone" && who.phone) {
+      const tries = phoneOrder(phoneVariants(who.phone), info.hint + " " + info.desc, hasCC);
+      for (const v of tries) {
+        await el.fill(v);
+        if (await el.evaluate((e) => e.checkValidity())) break;
+      }
+      filled.add("phone");
       continue;
     }
     const value = kind === "dob" ? dobFor(info.type, who.dob) : kind ? who[kind] : null;

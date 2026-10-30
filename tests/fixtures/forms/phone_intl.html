@@ -1,0 +1,4 @@
+<html><body><form onsubmit="event.preventDefault(); document.body.innerHTML = document.getElementById('ph').value === '+61400000000' ? '<p>Thanks, entered</p>' : '<p>Wrong number format</p>';">
+<input type="email" name="email" required><input name="first_name" placeholder="First name" required>
+<label for="ph">Mobile</label><input id="ph" type="tel" name="mobile" placeholder="+61 4XX XXX XXX" pattern="\+61[0-9]{9}" required>
+<button type="submit">Enter</button></form></body></html>

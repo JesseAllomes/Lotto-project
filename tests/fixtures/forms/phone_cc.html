@@ -1,0 +1,5 @@
+<html><body><form onsubmit="event.preventDefault(); document.body.innerHTML = (document.getElementById('ph').value === '400000000' && document.getElementById('cc').value === 'AU') ? '<p>Thanks, entered</p>' : '<p>Wrong number format</p>';">
+<input type="email" name="email" required><input name="first_name" placeholder="First name" required>
+<select id="cc" name="country_code" required><option value="">Code</option><option value="US">United States (+1)</option><option value="AU">Australia (+61)</option></select>
+<label for="ph">Phone</label><input id="ph" type="tel" name="phone" pattern="[1-9][0-9]{8}" required>
+<button type="submit">Enter</button></form></body></html>

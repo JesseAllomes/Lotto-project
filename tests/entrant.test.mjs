@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { classify, run } from "../workers/entrant.mjs";
+import { classify, phoneVariants, run } from "../workers/entrant.mjs";
 
 const FORMS = path.join(path.dirname(new URL(import.meta.url).pathname), "fixtures", "forms");
 const url = (f) => "file://" + path.join(FORMS, f);
@@ -53,4 +53,18 @@ test("skill form needs an approved answer, and uses it when given", async () => 
   const [b] = await run({ queue: [{ id: 5, entry_url: url("skill.html"), answer: "Approved words." }], live: true, logPath: tmpLog() });
   assert.equal(b.result, "entered");
   assert.ok(b.fields.includes("answer"));
+});
+
+test("phone number shapes", () => {
+  const want = { local: "0412345678", intl: "+61412345678", bare: "412345678", plain61: "61412345678" };
+  for (const typed of ["0412 345 678", "+61 412 345 678", "61412345678", "412345678"]) {
+    assert.deepEqual(phoneVariants(typed), want);
+  }
+});
+
+test("phone is entered in the shape each form wants (+61, country-code dropdown, local)", async () => {
+  const out = await run({ queue: ["phone_intl.html", "phone_cc.html", "phone_local.html"].map((f, i) => ({ id: 10 + i, entry_url: url(f) })),
+                          live: true, logPath: tmpLog() });
+  assert.deepEqual(out.map((r) => r.result), ["entered", "entered", "entered"]);
+  assert.ok(out[1].fields.includes("country"));
 });
