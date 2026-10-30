@@ -57,6 +57,8 @@ RETRY_FROM = "2026-10-30T16:30:00Z"
 # CAPTCHA and bot-check skips logged before the narrower challenge detection (data/analysis/CAPTCHA_CHECK.md: most
 # were invisible or passive checks, or widgets on another form) get a clean slate too.
 CHECK_FIX_FROM = "2026-10-30T22:45:00Z"
+# "Field is required" failures before the Mantine/komo form fixes (answer box, State and dial-code pickers).
+FORM_FIX_FROM = "2026-10-30T23:20:00Z"
 BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form", "blocked"}
 
 
@@ -176,6 +178,9 @@ def build(store=STORE, entries=ENTRIES, now=None):
                                                   e.get("reason") in ("no_submit", "unfillable")):
             continue
         if e.get("time_utc", "") < CHECK_FIX_FROM and e.get("reason") in ("captcha", "human_check"):
+            continue
+        if e.get("time_utc", "") < FORM_FIX_FROM and e.get("reason", "").startswith(("form said: is required",
+                                                                                   "form said: please fill")):
             continue
         if e.get("result") in ("skipped", "failed", "entered", "dry_ok"):   # the latest attempt decides
             fails[e["id"]] = fails.get(e["id"], 0) + 1 if e.get("result") == "failed" else 0
