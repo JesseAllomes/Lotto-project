@@ -148,14 +148,65 @@
           ".github/workflows/comps.yml"
         ]
       }
+    ],
+    "m7": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T13:17:43+00:00",
+        "est_min": 10,
+        "goal": "analysis/lotto_games.py: pools, division rules, fund shares, exact odds, current-format start draws; tests",
+        "id": "c1",
+        "note": "odds match published div1 odds for all four games",
+        "targets": [
+          "analysis/lotto_games.py",
+          "tests/test_lotto_analysis.py"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "analysis/lotto_sales.py: per-draw prize fund from pari-mutuel pools (winners x dividend / share), entries index, jackpot reconstruction for Oz Lotto and Powerball",
+        "id": "c2",
+        "note": "",
+        "targets": [
+          "analysis/lotto_sales.py",
+          "data/analysis/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "analysis/popularity.py: per-number popularity from winner counts vs expected (regression over current-format draws), payout uplift of least-popular picks, backtest",
+        "id": "c3",
+        "note": "",
+        "targets": [
+          "analysis/popularity.py",
+          "data/analysis/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "analysis/fairness.py: frequency and pair tests per game; analysis/lotto_ev.py: ticket value by game and jackpot, ranked opportunities; data/analysis/LOTTO.md",
+        "id": "c4",
+        "note": "",
+        "targets": [
+          "analysis/fairness.py",
+          "analysis/lotto_ev.py",
+          "data/analysis/LOTTO.md"
+        ]
+      }
     ]
   },
   "errors": [],
-  "rev": 23,
+  "rev": 28,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T13:15:38+00:00",
+      "end": "2026-10-30T13:17:43+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",
