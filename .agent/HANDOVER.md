@@ -51,6 +51,10 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   Re-enter button -> pre-filled issue "reenter: <ids>" -> reenter.yml (owner's issues only) -> log_reenter.jsonl.
   Freebies: workers/freebies.py reads OzBargain /freebies (VIC + national) in site.yml. OzCoupons does not resolve
   (www.ozcoupons.com.au, ozcoupons.com: no DNS from GitHub runners).
+- PENDING (2026-10-31): Fable is checking CAPTCHA false positives (owner entered 25-words comps by hand with no
+  challenge). Output: data/analysis/CAPTCHA_CHECK.md with a detection spec + fixtures. Then: apply it in
+  workers/entrant.mjs (skip only for a visible interactive challenge on the form; invisible/passive checks -> submit,
+  site decides), add fixtures/tests, reset those captcha blocks (RETRY_FROM-style), commit, push.
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
