@@ -68,3 +68,9 @@ test("phone is entered in the shape each form wants (+61, country-code dropdown,
   assert.deepEqual(out.map((r) => r.result), ["entered", "entered", "entered"]);
   assert.ok(out[1].fields.includes("country"));
 });
+
+test("forms inside frames and behind an Enter button are found", async () => {
+  const out = await run({ queue: [{ id: 20, entry_url: url("iframe_outer.html") }, { id: 21, entry_url: url("behind_button.html") }],
+                          live: true, logPath: tmpLog() });
+  assert.deepEqual(out.map((r) => r.result), ["entered", "entered"]);
+});

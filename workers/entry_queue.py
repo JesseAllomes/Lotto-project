@@ -40,7 +40,7 @@ EXCESSIVE_GAP_HOURS = 5
 # Owner's call (2026-10-30, "enter everything"): comps whose terms ban automated entry are entered too, at the
 # cautious excessive-entry pace. Repository variable ENTER_BANNED=0 puts them back on the manual list.
 ENTER_BANNED = os.environ.get("ENTER_BANNED", "1") != "0"
-BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed"}
+BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form"}
 
 
 def read_jsonl(path):
@@ -79,8 +79,11 @@ def build(store=STORE, entries=ENTRIES, now=None):
         if e.get("mode") == "live" and e.get("result") == "entered":
             entered.setdefault(e["id"], []).append(
                 dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
-        if e.get("result") == "skipped" and e.get("reason") in BLOCKING:
-            blocked[e["id"]] = e["reason"]
+        if e.get("result") in ("skipped", "failed", "entered", "dry_ok"):   # the latest attempt decides
+            if e.get("result") == "skipped" and e.get("reason") in BLOCKING:
+                blocked[e["id"]] = e["reason"]
+            else:
+                blocked.pop(e["id"], None)
     queue, manual = [], []
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
         if not r.get("open_to_vic") or (r.get("closes") or "9")[:10] < iso:

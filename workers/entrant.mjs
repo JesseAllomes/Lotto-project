@@ -20,7 +20,34 @@ const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const ENTRIES = path.join(ROOT, "data", "entries");
 
-export const CAPTCHA = /recaptcha|hcaptcha|turnstile|challenges\.cloudflare|captcha|are you (a )?human|verify you are human/i;
+export const CAPTCHA = /recaptcha|hcaptcha|turnstile|challenges\.cloudflare|cdn-cgi\/challenge-platform|_Incapsula_Resource|perimeterx|datadome|captcha|are you (a )?human|verify you are human/i;
+const EMAIL = ["input[type=email]", "input[name*=mail i]", "input[id*=mail i]", "input[placeholder*=mail i]",
+               "input[autocomplete=email]", "input[aria-label*=mail i]"].map((s) => s + ":visible").join(", ");
+const OPEN = /^\s*(enter( now| here| today| the (competition|draw|giveaway)| to win)?|click here to enter|get started|start( now)?|join now|i want to win)\s*[!>→]*\s*$/i;
+
+// Tick a checkbox; styled checkboxes that swallow clicks are set directly, with the events a form listens for.
+async function tick(el) {
+  try {
+    await el.check({ force: true, timeout: 3000 });
+  } catch {
+    await el.evaluate((e) => {
+      e.checked = true;
+      e.dispatchEvent(new Event("input", { bubbles: true }));
+      e.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
+}
+
+// The first frame (the page itself, then embedded frames such as UpViral or Wayin) holding a visible email box.
+async function findEmail(page) {
+  for (const f of page.frames()) {
+    try {
+      const box = f.locator(EMAIL).first();
+      if (await box.count()) return { root: f, box };
+    } catch { /* frame went away */ }
+  }
+  return null;
+}
 const MARKETING = /newsletter|marketing|offers|subscribe|updates|promotion(al)?|special deals|news and|e-?news|sms (me|updates)/i;
 const CONSENT = /terms|conditions|agree|accept|privacy|over 18|18 years|aged? 18|eligib|i confirm|i am/i;
 const SUBMIT = /enter|submit|send|go|win|register|join|i'?m in|count me in/i;
@@ -92,10 +119,25 @@ export async function fillForm(page, item, who, live) {
   if (await page.locator("input[autocomplete^=cc-]:visible, input[name*=card i]:visible, input[id*=cardnumber i]:visible").count()) {
     return { result: "skipped", reason: "payment", fields: [] };
   }
-  const emailBox = page.locator("input[type=email]:visible, input[name*=mail i]:visible, input[id*=mail i]:visible").first();
-  if (!(await emailBox.count())) return { result: "skipped", reason: "no_form", fields: [] };
-  const form = page.locator("form").filter({ has: emailBox }).first();
-  const scope = (await form.count()) ? form : page.locator("body");
+  let found = await findEmail(page);
+  if (!found) {                                   // late-loading forms
+    await page.waitForTimeout(5000);
+    found = await findEmail(page);
+  }
+  if (!found) {                                   // forms behind an "Enter now" button
+    const opener = page.locator("a:visible, button:visible").filter({ hasText: OPEN }).first();
+    if (await opener.count()) {
+      await opener.click({ timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(4000);
+      if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" "))) return { result: "skipped", reason: "captcha", fields: [] };
+      found = await findEmail(page);
+    }
+  }
+  if (!found) return { result: "skipped", reason: "no_form", fields: [] };
+  const { root, box: emailBox } = found;
+  if (await root.locator("input[type=password]:visible").count()) return { result: "skipped", reason: "login", fields: [] };
+  const form = root.locator("form").filter({ has: emailBox }).first();
+  const scope = (await form.count()) ? form : root.locator("body");
   const filled = new Set();
   const hasCC = await scope.locator("select:visible").evaluateAll((els) => els.some((e) =>
     /country|dial|calling|prefix|code/i.test([e.name, e.id, e.getAttribute("aria-label")].join(" ")) &&
@@ -121,12 +163,12 @@ export async function fillForm(page, item, who, live) {
     }
     if (info.type === "checkbox" || info.type === "radio") {
       if (info.type === "checkbox" && CONSENT.test(info.desc) && !MARKETING.test(info.desc)) {
-        await el.check({ force: true });
+        await tick(el);
         filled.add("consent");
       } else if (info.required && info.type === "checkbox" && !MARKETING.test(info.desc)) {
         return { result: "skipped", reason: "unfillable", fields: [`required checkbox: ${info.desc.slice(0, 60)}`] };
       } else if (info.required && info.type === "checkbox") {
-        await el.check({ force: true });           // marketing box the form will not submit without
+        await tick(el);           // marketing box the form will not submit without
         filled.add("required_marketing");
       }
       continue;
@@ -178,7 +220,8 @@ export async function fillForm(page, item, who, live) {
   if (!(await target.count())) return { result: "skipped", reason: "no_submit", fields: [...filled] };
   await target.click();
   await page.waitForTimeout(8000);
-  const after = await page.locator("body").innerText();
+  let after = await page.locator("body").innerText().catch(() => "");
+  if (root !== page.mainFrame()) after += " " + (await root.locator("body").innerText().catch(() => ""));
   if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" "))) return { result: "skipped", reason: "captcha", fields: [...filled] };
   const ok = page.url() !== before || SUCCESS.test(after);
   return { result: ok ? "entered" : "failed", reason: ok ? "" : "no confirmation seen", fields: [...filled] };
