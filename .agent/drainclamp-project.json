@@ -80,6 +80,22 @@
         ]
       }
     ],
+    "m4": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T13:15:38+00:00",
+        "est_min": 20,
+        "goal": "analysis/skill_rank.py: effort, skill, chance (1-5) and overall (0-10) per open skill comp; skill_ranked.csv; tests; daily in comps.yml",
+        "id": "c1",
+        "note": "84 skill comps ranked; top: 10-prize 25-word comps 8.5; bottom: public-vote video 4.7",
+        "targets": [
+          "analysis/skill_rank.py",
+          "tests/test_skill_rank.py",
+          "data/comps/skill_ranked.csv",
+          ".github/workflows/comps.yml"
+        ]
+      }
+    ],
     "m5": [
       {
         "done": true,
@@ -135,11 +151,11 @@
     ]
   },
   "errors": [],
-  "rev": 21,
+  "rev": 23,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T13:01:15+00:00",
+      "end": "2026-10-30T13:15:38+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

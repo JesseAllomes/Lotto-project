@@ -137,9 +137,9 @@ def task(sec, desc):
     t = (sec.get("enter") or "") + " " + (desc or "")
     for name, pat in [("prediction (closest guess)", r"(?i)closest (?:prediction|guess)|predict"),
                       ("25 words or less", r"(?i)\d+ words or (?:less|fewer)"), ("photo", r"(?i)photo|image|picture"),
-                      ("video", r"(?i)\bvideo"), ("recipe", r"(?i)recipe"), ("drawing or art", r"(?i)drawing|artwork|"
+                      ("video", r"(?i)\bvideo|\bfilm\b|commercial|\breel\b|tiktok"), ("recipe", r"(?i)recipe"), ("drawing or art", r"(?i)drawing|artwork|"
                       r"colou?r(?:ing)?[- ]in"), ("story or poem", r"(?i)\bstory|poem"), ("quiz", r"(?i)quiz|trivia"),
-                      ("written answer", r"(?i)answer|question|tell us|explain|why")]:
+                      ("written answer", r"(?i)answer|question|tell us|explain|why|response|prompt|caption")]:
         if re.search(pat, t):
             return name
     return "other"

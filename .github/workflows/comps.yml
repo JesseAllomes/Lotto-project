@@ -26,6 +26,8 @@ jobs:
           python3 -m workers.comp_terms
       - name: Entry types, odds variables and the skill list
         run: python3 -m workers.comp_odds --tags
+      - name: Rank the skill competitions
+        run: python3 -m analysis.skill_rank
       - name: Commit the register
         run: |
           git config user.name "lotto-comps-worker"
