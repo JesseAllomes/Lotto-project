@@ -1,11 +1,29 @@
 # schema=2
 # root=/home/user/lotto-project
-# generated=2026-10-30T11:24:38+00:00
+# generated=2026-10-30T12:00:10+00:00
 # COVERAGE: partial
 # engine=python:ast; javascript:regex(partial); others=UNSUPPORTED
+tests/__init__.py	1793360008961636004:0	OK			
+tests/test_draws.py	1793360007969635969:2986	OK	Windows	20	27
+tests/test_draws.py	1793360007969635969:2986	OK	Windows.test_windows_cover_the_range_within_the_90_day_limit	21	27
+tests/test_draws.py	1793360007969635969:2986	OK	Register	30	60
+tests/test_draws.py	1793360007969635969:2986	OK	Register.test_row_keeps_numbers_in_drawn_order_and_division_one	31	38
+tests/test_draws.py	1793360007969635969:2986	OK	Register.test_append_is_idempotent_by_draw_number	40	50
+tests/test_draws.py	1793360007969635969:2986	OK	Register.test_csv_register_is_rebuilt_in_draw_order	52	60
 work/scripts/ev_models.py	1793358502796792563:20588	OK	say	29	31
 work/scripts/ev_models.py	1793358502796792563:20588	OK	share_factor	34	37
 work/scripts/ev_models.py	1793358502796792563:20588	OK	hyper	41	42
 work/scripts/ev_models.py	1793358502796792563:20588	OK	keno_ev	61	70
 work/scripts/ev_models.py	1793358502796792563:20588	OK	infer	224	236
 work/scripts/ev_models.py	1793358502796792563:20588	OK	ev_jackpot_game	239	244
+workers/__init__.py	1793360008961636004:0	OK			
+workers/draws.py	1793360410430788718:4317	OK	row	31	41
+workers/draws.py	1793360410430788718:4317	OK	_stored	44	48
+workers/draws.py	1793360410430788718:4317	OK	append	51	63
+workers/draws.py	1793360410430788718:4317	OK	write_csv	66	73
+workers/draws.py	1793360410430788718:4317	OK	last_date	76	80
+workers/draws.py	1793360410430788718:4317	OK	run	83	94
+workers/draws.py	1793360410430788718:4317	OK	main	97	102
+workers/lott.py	1793360016749636282:1737	OK	post	13	27
+workers/lott.py	1793360016749636282:1737	OK	windows	30	36
+workers/lott.py	1793360016749636282:1737	OK	draws_between	39	43

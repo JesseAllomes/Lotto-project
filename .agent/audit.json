@@ -1,22 +1,32 @@
 {
   "schema": 1,
   "root": "/home/user/lotto-project",
-  "head": "c40a1b8b21c5dfc07f7d33247e62bbce0376f8bb",
+  "head": "bb7edb2c7ed64f7602459862b57f3d3198689f2b",
   "dirty_fingerprint": "b9a8816e585d5eaae36410a797c929afa619999265d5b3e4b5cebab270c98a51",
   "dirty_files": 0,
   "verify_config_fingerprint": "00ce9ee58ad8770625f9898500af160bb6ba911f48358a89368194ce77da1176",
-  "verify_block_fingerprint": "absent",
-  "verify_entries": 0,
+  "verify_block_fingerprint": "ffe5d65d034d27d94795a91754613e8c2eec3bcd1b5cb8b91d602812ce402d59",
+  "verify_entries": 1,
   "config_files": [],
-  "generated": "2026-10-30T11:24:38+00:00",
+  "generated": "2026-10-30T12:00:10+00:00",
   "scan": {
-    "files": 1,
-    "lines": 308,
+    "files": 6,
+    "lines": 521,
     "depth2": [
       {
         "path": "work/scripts",
         "files": 1,
         "lines": 308
+      },
+      {
+        "path": "workers",
+        "files": 3,
+        "lines": 149
+      },
+      {
+        "path": "tests",
+        "files": 2,
+        "lines": 64
       }
     ],
     "skipped_links": []
@@ -25,7 +35,7 @@
     "unknown(no recognised manifest)"
   ],
   "languages": [
-    "python(inferred: 1/1 indexed file(s))"
+    "python(inferred: 6/6 indexed file(s))"
   ],
   "dead_code_candidates": [],
   "gate3_required": true

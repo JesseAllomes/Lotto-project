@@ -26,14 +26,40 @@
           "data/draws/"
         ]
       }
+    ],
+    "m2": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T12:05:24+00:00",
+        "est_min": 25,
+        "goal": "workers/jackpots.py: backfill Mega and Super draw history with jackpot (division 11), open-draw snapshot log, CSV register, STATUS.md, alert list; offline tests",
+        "id": "c1",
+        "note": "jackpots worker; 1,311 Mega + 3,882 Super draws backfilled, no gaps; jackpot (div 11) from 2015",
+        "targets": [
+          "workers/jackpots.py",
+          "tests/test_jackpots.py",
+          "data/jackpots/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 15,
+        "goal": ".github/workflows/jackpots.yml: daily run, commit data/jackpots, open one GitHub issue per alert key (no duplicates); verify on GitHub",
+        "id": "c2",
+        "note": "",
+        "targets": [
+          ".github/workflows/jackpots.yml"
+        ]
+      }
     ]
   },
   "errors": [],
-  "rev": 4,
+  "rev": 7,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T11:46:27+00:00",
+      "end": "2026-10-30T12:05:24+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

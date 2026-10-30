@@ -1,0 +1,41 @@
+# Lucky Lotteries jackpot tracker (workers/jackpots.py): new draws, the open jackpots, STATUS.md, alerts.
+# Daily at 12:41 UTC (about 11:41pm Melbourne in summer). Token-free. An alert opens one GitHub issue per
+# jackpot cycle and level (Mega $30M / $35M, Super $23M / $27.2M); GitHub emails the owner.
+name: jackpots
+on:
+  schedule:
+    - cron: "41 12 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: jackpots
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch draws and open jackpots
+        run: python3 -m workers.jackpots --alerts "$RUNNER_TEMP/alerts.json"
+      - name: Open an issue for each new alert
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -c '.[]' "$RUNNER_TEMP/alerts.json" | while read -r a; do
+            key=$(jq -r .key <<<"$a")
+            open=$(gh issue list --state all --limit 200 --json title --jq "[.[] | select(.title | contains(\"$key\"))] | length")
+            if [ "$open" = "0" ]; then
+              gh issue create --title "$(jq -r .title <<<"$a")" --body "$(jq -r .body <<<"$a")"
+            fi
+          done
+      - name: Commit the register
+        run: |
+          git config user.name "lotto-jackpots-worker"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/jackpots
+          git diff --cached --quiet || git commit -m "jackpots: register update $(date -u +%F)"
+          git pull --rebase origin main
+          git push
