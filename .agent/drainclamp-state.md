@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=29 -->
+<!-- drainclamp-build: state; schema=1; generation=30 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -61,4 +61,5 @@
 - 2026-10-30T13:21:45+00:00 ac6b56e6 entry_route + automation_banned on competitions; m7 c3: NUMBERS.md least-picked and most-drawn sets
 - 2026-10-30T13:30:21+00:00 8f1745b9 m9 c1-c3: entry queue, Playwright entrant (dry by default), entries.yml; waiting on owner's secrets
 - 2026-10-30T13:38:28+00:00 a85a45b2 m7 blind tests: re-picked each draw 0/90, fixed sets 0/40 beat chance (BLIND.md, BLIND_FIXED.md); no pattern edge
+- 2026-10-30T13:50:15+00:00 c0f3592f every-line search: registered z invalid (overlapping lines); draw-level correction: no game beats chance (SfL p=0.059)
 <!-- /DC:LOG -->
