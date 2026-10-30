@@ -123,6 +123,20 @@ class LastDay(unittest.TestCase):
             queue, manual = entry_queue.build(store, entries, now + dt.timedelta(minutes=10))
             self.assertEqual([m["id"] for m in manual], [3])                 # failed again today: back on the list
 
+    def test_unknown_result_counts_against_stated_limits_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            store, entries = Path(d) / "comps", Path(d) / "entries"
+            comps.append(store, [rec(1, desc=FORM + " Only one entry per person."), rec(2)], "t")
+            (store / "terms.jsonl").write_text("".join(json.dumps({"id": i, "tried": ["x"], "terms_read": True}) + "\n"
+                                                       for i in (1, 2)))
+            entries.mkdir()
+            (entries / "log.jsonl").write_text("".join(json.dumps({"id": i, "time_utc": "2026-10-30T17:00:00Z",
+                                                                   "mode": "live", "result": "unknown"}) + "\n"
+                                                       for i in (1, 2)))
+            queue, _ = entry_queue.build(store, entries, dt.datetime(2026, 10, 30, 22, tzinfo=dt.timezone.utc))
+            self.assertEqual([q["id"] for q in queue], [2])               # once: maybe entered, so not again
+            self.assertEqual((entries / "register.csv").read_text().count("\n"), 1)   # header only
+
     def test_allowed_one_entry_wording(self):
         from workers import comp_odds
         self.assertEqual(comp_odds.entry_limit({}, "Each individual is allowed one entry unless otherwise specified."),

@@ -52,6 +52,8 @@ ENTER_BANNED = os.environ.get("ENTER_BANNED", "1") != "0"
 # Failures logged before the entrant fixes of 30 Oct 2026 (popup forms, JS buttons, overlays, confirmation) get a
 # clean slate: they say nothing about the fixed entrant.
 RETRY_FROM = "2026-10-30T16:30:00Z"
+# Result "unknown" (a run whose log was lost, e.g. 41135966222 on 30 Oct 2026): counted as a possible entry against
+# stated limits (once, daily, weekly, capped) so they are never exceeded, but not in the register.
 # CAPTCHA and bot-check skips logged before the narrower challenge detection (data/analysis/CAPTCHA_CHECK.md: most
 # were invisible or passive checks, or widgets on another form) get a clean slate too.
 CHECK_FIX_FROM = "2026-10-30T22:45:00Z"
@@ -161,9 +163,12 @@ def build(store=STORE, entries=ENTRIES, now=None):
     log = sorted((x for f in sorted(entries.glob("log*.jsonl")) for x in read_jsonl(f)),   # main and re-enter logs
                  key=lambda x: x.get("time_utc", ""))
     answers = json.loads((entries / "answers.json").read_text()) if (entries / "answers.json").exists() else {}
-    entered, blocked, fails, done_once, tried = {}, {}, {}, set(), {}
+    entered, blocked, fails, done_once, tried, maybe = {}, {}, {}, set(), {}, {}
     for e in log:
         tried[e["id"]] = e.get("time_utc", "")
+        if e.get("mode") == "live" and e.get("result") == "unknown":   # a run whose log was lost: may have entered
+            maybe.setdefault(e["id"], []).append(dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
+            continue
         if e.get("mode") == "live" and e.get("result") == "entered":
             entered.setdefault(e["id"], []).append(
                 dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
@@ -217,7 +222,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
         if final and limit != "once" and r["id"] not in done_once:
             last_day_ids.add(r["id"])         # can take more entries today: keep entries.yml running hourly
         excessive = banned or not hist or any(h.get("excessive_clause") for h in hist)   # unread terms: cautious
-        if r["id"] in done_once or not may_enter(limit, entered.get(r["id"], []), now, n, excessive, final):
+        past = entered.get(r["id"], []) + (maybe.get(r["id"], []) if limit not in ("unlimited", "unknown") else [])
+        if r["id"] in done_once or not may_enter(limit, past, now, n, excessive, final):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)
