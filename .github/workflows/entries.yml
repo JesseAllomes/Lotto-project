@@ -2,7 +2,8 @@
 # about 5 minutes apart: each round rebuilds today's queue (workers/entry_queue.py decides what is due: bursts of 5
 # per 3-hour window for comps with no stated limit, 4 a day where the terms flag excessive entries, the stated limit
 # otherwise) and runs workers/entrant.mjs, which fills each form with the owner's details from secrets.
-# Submits only when the repository variable ENTRANT_LIVE is 1; a dry run does one round. The repository is public:
+# Live by default (owner, 2026-10-30): set the repository variable ENTRANT_LIVE to 0 for a dry run (one round,
+# nothing submitted), and ENTER_BANNED to 0 to stop entering comps whose terms ban automated entry. The repository is public:
 # no screenshots are kept and nothing personal is logged (the log holds listing ids, results and field kinds).
 name: entries
 on:
@@ -28,7 +29,8 @@ jobs:
       ENTRANT_STATE: ${{ secrets.ENTRANT_STATE }}
       ENTRANT_ADDRESS: ${{ secrets.ENTRANT_ADDRESS }}
       ENTRANT_DOB: ${{ secrets.ENTRANT_DOB }}
-      ENTRANT_LIVE: ${{ vars.ENTRANT_LIVE }}
+      ENTRANT_LIVE: ${{ vars.ENTRANT_LIVE || '1' }}
+      ENTER_BANNED: ${{ vars.ENTER_BANNED || '1' }}
       ENTRY_BURST: ${{ vars.ENTRY_BURST }}
     steps:
       - uses: actions/checkout@v4

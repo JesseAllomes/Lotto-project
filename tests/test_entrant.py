@@ -94,9 +94,16 @@ class Queue(unittest.TestCase):
                 json.dumps({"id": 8, "time_utc": "2026-10-29T01:00:00Z", "mode": "dry", "result": "skipped",
                             "reason": "captcha"}) + "\n")
             queue, manual = entry_queue.build(store, entries, dt.datetime(2026, 10, 30, 3, tzinfo=dt.timezone.utc))
-            self.assertEqual([(q["id"], q["needs_answer"]) for q in queue], [(1, False), (4, True)])
+            self.assertEqual([(q["id"], q["needs_answer"]) for q in queue], [(1, False), (3, False), (4, True)])
             self.assertEqual({m["id"]: m["reason"] for m in manual},
-                             {2: "entry route manual", 3: "terms ban automated entry", 8: "entrant blocked: captcha"})
+                             {2: "entry route manual", 8: "entrant blocked: captcha"})
+            entry_queue.ENTER_BANNED = False                          # owner's off switch
+            try:
+                queue, manual = entry_queue.build(store, entries, dt.datetime(2026, 10, 30, 3, tzinfo=dt.timezone.utc))
+            finally:
+                entry_queue.ENTER_BANNED = True
+            self.assertEqual(manual[0]["reason"] if manual[0]["id"] == 3 else
+                             {m["id"]: m["reason"] for m in manual}[3], "terms ban automated entry")
             text = (entries / "queue.csv").read_text() + (entries / "manual.csv").read_text()
             self.assertNotIn("@", text)
 

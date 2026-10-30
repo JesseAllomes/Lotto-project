@@ -37,6 +37,9 @@ BURST_HOURS = 3
 GAP_MINUTES = 5
 EXCESSIVE_PER_DAY = 4
 EXCESSIVE_GAP_HOURS = 5
+# Owner's call (2026-10-30, "enter everything"): comps whose terms ban automated entry are entered too, at the
+# cautious excessive-entry pace. Repository variable ENTER_BANNED=0 puts them back on the manual list.
+ENTER_BANNED = os.environ.get("ENTER_BANNED", "1") != "0"
 BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed"}
 
 
@@ -91,7 +94,7 @@ def build(store=STORE, entries=ENTRIES, now=None):
         reason = None
         if a["entry_route"] != "agent_ok":
             reason = f"entry route {a['entry_route']}"
-        elif banned:
+        elif banned and not ENTER_BANNED:
             reason = "terms ban automated entry"
         elif r["id"] in blocked:
             reason = f"entrant blocked: {blocked[r['id']]}"
@@ -104,7 +107,7 @@ def build(store=STORE, entries=ENTRIES, now=None):
         limit = stated["entry_limit_terms"] if stated else a["entry_limit"]
         n = stated.get("entry_limit_terms_n") if stated else a["entry_limit_n"]
         row["entry_limit"] = limit
-        excessive = any(h.get("excessive_clause") for h in terms[r["id"]])
+        excessive = banned or any(h.get("excessive_clause") for h in terms[r["id"]])
         if not may_enter(limit, entered.get(r["id"], []), now, n, excessive):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
