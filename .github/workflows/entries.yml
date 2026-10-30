@@ -63,7 +63,8 @@ jobs:
           python3 -m workers.entry_queue
       - name: Commit the queue, manual list and log
         if: always()
-        run: bash workers/commit_entries.sh "entries: $(date -u +%F' '%H:%M)"
+        run: |
+          bash workers/commit_entries.sh "entries: $(date -u +%F' '%H:%M)"
       - name: Refresh the website with the new entries
         if: always()
         env:
