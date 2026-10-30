@@ -162,7 +162,8 @@ def terms_limit(text):
 
 MANUAL = (r"(?i)in[- ]store|stores?'s?\b|outlet|venue|retailer|receipt|scan|barcode|social (?:media )?(?:channel|"
           r"post|page)|install|"
-          r"\bsms\b|text (?:the|your|a) |phone|call |by post|mail (?:in|your)|post (?:your|the) entry|download the "
+          r"\bsms\b|text (?:the|your|a) |by (?:tele)?phone|phone (?:us|the|our)|call (?:us|the|our|\d)|by post|"
+          r"mail (?:in|your)|post (?:your|the) entry|download the "
           r"app|via the app|\bapp\b|upload|comment|\blike\b|follow|\btag\b|share (?:the|this) post|direct message|"
           r"\bDM\b|container|refund point|click the button in the email|loyalty card|swipe|membership card")
 BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|third[- ]party|agent)[^.]{0,80}(?:invalid|void|not (?:be )?"
@@ -172,7 +173,10 @@ BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|third[- ]party|agent)[^.]
 
 def entry_route(sec, desc, platform, buy):
     t = sec.get("enter") or desc or ""
-    if platform in ("facebook", "instagram", "tiktok", "x", "youtube") or re.search(MANUAL, t):
+    # Bonus-entry sentences ("follow us for an extra entry") describe optional extras, not the way in.
+    core = " ".join(x for x in re.split(r"(?<=[.!?])\s+", t)
+                    if not re.search(r"(?i)(?:bonus|additional|extra|more) entr|entries (?:can|may) be earned", x))
+    if platform in ("facebook", "instagram", "tiktok", "x", "youtube") or re.search(MANUAL, core):
         return "manual"
     if not t:
         return "unknown"

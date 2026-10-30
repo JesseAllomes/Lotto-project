@@ -51,6 +51,10 @@ class Classify(unittest.TestCase):
         self.assertEqual(route("Complete the form.", platform="facebook"), "manual")
         self.assertEqual(route("Comment on the post and tag a friend."), "manual")
         self.assertEqual(route(""), "unknown")
+        self.assertEqual(route("Complete the online form with your name, email and phone number."), "agent_ok")
+        self.assertEqual(route("Complete the online form. Follow us on Instagram for a bonus entry."), "agent_ok")
+        self.assertEqual(route("Call us on 13 13 13 to enter."), "manual")
+        self.assertEqual(route("Enter by phone during the show."), "manual")
 
     def test_automation_ban_wording(self):
         ban = lambda t: bool(comp_odds.re.search(comp_odds.BANNED, t))
