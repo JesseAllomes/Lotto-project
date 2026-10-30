@@ -82,7 +82,7 @@
     ]
   },
   "errors": [],
-  "rev": 11,
+  "rev": 13,
   "schema": 1,
   "time": [
     {
@@ -93,6 +93,23 @@
       "start": "2026-10-30T11:33:56+00:00"
     }
   ],
-  "todos": [],
+  "todos": [
+    {
+      "at": "2026-10-30T12:19:31+00:00",
+      "done": false,
+      "done_at": null,
+      "id": "t1",
+      "milestone": "m4",
+      "text": "Membership draws (LMCT+, Dream Car Giveaways, Gotcha etc.) are not on competitions.com.au; their sites are blocked from the dev container. Collect via a GitHub Actions probe if the owner wants them."
+    },
+    {
+      "at": "2026-10-30T12:19:31+00:00",
+      "done": false,
+      "done_at": null,
+      "id": "t2",
+      "milestone": "m4",
+      "text": "Prize-home value per ticket needs each draw's ticket cap (in the permit T&Cs, not the listing). Charity raffles in comps.jsonl give prize value, price range and dates."
+    }
+  ],
   "tokens": null
 }
