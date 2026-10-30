@@ -23,6 +23,16 @@
 **Competitions extra (2026-10-30)**: odds.csv / skill lists carry entry_route (agent_ok 149, agent_assist 33,
 manual 288, unknown 42) and automation_banned (from full terms when fetched). Decision stands: the owner enters.
 
+**m9 auto-entry (in progress)**: decisions in DC:DECISIONS (free web-form comps only; owner's details from
+GitHub secrets; skip bans/captcha/login; skill answers approved via issues; dry run until ENTRANT_LIVE=1).
+- c1 done `workers/entry_queue.py` (queue.csv/queue.json/manual.csv); c2 done `workers/entrant.mjs` (Playwright,
+  tests/entrant.test.mjs on tests/fixtures/forms); c3 done `.github/workflows/entries.yml` (22:47 UTC).
+- Owner to do: add Actions secrets ENTRANT_FIRST_NAME, ENTRANT_LAST_NAME, ENTRANT_EMAIL, ENTRANT_PHONE,
+  ENTRANT_POSTCODE, ENTRANT_SUBURB, ENTRANT_STATE, ENTRANT_ADDRESS, ENTRANT_DOB; check a dry run; then set the
+  repository variable ENTRANT_LIVE=1. Until the secrets exist the browser steps are skipped (untested on GitHub).
+- c4 next: skill answers (issue per agent_ok skill comp with question + drafted answer; owner approves; write
+  data/entries/answers.json).
+
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
 chance, skill and overall; lotto: analyse the data for optimised opportunities.
 
