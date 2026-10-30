@@ -47,6 +47,10 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   bonus-entry sentences ignored): ~62 comps moved manual -> agent_ok.
 - Second source: workers/source_auscomps.py (AusComps sitemaps + pages, ids 10,000,000 + post id, dedup vs
   competitions.com.au); probe.yml fetches candidate pages to the `probe` branch for parser work.
+- 2026-10-31 later: site v2 (tabs To enter / Auto-entered / Freebies, search, category chips, filters, sort);
+  Re-enter button -> pre-filled issue "reenter: <ids>" -> reenter.yml (owner's issues only) -> log_reenter.jsonl.
+  Freebies: workers/freebies.py reads OzBargain /freebies (VIC + national) in site.yml. OzCoupons does not resolve
+  (www.ozcoupons.com.au, ozcoupons.com: no DNS from GitHub runners).
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,

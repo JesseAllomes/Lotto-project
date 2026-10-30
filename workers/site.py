@@ -11,7 +11,7 @@ searching, filtering and sorting. Three tabs:
   Auto-entered the auto-entry register: every competition entered automatically, how many times, when last, with a
                Re-enter button (opens a pre-filled GitHub issue; .github/workflows/reenter.yml acts on the owner's
                issues only) and multi-select to re-enter several at once.
-  Freebies     free samples and free stuff from OzCoupons (data/freebies/freebies.csv, workers/freebies.py).
+  Freebies     free stuff for Victoria from OzBargain's Freebies listing (workers/freebies.py, rebuilt with the site).
 The repository is public, so the page holds no personal details.
 """
 import argparse
@@ -152,8 +152,10 @@ def autos(entries=ENTRIES, today=None, recs=None):
 def freebies(path=FREEBIES):
     if not path.exists():
         return []
-    return [{"t": r["title"], "u": r["url"], "d": r.get("summary") or "", "c": r.get("posted") or "",
-             "k": r.get("kind") or "Freebie"} for r in csv.DictReader(open(path))]
+    return [{"t": r["title"], "u": r["url"], "c": r.get("posted") or "", "k": r.get("kind") or "Freebie",
+             "d": " · ".join(x for x in (r.get("store"), ("ends " + r["expires"]) if r.get("expires") else "",
+                                         f'{r.get("votes") or 0} votes', r.get("summary")) if x)}
+            for r in csv.DictReader(open(path))]
 
 
 def stats(entries=ENTRIES):

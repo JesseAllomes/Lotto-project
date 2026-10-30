@@ -54,6 +54,16 @@ class Page(unittest.TestCase):
         self.assertEqual(site.category("Win something", "travel-competitions"), "Travel")
 
 
+class Freebies(unittest.TestCase):
+    def test_keeps_national_and_victorian_freebies_only(self):
+        from workers import freebies
+        rows = freebies.parse((Path(__file__).resolve().parent / "fixtures" / "ozbargain_freebies.html").read_text())
+        titles = [r["title"] for r in rows]
+        self.assertTrue(any("[VIC]" in t for t in titles))
+        self.assertFalse(any(t.startswith("[NSW]") or "Today [NSW]" in t for t in titles))
+        self.assertTrue(all(r["url"].startswith("https://www.ozbargain.com.au/node/") for r in rows))
+
+
 class Reenter(unittest.TestCase):
     def test_ids_are_read_from_the_issue_title_and_only_open_listings_queued(self):
         from workers import comps
