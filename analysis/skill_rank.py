@@ -28,7 +28,8 @@ TASK_EFFORT = {"prediction (closest guess)": 1, "quiz": 1, "written answer": 2, 
 TASK_SKILL = {"prediction (closest guess)": 1, "quiz": 2, "written answer": 3, "25 words or less": 3,
               "story or poem": 4, "photo": 3, "other": 3, "recipe": 4, "drawing or art": 4, "video": 4}
 FIELDS = ["rank", "overall", "chance", "effort", "skill", "title", "brand", "prize_pool", "prizes", "prize_per_winner",
-          "closes", "days_left", "task", "word_limit", "public_vote", "question", "entry_limit", "purchase", "why",
+          "closes", "days_left", "task", "word_limit", "public_vote", "question", "entry_limit", "purchase", "entry_route",
+          "automation_banned", "why",
           "entry_url", "url"]
 
 

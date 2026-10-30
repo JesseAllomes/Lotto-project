@@ -10,6 +10,11 @@ chance of winning:
   purchase     yes / no / unknown: whether entry needs a purchase or ticket
   entry_limit  once, daily, weekly, per_purchase, unlimited, capped (entry_limit_n per person) or unknown
   bonus        yes when extra entries can be earned (referrals, shares, comments), which raises one person's chance
+  entry_route  how an entry can be made: agent_ok (an online form only, which an agent could fill in), agent_assist
+               (an online form plus an online payment the owner approves), manual (in store, receipt or scan, social
+               media action, SMS, phone, post, app, upload) or unknown
+  automation_banned  yes when the terms say automated, scripted, bulk or third-party entries are invalid; otherwise
+               unknown (most full terms do say so: check before letting anything enter for you)
   prizes       how many prizes there are, when stated
   cap          the ticket or entry cap, filled from the promoter's own terms (data/comps/terms.jsonl, m6)
 The summaries are the aggregator's, not the promoter's wording: evidence columns quote them so a row can be
@@ -29,10 +34,10 @@ from workers import comps
 
 STORE = comps.STORE
 ODDS_FIELDS = ["id", "title", "brand", "prize_pool", "prizes", "closes", "open_to_vic", "entry_platform", "draw_type",
-               "purchase", "entry_limit", "entry_limit_n", "bonus", "entry_types", "cap", "cap_source", "evidence_selection",
+               "purchase", "entry_limit", "entry_limit_n", "bonus", "entry_route", "automation_banned", "entry_types", "cap", "cap_source", "evidence_selection",
                "evidence_entry", "entry_url", "url"]
 SKILL_FIELDS = ["id", "title", "brand", "prize_pool", "prizes", "closes", "task", "question", "entry_limit",
-                "entry_limit_n", "bonus", "purchase", "judging", "entry_platform", "entry_url", "url"]
+                "entry_limit_n", "bonus", "purchase", "entry_route", "automation_banned", "judging", "entry_platform", "entry_url", "url"]
 SKILL_ENTRY_TYPES = {"25-words-or-less", "creative-competitions", "quiz-competitions"}
 ENTRY_TYPES = ["25-words-or-less", "codeword-entry", "creative-competitions", "daily-entry", "facebook-competitions",
                "free-entry", "instagram-competitions", "instant-win", "interactive-games", "kids-competitions",
@@ -122,6 +127,28 @@ def entry_limit(sec, desc):
     return "unknown", None
 
 
+MANUAL = (r"(?i)in[- ]store|stores?'s?\b|outlet|venue|retailer|receipt|scan|barcode|social (?:media )?(?:channel|"
+          r"post|page)|install|"
+          r"\bsms\b|text (?:the|your|a) |phone|call |by post|mail (?:in|your)|post (?:your|the) entry|download the "
+          r"app|via the app|\bapp\b|upload|comment|\blike\b|follow|\btag\b|share (?:the|this) post|direct message|"
+          r"\bDM\b|container|refund point|click the button in the email|loyalty card|swipe|membership card")
+BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|third[- ]party|agent)[^.]{0,80}(?:invalid|void|not (?:be )?"
+          r"(?:accepted|permitted|valid)|prohibit|disqualif|ineligible|rejected)|(?:entries|entry) (?:made|submitted|"
+          r"generated|lodged) (?:by|using|through|via) (?:any )?(?:automat|script|macro|bots?|bulk|third[- ]party)")
+
+
+def entry_route(sec, desc, platform, buy):
+    t = sec.get("enter") or desc or ""
+    if platform in ("facebook", "instagram", "tiktok", "x", "youtube") or re.search(MANUAL, t):
+        return "manual"
+    if not t:
+        return "unknown"
+    if re.search(r"(?i)online|website|entry form|form on|web ?page|complete (?:the|an|their)|submit|register|"
+                 r"subscrib|sign(?:ing)? up|newsletter|email list|mailing list", t):
+        return "agent_assist" if buy == "yes" else "agent_ok"
+    return "unknown"
+
+
 def prizes(title, sec):
     m = re.search(r"(?i)\b1 of (\d[\d,]*)|\b(\d[\d,]*) x\b|share of (\d[\d,]*) prizes", title or "")
     if m:
@@ -196,15 +223,15 @@ def tags(store):
 
 
 def caps(store):
-    """{listing id: (cap, source url)} from terms.jsonl (m6), latest record per listing."""
+    """{listing id: (cap, source url, automation banned)} from terms.jsonl (m6), latest record per listing."""
     path = store / "terms.jsonl"
     out = {}
     if path.exists():
         for l in path.read_text().splitlines():
             if l.strip():
                 r = json.loads(l)
-                if r.get("cap"):
-                    out[r["id"]] = (r["cap"], r.get("source"))
+                if r.get("cap") or r.get("automation_banned"):
+                    out[r["id"]] = (r.get("cap"), r.get("source"), bool(r.get("automation_banned")))
     return out
 
 
@@ -226,7 +253,9 @@ def assess(r, entry_types=(), cap=None):
         "entry_platform": comps.platform(r.get("entry_url")), "draw_type": dtype,
         "purchase": buy, "entry_limit": limit, "entry_limit_n": n,
         "bonus": bonus(sec, desc),
-        "entry_types": " ".join(entry_types), "cap": cap[0] if cap else None, "cap_source": cap[1] if cap else None,
+        "entry_route": entry_route(sec, desc, comps.platform(r.get("entry_url")), buy),
+        "automation_banned": "yes" if re.search(BANNED, desc) or (cap and cap[2:] == (True,)) else "unknown",
+        "entry_types": " ".join(entry_types), "cap": cap[0] if cap else None, "cap_source": cap[1] if cap and cap[0] else None,
         "evidence_selection": (sec.get("select") or "")[:300], "evidence_entry": (sec.get("enter") or "")[:300],
         "entry_url": r.get("entry_url"), "url": r.get("url"),
         "task": task(sec, desc) if dtype == "skill" else None, "question": question(sec) if dtype == "skill" else None,

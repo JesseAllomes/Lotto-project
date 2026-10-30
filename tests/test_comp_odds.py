@@ -43,6 +43,21 @@ class Classify(unittest.TestCase):
         self.assertEqual((a["draw_type"], a["purchase"], a["bonus"], a["prizes"]), ("chance", "no", "yes", 5))
         self.assertEqual(a["entry_platform"], "facebook")
 
+    def test_entry_route(self):
+        route = lambda t, platform="web", buy="no": comp_odds.entry_route({"enter": t}, t, platform, buy)
+        self.assertEqual(route("Complete the online entry form."), "agent_ok")
+        self.assertEqual(route("Buy tickets online via the website.", buy="yes"), "agent_assist")
+        self.assertEqual(route("Scan your receipt in store."), "manual")
+        self.assertEqual(route("Complete the form.", platform="facebook"), "manual")
+        self.assertEqual(route("Comment on the post and tag a friend."), "manual")
+        self.assertEqual(route(""), "unknown")
+
+    def test_automation_ban_wording(self):
+        ban = lambda t: bool(comp_odds.re.search(comp_odds.BANNED, t))
+        self.assertTrue(ban("Entries made using automated software, scripts or bots are invalid."))
+        self.assertTrue(ban("Entries submitted through third-party competition services will be disqualified."))
+        self.assertFalse(ban("You will automatically be entered into the draw."))
+
     def test_entry_limits(self):
         lim = lambda t: comp_odds.entry_limit({"enter": t}, "")
         self.assertEqual(lim("You may enter once per day."), ("daily", None))

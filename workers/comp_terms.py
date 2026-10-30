@@ -123,7 +123,7 @@ def fetch_bytes(url):
 def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
     """Fetch the draw page, then up to MAX_TERMS_PAGES terms pages, until a cap is found."""
     rec = {"cap": None, "cap_paid": None, "cap_text": None, "source": None, "per_ticket": [], "prices": [],
-           "permit_vic": None, "tried": []}
+           "permit_vic": None, "automation_banned": False, "tried": []}
     queue, seen = [entry_url], set()
     while queue and len(rec["tried"]) < 1 + MAX_TERMS_PAGES:
         url = queue.pop(0)
@@ -143,6 +143,8 @@ def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
         rec["prices"] = sorted(set(map(tuple, rec["prices"])) | set(find_prices(raw, text)))
         if url == entry_url:
             rec["per_ticket"] = sorted({float(m.group("p").replace(",", "")) for m in re.finditer(PER_TICKET, text, re.I)})
+        if re.search(comp_odds.BANNED, text):
+            rec["automation_banned"] = True
         permit = re.search(PERMIT, text)
         if permit and not rec["permit_vic"]:
             rec["permit_vic"] = permit.group("v").rstrip(".,")
