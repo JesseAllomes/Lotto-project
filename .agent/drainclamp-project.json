@@ -52,14 +52,41 @@
           ".github/workflows/jackpots.yml"
         ]
       }
+    ],
+    "m3": [
+      {
+        "done": true,
+        "done_at": "2026-10-30T12:19:04+00:00",
+        "est_min": 25,
+        "goal": "workers/comps.py: competitions.com.au open listings (sitemap -> new ids -> detail page) into append-only data/comps/comps.jsonl + CSV, Victoria flag; offline tests with saved fixtures",
+        "id": "c1",
+        "note": "comps worker + fixtures; live sample 40/40 parsed, 36 open to Vic, prize pool missing on 10",
+        "targets": [
+          "workers/comps.py",
+          "tests/test_comps.py",
+          "tests/fixtures/",
+          "data/comps/"
+        ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 10,
+        "goal": ".github/workflows/comps.yml daily; verify on GitHub",
+        "id": "c2",
+        "note": "",
+        "targets": [
+          ".github/workflows/comps.yml"
+        ]
+      }
     ]
   },
   "errors": [],
-  "rev": 8,
+  "rev": 11,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T12:11:00+00:00",
+      "end": "2026-10-30T12:19:04+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",
