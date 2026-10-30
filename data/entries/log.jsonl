@@ -38,3 +38,163 @@
 {"time_utc":"2026-10-30T14:27:59Z","id":76063,"mode":"dry","result":"skipped","reason":"unfillable","fields":["select: field_membership_and_tickets_2027 membership_and_tickets_202"]}
 {"time_utc":"2026-10-30T14:28:02Z","id":75449,"mode":"dry","result":"skipped","reason":"no_form","fields":[]}
 {"time_utc":"2026-10-30T14:28:06Z","id":70434,"mode":"dry","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:40:03Z","id":76090,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:40:15Z","id":76086,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:40:49Z","id":76042,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:41:01Z","id":75978,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T14:41:09Z","id":75966,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:41:21Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T14:41:33Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T14:41:48Z","id":75842,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:42:00Z","id":75794,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T14:42:08Z","id":75782,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:42:12Z","id":75641,"mode":"live","result":"skipped","reason":"unfillable","fields":["country_01M3RCGSRFSBK4SQZGF4R2N63G Country country Country"]}
+{"time_utc":"2026-10-30T14:42:15Z","id":75601,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:42:18Z","id":75596,"mode":"live","result":"skipped","reason":"login","fields":[]}
+{"time_utc":"2026-10-30T14:42:31Z","id":75364,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T14:42:42Z","id":75359,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:42:55Z","id":75274,"mode":"live","result":"entered","reason":"","fields":["first","last","state","postcode","email","phone","consent"]}
+{"time_utc":"2026-10-30T14:43:09Z","id":74560,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:43:13Z","id":72120,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:43:16Z","id":76174,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:43:25Z","id":76168,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:43:34Z","id":76132,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:43:39Z","id":76112,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:43:43Z","id":76111,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:43:48Z","id":76091,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T14:43:59Z","id":76050,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:44:11Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:44:24Z","id":76022,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T14:44:27Z","id":76004,"mode":"live","result":"skipped","reason":"unfillable","fields":["downshift-0-input COUNTRY off Country"]}
+{"time_utc":"2026-10-30T14:44:40Z","id":75981,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:44:51Z","id":75726,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T14:45:05Z","id":76088,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:45:39Z","id":76115,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:45:43Z","id":76054,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T14:45:48Z","id":76094,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","phone"]}
+{"time_utc":"2026-10-30T14:46:00Z","id":75918,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:46:04Z","id":75739,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:46:08Z","id":75687,"mode":"live","result":"skipped","reason":"unfillable","fields":["select: field198468931-muiPickersPrimary Date of birth-Day"]}
+{"time_utc":"2026-10-30T14:46:41Z","id":76137,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:46:45Z","id":76161,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:46:54Z","id":76120,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:47:07Z","id":76090,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:47:19Z","id":76086,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:47:52Z","id":76042,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:48:05Z","id":75978,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T14:48:17Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T14:48:29Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T14:48:41Z","id":75794,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T14:48:54Z","id":75364,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T14:48:59Z","id":76091,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T14:49:11Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:49:23Z","id":76022,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T14:49:35Z","id":75726,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T14:50:08Z","id":76115,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:50:12Z","id":76054,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T14:50:16Z","id":76094,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","phone"]}
+{"time_utc":"2026-10-30T14:50:28Z","id":75918,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:51:02Z","id":76137,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:51:05Z","id":76049,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:51:18Z","id":76136,"mode":"live","result":"entered","reason":"","fields":["email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T14:51:31Z","id":76026,"mode":"live","result":"entered","reason":"","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T14:51:46Z","id":75947,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:51:51Z","id":75699,"mode":"live","result":"skipped","reason":"unfillable","fields":["review_title review_title Title For Comment"]}
+{"time_utc":"2026-10-30T14:52:24Z","id":76029,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:52:40Z","id":75636,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email","phone","country","state","postcode"]}
+{"time_utc":"2026-10-30T14:52:45Z","id":75488,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:52:56Z","id":75349,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","consent","email"]}
+{"time_utc":"2026-10-30T14:53:08Z","id":74216,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:53:12Z","id":76058,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","postcode","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T14:53:18Z","id":75365,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T14:53:30Z","id":76037,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email","first","last","postcode","phone","required_marketing"]}
+{"time_utc":"2026-10-30T14:53:42Z","id":75611,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T14:53:54Z","id":76083,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T14:54:06Z","id":74311,"mode":"live","result":"skipped","reason":"captcha","fields":["email"]}
+{"time_utc":"2026-10-30T14:54:10Z","id":72517,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T14:54:19Z","id":72460,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:54:21Z","id":75893,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T14:54:55Z","id":75325,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:55:04Z","id":74853,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-30T14:55:18Z","id":76090,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:55:30Z","id":76086,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:56:03Z","id":76042,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:56:16Z","id":75978,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T14:56:28Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T14:56:40Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T14:56:52Z","id":75794,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T14:57:04Z","id":75364,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T14:57:17Z","id":75274,"mode":"live","result":"entered","reason":"","fields":["first","last","state","postcode","email","phone","consent"]}
+{"time_utc":"2026-10-30T14:57:22Z","id":76091,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T14:57:34Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:57:46Z","id":76022,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T14:57:58Z","id":75726,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T14:58:32Z","id":76115,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:58:36Z","id":76054,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T14:58:40Z","id":76094,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","phone"]}
+{"time_utc":"2026-10-30T14:58:52Z","id":75918,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T14:59:26Z","id":76137,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T14:59:59Z","id":76029,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:00:17Z","id":75636,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email","phone","country","state","postcode"]}
+{"time_utc":"2026-10-30T15:00:29Z","id":75349,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","consent","email"]}
+{"time_utc":"2026-10-30T15:00:33Z","id":76058,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","postcode","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:00:37Z","id":75365,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:00:49Z","id":76037,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email","first","last","postcode","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:01:00Z","id":75611,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T15:01:15Z","id":76083,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:01:19Z","id":72517,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:01:53Z","id":75325,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:02:06Z","id":76090,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:02:18Z","id":76086,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:02:52Z","id":76042,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:03:04Z","id":75978,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T15:03:16Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T15:03:27Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T15:03:39Z","id":75794,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T15:03:51Z","id":75364,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T15:03:56Z","id":76091,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T15:04:08Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:04:20Z","id":76022,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:04:32Z","id":75726,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:05:05Z","id":76115,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:05:10Z","id":76054,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T15:05:14Z","id":76094,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","phone"]}
+{"time_utc":"2026-10-30T15:05:26Z","id":75918,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:06:00Z","id":76137,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:06:33Z","id":76029,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:06:49Z","id":75636,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email","phone","country","state","postcode"]}
+{"time_utc":"2026-10-30T15:07:01Z","id":75349,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","consent","email"]}
+{"time_utc":"2026-10-30T15:07:06Z","id":76058,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","postcode","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:07:10Z","id":75365,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:07:22Z","id":76037,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email","first","last","postcode","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:07:34Z","id":75611,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T15:07:47Z","id":76083,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:07:51Z","id":72517,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:08:25Z","id":75325,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:08:38Z","id":76090,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:08:50Z","id":76086,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:09:24Z","id":76042,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:09:36Z","id":75978,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T15:09:48Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T15:10:00Z","id":75794,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T15:10:12Z","id":75364,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T15:10:26Z","id":75274,"mode":"live","result":"entered","reason":"","fields":["first","last","state","postcode","email","phone","consent"]}
+{"time_utc":"2026-10-30T15:10:31Z","id":76091,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T15:10:42Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:10:55Z","id":76022,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:11:06Z","id":75726,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:11:39Z","id":76115,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:11:43Z","id":76054,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T15:11:47Z","id":76094,"mode":"live","result":"skipped","reason":"no_submit","fields":["email","phone"]}
+{"time_utc":"2026-10-30T15:11:59Z","id":75918,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T15:12:33Z","id":76137,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:13:06Z","id":76029,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T15:13:21Z","id":75636,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email","phone","country","state","postcode"]}
+{"time_utc":"2026-10-30T15:13:33Z","id":75349,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","consent","email"]}
+{"time_utc":"2026-10-30T15:13:37Z","id":76058,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","postcode","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:13:42Z","id":75365,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:13:54Z","id":76037,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email","first","last","postcode","phone","required_marketing"]}
+{"time_utc":"2026-10-30T15:14:05Z","id":75611,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T15:14:18Z","id":76083,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:14:22Z","id":72517,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
+{"time_utc":"2026-10-30T15:14:56Z","id":75325,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
