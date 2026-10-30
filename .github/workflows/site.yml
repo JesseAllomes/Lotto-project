@@ -32,6 +32,8 @@ jobs:
           ref: main
       - name: Current freebies (OzBargain)
         run: python3 -m workers.freebies || true
+      - name: Winners tracker statuses for today (no network)
+        run: python3 -m workers.winners || true
       - name: Build the page
         run: python3 -m workers.site --out site
       - uses: actions/configure-pages@v5

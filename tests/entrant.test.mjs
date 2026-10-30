@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { classify, phoneVariants, run } from "../workers/entrant.mjs";
 
 const FORMS = path.join(path.dirname(new URL(import.meta.url).pathname), "fixtures", "forms");
@@ -86,11 +87,56 @@ test("an 'already entered' reply counts as entered once", async () => {
   assert.deepEqual([r.result, r.reason], ["entered", "already entered"]);
 });
 
-test("a bounce to a /challenge page or a 'try again' rejection is a human check, not a retry", async () => {
+test("a bounce to a /challenge page is a captcha; a 'try again' reply is a failure with what the form said", async () => {
   const out = await run({ queue: [{ id: 40, entry_url: url("shopify_challenge.html") }, { id: 41, entry_url: url("rejected.html") }],
                           live: true, logPath: tmpLog() });
-  assert.deepEqual(out.map((r) => [r.result, r.reason]), [["skipped", "captcha"], ["skipped", "human_check"]]);
+  assert.deepEqual(out.map((r) => r.result), ["skipped", "failed"]);
+  assert.equal(out[0].reason, "captcha");
   assert.match(out[1].said, /try again/);
+});
+
+// Challenge detection (data/analysis/CAPTCHA_CHECK.md): vendor iframes are stubbed, nothing leaves the machine.
+const SHELL = (inner, after = "") => `<html><body><form id="comp" action="/enter"><h2>Win a prize</h2>
+  <input name="first" placeholder="First name"><input type="email" name="email" placeholder="Email">${inner}
+  <button>Enter now</button></form>${after}</body></html>`;
+const ANCHOR = (size, w = 304, h = 78) => `<iframe title="reCAPTCHA" src="https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LTEST&hl=en&size=${size}" width="${w}" height="${h}"></iframe>`;
+const TURNSTILE = (value, w = 300, h = 65) => `<div class="cf-turnstile" style="width:${w}px;height:${h}px"><iframe src="https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/g/turnstile/f/av0/rch/abc/0x4TEST" width="${w}" height="${h}"></iframe></div><input type="hidden" name="cf-turnstile-response" value="${value}">`;
+const HC = (w, h) => `<div class="h-captcha"${w ? "" : ' data-size="invisible" style="height:0"'}><iframe src="https://newassets.hcaptcha.com/captcha/v1/abc/static/hcaptcha.html#frame=checkbox" width="${w}" height="${h}"></iframe></div>`;
+const CASES = [
+  ["visible reCAPTCHA v2 checkbox in the form", SHELL(`<div class="g-recaptcha">${ANCHOR("normal")}</div>`), "captcha: reCAPTCHA v2 checkbox"],
+  ["invisible reCAPTCHA badge outside the form", SHELL('<input type="hidden" name="g-recaptcha-response">',
+    `<div class="grecaptcha-badge" style="position:fixed;bottom:14px;right:-186px;width:256px;height:60px">${ANCHOR("invisible", 256, 60)}</div>`), null],
+  ["visible Turnstile with no token", SHELL(TURNSTILE("")), "captcha: Turnstile awaiting interaction"],
+  ["Turnstile that has issued its token", SHELL(TURNSTILE("0.ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdef")), null],
+  ["interaction-only Turnstile with a 0-height host", SHELL(TURNSTILE("", 300, 0)), null],
+  ["visible v2 widget on another form", SHELL(""), null],
+  ["custom security-code image", SHELL('<img alt="security code" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" width="120" height="40"><input name="cp_captcha">'), "captcha: security-code field"],
+  ["invisible hCaptcha in the form", SHELL(HC(0, 0)), null],
+  ["visible hCaptcha checkbox in the form", SHELL(HC(303, 78)), "captcha: hCaptcha checkbox"],
+];
+CASES[5][1] = CASES[5][1].replace("</body>", `<footer><form action="/newsletter"><input type="email" name="EMAIL"><div class="g-recaptcha">${ANCHOR("normal")}</div></form></footer></body>`);
+
+test("only an interactive challenge on the chosen form is a captcha; invisible or passive checks are not", async () => {
+  const { interactiveChallenge, challengeAfterSubmit } = await import("../workers/entrant.mjs");
+  const { chromium } = createRequire(import.meta.url)("playwright");    // NODE_PATH, as the entrant loads it
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await page.route(/^https:\/\//, (r) => r.fulfill({ contentType: "text/html", body: "<html><body></body></html>" }));
+    for (const [name, html, want] of CASES) {
+      await page.setContent(html);
+      await page.waitForTimeout(300);
+      const scope = page.locator("form#comp");
+      assert.equal(await interactiveChallenge(page, page.mainFrame(), scope, { tokenWait: 1000 }), want, name);
+    }
+    await page.setContent(`<html><body>${ANCHOR("invisible", 256, 60)}</body></html>`);
+    assert.equal(await challengeAfterSubmit(page), null, "anchor alone after submit");
+    await page.setContent('<html><body><iframe src="https://www.google.com/recaptcha/api2/bframe?k=x" width="400" height="580"></iframe></body></html>');
+    await page.waitForTimeout(300);
+    assert.equal(await challengeAfterSubmit(page), "captcha: challenge opened after submit");
+  } finally {
+    await browser.close();
+  }
 });
 
 test("error lines are masked before logging", async () => {

@@ -2,6 +2,8 @@
 # about 5 minutes apart: each round rebuilds today's queue (workers/entry_queue.py decides what is due: bursts of 5
 # per 3-hour window for comps with no stated limit, 4 a day where the terms flag excessive entries, the stated limit
 # otherwise) and runs workers/entrant.mjs, which fills each form with the owner's details from secrets.
+# Last day (owner, 2026-10-31): while any listing is in its final 24 hours and can take more entries, the chain runs
+# hourly (data/entries/pace.json from entry_queue) and those listings get a burst every hour; stated limits stand.
 # Self-chaining: after its burst a run commits the log, waits for the next 3-hour window and starts the next run
 # itself (workflow_dispatch is allowed from GITHUB_TOKEN), because GitHub's scheduler can be hours late or drop
 # runs; the cron stays as a backup that restarts the chain if it ever breaks. Unlimited minutes: the repo is public.
@@ -73,13 +75,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run site.yml --ref main || true
-      - name: Wait for the next 3-hour window, then start the next run
+      - name: Wait for the next window (hourly while a comp is in its last day, else 3-hourly), then start the next run
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           now=$(date -u +%s)
-          next=$(( (now / 10800 + 1) * 10800 + 300 ))
+          step=$(python3 -c "import json; print(json.load(open('data/entries/pace.json'))['next_run_minutes'] * 60)" 2>/dev/null || echo 10800)
+          next=$(( (now / step + 1) * step + 300 ))
           echo "sleeping $(( next - now ))s until $(date -u -d @$next +%H:%M) UTC"
           sleep $(( next - now ))
           gh workflow run entries.yml --ref main

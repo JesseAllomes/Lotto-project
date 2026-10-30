@@ -264,11 +264,38 @@
           "workers/entry_answers.py",
           ".github/workflows/entries.yml"
         ]
+      },
+      {
+        "done": true,
+        "done_at": "2026-10-30T22:07:01+00:00",
+        "est_min": 20,
+        "goal": "closing-day boost: comps closing today (Melbourne) get extra entries within their stated limit; entries.yml runs extra rounds",
+        "id": "c5",
+        "note": "last day: stated close times from summaries; 5/hour bursts for no-limit comps, excessive gap 3h, unread terms entered cautiously, failing/no_form one more try; pace.json -> entries.yml hourly; 'allowed one entry' wording now = once; Fable CAPTCHA spec applied (40 skips reset)",
+        "targets": [
+          "workers/entry_queue.py::may_enter",
+          ".github/workflows/entries.yml",
+          "tests/test_entrant.py"
+        ]
+      },
+      {
+        "done": true,
+        "done_at": "2026-10-30T22:07:02+00:00",
+        "est_min": 25,
+        "goal": "winners tracker: draw date, notify method and publication place from terms for every entered comp; winners.csv + site tab",
+        "id": "c6",
+        "note": "workers/winners.py: draw date, notify method/window, claim window/by, winners page from listing summaries; --check surname yes/no (comps.yml, secret); site Winners tab (auto-entered + ticked Done)",
+        "targets": [
+          "workers/winners.py",
+          "workers/comp_terms.py",
+          "workers/site.py",
+          "tests/test_winners.py"
+        ]
       }
     ]
   },
   "errors": [],
-  "rev": 41,
+  "rev": 45,
   "schema": 1,
   "time": [
     {
@@ -277,6 +304,13 @@
       "note": "",
       "source": "auto",
       "start": "2026-10-30T11:33:56+00:00"
+    },
+    {
+      "end": "2026-10-30T22:07:02+00:00",
+      "id": "s2",
+      "note": "",
+      "source": "auto",
+      "start": "2026-10-30T22:07:01+00:00"
     }
   ],
   "todos": [

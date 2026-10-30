@@ -4,14 +4,18 @@
     python3 -m workers.site --out DIR       # somewhere else
 
 One static page built from the registers after each run. All the data is embedded as JSON and the phone does the
-searching, filtering and sorting. Three tabs:
+searching, filtering and sorting. Four tabs:
   To enter     open competitions a Victorian can enter that the auto-entrant cannot (bot-checked web forms,
                social media, everything else), each with its prize category, Open button, approved answer with a
                Copy button, and a Done tick kept in the phone's browser storage.
   Auto-entered the auto-entry register: every competition entered automatically, how many times, when last, with a
                Re-enter button (opens a pre-filled GitHub issue; .github/workflows/reenter.yml acts on the owner's
                issues only) and multi-select to re-enter several at once.
+  Winners      draw date, how winners are told, claim deadline and winners page for every auto-entered comp and every
+               comp ticked Done (data/entries/winners.csv from workers/winners.py), with a flag when the owner's
+               surname was seen on a published winners page.
   Freebies     free stuff for Victoria from OzBargain's Freebies listing (workers/freebies.py, rebuilt with the site).
+Closing times are the promoter's stated time where the listing gives one (entry_queue.closes_at).
 The repository is public, so the page holds no personal details.
 """
 import argparse
@@ -23,7 +27,7 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from workers import comps
+from workers import comps, entry_queue
 
 ROOT = comps.ROOT
 ENTRIES = ROOT / "data" / "entries"
@@ -81,6 +85,7 @@ def why(reason):
     r = reason.replace("entrant blocked: ", "")
     return {"captcha": "human check (CAPTCHA)", "human_check": "the site's bot check", "no_form": "form not reachable",
             "unfillable": "a field only you can answer", "login": "needs a login",
+            "blocked": "the site blocks automated browsers",
             "entry route manual": "manual entry", "entry route unknown": "entry method unclear",
             "terms ban automated entry": "terms ban automated entry"}.get(r, r if not r.startswith("failing") else
                                                                           "the auto-entrant failed here")
@@ -90,6 +95,15 @@ def melb(utc_text):
     """'2026-10-30 19:31' (UTC) as Melbourne time, e.g. 'Sat 31 Oct, 6:31am'."""
     t = dt.datetime.strptime(utc_text, "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc).astimezone(MELB)
     return t.strftime("%a %d %b, %I:%M%p").replace(" 0", " ").replace("AM", "am").replace("PM", "pm")
+
+
+def close_of(rec, fallback=""):
+    """(Melbourne closing date, '6:00pm' closing time) from the listing's stated or listed closing time."""
+    t = entry_queue.closes_at(rec) if rec else None
+    if not t:
+        return fallback[:10], ""
+    t = t.astimezone(MELB)
+    return t.date().isoformat(), t.strftime("%I:%M%p").lstrip("0").lower()
 
 
 def load_answers(entries=ENTRIES):
@@ -115,12 +129,12 @@ def items(entries=ENTRIES, today=None, recs=None):
     path = entries / "manual.csv"
     out = []
     for r in (csv.DictReader(open(path)) if path.exists() else []):
-        closes = (r.get("closes") or "")[:10]
+        rec = recs.get(r["id"], {})
+        closes, at = close_of(rec, r.get("closes") or "")
         if closes and closes < today or not r.get("entry_url"):
             continue
-        rec = recs.get(r["id"], {})
         out.append({"id": r["id"], "t": r["title"], "b": r.get("brand") or "", "p": _num(r.get("prize_pool")),
-                    "c": closes, "u": r["entry_url"], "w": why(r.get("reason") or ""),
+                    "c": closes, "ct": at, "u": r["entry_url"], "w": why(r.get("reason") or ""),
                     "g": group_of(r.get("reason") or "", r.get("entry_platform") or "", r["entry_url"]),
                     "k": category(r["title"], rec.get("category_slug")), "a": ans.get(str(r["id"])),
                     "s": rec.get("source_site") or "competitions.com.au"})
@@ -149,6 +163,20 @@ def autos(entries=ENTRIES, today=None, recs=None):
     return out
 
 
+def winners(entries=ENTRIES):
+    """The 'Winners' list (all tracked comps; the page shows the auto-entered and the ones ticked Done)."""
+    path = entries / "winners.csv"
+    if not path.exists():
+        return []
+    return [{"id": r["id"], "t": r["title"], "b": r.get("brand") or "", "p": _num(r.get("prize_pool")),
+             "c": r.get("draw_date") or r.get("closes") or "", "cl": r.get("closes") or "", "n": int(r.get("auto_entries") or 0),
+             "st": r["status"], "est": r.get("draw_estimated") == "True", "h": r.get("notify") or "",
+             "nw": r.get("notify_within_days") or "", "cw": r.get("claim_within_days") or "", "cb": r.get("claim_by") or "",
+             "wp": r.get("winners_page") or "", "pn": r.get("published_note") or "", "seen": r.get("name_seen") or "",
+             "u": r.get("url") or "", "k": category(r["title"])}
+            for r in csv.DictReader(open(path))]
+
+
 def freebies(path=FREEBIES):
     if not path.exists():
         return []
@@ -171,6 +199,7 @@ def stats(entries=ENTRIES):
 def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
     recs = records()
     data = {"todo": items(entries, today, recs), "auto": autos(entries, today, recs), "free": freebies(freebie_path),
+            "win": winners(entries),
             "stats": stats(entries), "groups": GROUP_NAMES, "categories": [c for c, _ in CATEGORIES] + ["Other"],
             "repo": REPO, "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
     blob = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
@@ -208,7 +237,7 @@ ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px so
 </style></head><body>
 <header><div class="wrap">
 <h1>Comps to enter</h1><div class="sub" id="summary"></div>
-<div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="auto">Auto-entered</button><button class="tab" data-tab="free">Freebies</button></div>
+<div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="auto">Auto-entered</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
 <input type="search" id="q" placeholder="Search prize, brand or title">
 <div class="chips" id="cats"></div>
 <div class="row" style="margin-top:6px">
@@ -236,7 +265,7 @@ const money = (p) => p ? "$" + Math.round(p).toLocaleString("en-AU") : "prize n/
 const issue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("reenter: " + ids.join(" "))}&body=${encodeURIComponent("Re-enter these competitions now. Submit this issue; the reenter workflow does the rest and closes it.")}`;
 $("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps · updated ${D.built}`;
 for (const [k, v] of Object.entries(D.groups)) $("#grp").insertAdjacentHTML("beforeend", `<option value="${k}">${esc(v)}</option>`);
-const pool = () => S.tab === "todo" ? D.todo : S.tab === "auto" ? D.auto : D.free;
+const pool = () => S.tab === "todo" ? D.todo : S.tab === "auto" ? D.auto : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
 function chips() {
   const src = S.tab === "free" ? [...new Set(D.free.map((x) => x.k))] : D.categories;
   $("#cats").innerHTML = src.map((c) => { const n = pool().filter((x) => x.k === c).length;
@@ -245,7 +274,19 @@ function chips() {
 function card(x) {
   const d = days(x.c), soon = d <= 2 ? "soon" : "";
   const ans = x.a ? `<div class="ans"><p>${esc(x.a)}</p><button class="ghost copy" data-copy="${esc(x.a)}">Copy answer</button></div>` : "";
-  const when = x.c ? `<span class="${soon}">${d === 0 ? "closes today" : d === 1 ? "closes tomorrow" : "closes " + esc(x.c.slice(0, 10))}</span>` : "";
+  const at = x.ct ? " " + esc(x.ct) : "";
+  const when = x.c ? `<span class="${soon}">${d === 0 ? "closes today" + at : d === 1 ? "closes tomorrow" + at : "closes " + esc(x.c.slice(0, 10))}</span>` : "";
+  if (S.tab === "win") {
+    const st = x.seen === "yes" ? `<span class="soon">Your surname is on the winners page</span>` : `<span class="${/watch/.test(x.st) ? "soon" : ""}">${esc(x.st)}</span>`;
+    const draw = x.c ? `${x.est ? "drawn by about" : "drawn"} ${esc(x.c)}` : "draw date not stated";
+    const claim = x.cb ? `claim by ${esc(x.cb)}` : x.cw ? `claim within ${esc(x.cw)} days` : "";
+    return `<li class="card"><div class="top"><span class="prize">${money(x.p)}</span><span class="meta">${st}</span></div>
+    <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
+    <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)} · ${x.st === "open" ? "closes" : "closed"} ${esc(x.cl)} · ${draw}</div>
+    <div class="meta">Winners told by ${esc(x.h || "not stated")}${x.nw ? ` within ${esc(x.nw)} days` : ""}${claim ? " · " + claim : ""}${x.n ? ` · ${x.n} auto-entries` : " · entered by hand"}</div>
+    ${x.pn ? `<div class="meta">${esc(x.pn)}</div>` : ""}
+    <div class="acts">${x.wp ? `<a class="go" href="${esc(x.wp)}" target="_blank" rel="noopener">Winners page</a>` : `<span class="meta">Watch your email, phone and spam folder</span>`}<a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Listing</a></div></li>`;
+  }
   if (S.tab === "auto") return `<li class="card"><div class="top"><span class="prize">${money(x.p)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
@@ -275,8 +316,8 @@ function render() {
   const by = { close: (a, b) => days(a.c) - days(b.c) || (b.p || 0) - (a.p || 0), prize: (a, b) => (b.p || 0) - (a.p || 0), az: (a, b) => a.t.localeCompare(b.t) };
   list.sort(by[S.sort]);
   const total = list.reduce((s, x) => s + (x.p || 0), 0);
-  $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "");
-  $("#list").innerHTML = list.map(card).join("") || `<li class="empty">Nothing matches. Clear a filter.</li>`;
+  $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
+  $("#list").innerHTML = list.map(card).join("") || `<li class="empty">${S.tab === "win" ? "Nothing entered yet. Tick Done on the To enter tab to track a comp here." : "Nothing matches. Clear a filter."}</li>`;
   $("#bar").classList.toggle("show", S.tab === "auto" && sel.size > 0);
   $("#selcount").textContent = `${sel.size} selected`; $("#reselect").href = issue([...sel]);
   store.set("comps-ui", S);

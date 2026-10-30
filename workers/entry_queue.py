@@ -20,6 +20,7 @@ import csv
 import datetime as dt
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -28,7 +29,7 @@ from workers import comp_odds, comps, comp_terms
 
 STORE = comps.STORE
 ENTRIES = comps.ROOT / "data" / "entries"
-QUEUE_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "entry_limit", "needs_answer",
+QUEUE_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "last_day", "draw_type", "entry_limit", "needs_answer",
                 "question", "terms_checked", "entry_url"]
 MANUAL_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "reason", "entry_platform", "entry_url"]
 MELB = ZoneInfo("Australia/Melbourne")
@@ -37,13 +38,24 @@ BURST_HOURS = 3
 GAP_MINUTES = 5
 EXCESSIVE_PER_DAY = 4
 EXCESSIVE_GAP_HOURS = 5
+# Last day (owner, 2026-10-31: "more entries in anything that closes today"): in a competition's final 24 hours a
+# burst may come every LAST_DAY_BURST_HOURS instead of every BURST_HOURS (no stated limit only), the excessive-entry
+# pace keeps its 4 a day but LAST_DAY_EXCESSIVE_GAP_HOURS apart, a listing comp_terms has not read yet is entered at
+# that cautious pace instead of waiting, and a listing blocked for failing gets one more try. Stated limits (once,
+# daily, weekly, capped) never change: entering past them can void every entry.
+LAST_DAY_BURST_HOURS = 1
+LAST_DAY_EXCESSIVE_GAP_HOURS = 3
+RETRY_ON_LAST_DAY = ("failing", "no_form")
 # Owner's call (2026-10-30, "enter everything"): comps whose terms ban automated entry are entered too, at the
 # cautious excessive-entry pace. Repository variable ENTER_BANNED=0 puts them back on the manual list.
 ENTER_BANNED = os.environ.get("ENTER_BANNED", "1") != "0"
 # Failures logged before the entrant fixes of 30 Oct 2026 (popup forms, JS buttons, overlays, confirmation) get a
 # clean slate: they say nothing about the fixed entrant.
 RETRY_FROM = "2026-10-30T16:30:00Z"
-BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form"}
+# CAPTCHA and bot-check skips logged before the narrower challenge detection (data/analysis/CAPTCHA_CHECK.md: most
+# were invisible or passive checks, or widgets on another form) get a clean slate too.
+CHECK_FIX_FROM = "2026-10-30T22:45:00Z"
+BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form", "blocked"}
 
 
 def read_jsonl(path):
@@ -73,8 +85,54 @@ def write_register(store, entries, entered):
     return rows
 
 
-def may_enter(limit, entered, now, n=None, excessive=False):
-    """Whether the entry limit allows another entry now, given the UTC datetimes of past successful entries."""
+ZONES = {"aedt": 11, "aest": 10, "acdt": 10.5, "acst": 9.5, "awst": 8}
+# "closes at 6:00 PM AEDT on Saturday, 31 October 2026": the listing's timestamp is often a default (23:59 +10:00)
+# while its summary states the promoter's real closing time.
+STATED_CLOSE = (r"(?i)clos(?:es|ing)[^.]{0,30}?\b(\d{1,2})(?:[:.](\d\d))? ?([ap])\.?m\.? ?\(?(" + "|".join(ZONES) +
+                r")\)?[^.]{0,25}?(\d{1,2})(?:st|nd|rd|th)? (january|february|march|april|may|june|july|august|september|"
+                r"october|november|december),? (20\d\d)")
+MONTH_NO = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
+                                        "september", "october", "november", "december"], 1)}
+
+
+def closes_at(r):
+    """The listing's closing time (UTC): the time its summary states when that falls on the listing's closing date,
+    else its timestamp, a bare date meaning the end of that Melbourne day; None when unknown."""
+    c = r.get("closes")
+    if not c:
+        return None
+    try:
+        t = dt.datetime.fromisoformat(c.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if len(c) <= 10:
+        t = dt.datetime.combine(t.date(), dt.time(23, 59), MELB)
+    elif t.tzinfo is None:
+        t = t.replace(tzinfo=MELB)
+    m = re.search(STATED_CLOSE, r.get("description") or "")
+    if m:
+        h, mi, ap, zone, d, mon, y = m.groups()
+        h = int(h) % 12 + (12 if ap.lower() == "p" else 0)
+        try:
+            day = dt.date(int(y), MONTH_NO[mon.lower()], int(d))
+            tz = dt.timezone(dt.timedelta(hours=ZONES[zone.lower()]))
+            stated = dt.datetime.combine(day, dt.time(h, int(mi or 0)), tz)
+            if abs((stated.date() - t.date()).days) <= 1:
+                return stated.astimezone(dt.timezone.utc)
+        except ValueError:
+            pass
+    return t.astimezone(dt.timezone.utc)
+
+
+def last_day(r, now):
+    """True in a listing's final 24 hours."""
+    c = closes_at(r)
+    return c is not None and dt.timedelta(0) <= c - now <= dt.timedelta(hours=24)
+
+
+def may_enter(limit, entered, now, n=None, excessive=False, final=False):
+    """Whether the entry limit allows another entry now, given the UTC datetimes of past successful entries.
+    final: the listing's last day (shorter burst windows and gaps; stated limits unchanged)."""
     local = now.astimezone(MELB)
     today = [t for t in entered if t.astimezone(MELB).date() == local.date()]
     last = max(entered) if entered else None
@@ -85,9 +143,11 @@ def may_enter(limit, entered, now, n=None, excessive=False):
     if limit == "weekly":
         return not entered or (now - max(entered)).days >= 7
     if excessive:
-        ok = len(today) < EXCESSIVE_PER_DAY and (last is None or now - last >= dt.timedelta(hours=EXCESSIVE_GAP_HOURS))
+        gap = LAST_DAY_EXCESSIVE_GAP_HOURS if final else EXCESSIVE_GAP_HOURS
+        ok = len(today) < EXCESSIVE_PER_DAY and (last is None or now - last >= dt.timedelta(hours=gap))
         return ok and (limit != "capped" or len(entered) < (n or 1))
-    slot = lambda t: (t.astimezone(dt.timezone.utc).date(), t.astimezone(dt.timezone.utc).hour // BURST_HOURS)
+    hours = LAST_DAY_BURST_HOURS if final else BURST_HOURS
+    slot = lambda t: (t.astimezone(dt.timezone.utc).date(), t.astimezone(dt.timezone.utc).hour // hours)
     window = [t for t in entered if slot(t) == slot(now)]
     ok = len(window) < BURST and (last is None or now - last >= dt.timedelta(minutes=GAP_MINUTES))
     return ok and (limit != "capped" or len(entered) < (n or 1))     # unlimited, unknown, capped
@@ -101,13 +161,16 @@ def build(store=STORE, entries=ENTRIES, now=None):
     log = sorted((x for f in sorted(entries.glob("log*.jsonl")) for x in read_jsonl(f)),   # main and re-enter logs
                  key=lambda x: x.get("time_utc", ""))
     answers = json.loads((entries / "answers.json").read_text()) if (entries / "answers.json").exists() else {}
-    entered, blocked, fails, done_once = {}, {}, {}, set()
+    entered, blocked, fails, done_once, tried = {}, {}, {}, set(), {}
     for e in log:
+        tried[e["id"]] = e.get("time_utc", "")
         if e.get("mode") == "live" and e.get("result") == "entered":
             entered.setdefault(e["id"], []).append(
                 dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
         if e.get("time_utc", "") < RETRY_FROM and (e.get("result") == "failed" or
                                                   e.get("reason") in ("no_submit", "unfillable")):
+            continue
+        if e.get("time_utc", "") < CHECK_FIX_FROM and e.get("reason") in ("captcha", "human_check"):
             continue
         if e.get("result") in ("skipped", "failed", "entered", "dry_ok"):   # the latest attempt decides
             fails[e["id"]] = fails.get(e["id"], 0) + 1 if e.get("result") == "failed" else 0
@@ -119,36 +182,42 @@ def build(store=STORE, entries=ENTRIES, now=None):
                 done_once.add(e["id"])                        # the form keeps one entry per email: no more
             else:
                 blocked.pop(e["id"], None)
-    queue, manual = [], []
+    queue, manual, last_day_ids = [], [], set()
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
-        if not r.get("open_to_vic") or (r.get("closes") or "9")[:10] < iso:
+        if not r.get("open_to_vic") or (r.get("closes") or "9")[:10] < iso or (closes_at(r) or now) < now:
             continue
         a = comp_odds.assess(r, tags.get(r["id"], ()), caps.get(r["id"]))
+        final = last_day(r, now)
+        start_of_last_day = ((closes_at(r) or now) - dt.timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
         if a["purchase"] == "yes":
             continue
         banned = a["automation_banned"] == "yes" or any(h.get("automation_banned") for h in terms.get(r["id"], []))
         checked = any(h.get("terms_read") for h in terms.get(r["id"], []))
-        row = {**a, "terms_checked": checked}
+        row = {**a, "terms_checked": checked, "last_day": final}
         reason = None
         if a["entry_route"] != "agent_ok":
             reason = f"entry route {a['entry_route']}"
         elif banned and not ENTER_BANNED:
             reason = "terms ban automated entry"
-        elif r["id"] in blocked:
+        elif r["id"] in blocked and not (final and blocked[r["id"]].startswith(RETRY_ON_LAST_DAY)
+                                         and tried.get(r["id"], "") < start_of_last_day):
             reason = f"entrant blocked: {blocked[r['id']]}"
         if reason:
             manual.append({**row, "reason": reason})
             continue
-        if r["id"] not in terms:
+        if r["id"] not in terms and not final:
             continue                      # wait until comp_terms has looked for an automation ban
-        stated = next((h for h in reversed(terms[r["id"]]) if h.get("entry_limit_terms")), None)
+        hist = terms.get(r["id"], [])
+        stated = next((h for h in reversed(hist) if h.get("entry_limit_terms")), None)
         limit = stated["entry_limit_terms"] if stated else a["entry_limit"]
         n = stated.get("entry_limit_terms_n") if stated else a["entry_limit_n"]
         if a["draw_type"] == "skill":
             limit = "once"                    # one judged answer per competition: repeats of it add nothing
         row["entry_limit"] = limit
-        excessive = banned or any(h.get("excessive_clause") for h in terms[r["id"]])
-        if r["id"] in done_once or not may_enter(limit, entered.get(r["id"], []), now, n, excessive):
+        if final and limit != "once" and r["id"] not in done_once:
+            last_day_ids.add(r["id"])         # can take more entries today: keep entries.yml running hourly
+        excessive = banned or not hist or any(h.get("excessive_clause") for h in hist)   # unread terms: cautious
+        if r["id"] in done_once or not may_enter(limit, entered.get(r["id"], []), now, n, excessive, final):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)
@@ -165,6 +234,11 @@ def build(store=STORE, entries=ENTRIES, now=None):
                    for q in queue if not q["needs_answer"]]
     (entries / "queue.json").write_text(json.dumps(ready_items, indent=1))
     ready = len(ready_items)
+    # entries.yml reads this to decide when its next run starts: hourly while any open listing is in its last day
+    # and could still take an entry under the faster pace, else at the next 3-hour window.
+    rush = len(last_day_ids)
+    (entries / "pace.json").write_text(json.dumps({"last_day_listings": rush,
+                                                   "next_run_minutes": 60 if rush else 180}) + "\n")
     print(f"entry_queue: {ready} ready to enter, {len(queue) - ready} waiting for an approved answer, "
           f"{len(manual)} on the manual list", flush=True)
     return queue, manual

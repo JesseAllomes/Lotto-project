@@ -20,7 +20,6 @@ const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const ENTRIES = path.join(ROOT, "data", "entries");
 
-export const CAPTCHA = /recaptcha|hcaptcha|turnstile|challenges\.cloudflare|cdn-cgi\/challenge-platform|_Incapsula_Resource|perimeterx|datadome|captcha|are you (a )?human|verify you are human/i;
 const EMAIL = ["input[type=email]", "input[name*=mail i]", "input[id*=mail i]", "input[placeholder*=mail i]",
                "input[autocomplete=email]", "input[aria-label*=mail i]"].map((s) => s + ":visible").join(", ");
 const OPEN = /^\s*(enter( now| here| today| the (competition|draw|giveaway)| to win)?|click here to enter|get started|start( now)?|join now|i want to win)\s*[!>→]*\s*$/i;
@@ -159,13 +158,107 @@ function dobFor(type, iso) {
   return type === "date" ? iso : `${dd}/${m}/${y}`;
 }
 
+// Challenge detection (data/analysis/CAPTCHA_CHECK.md, 2026-10-31): skip only for an interactive challenge a person
+// would have to act on, in or attached to the chosen form; invisible/passive checks are submitted and the site decides.
+const VENDOR_FRAME = /\/recaptcha\/(api2|enterprise)\/(anchor|bframe)|hcaptcha\.com\/.*hcaptcha\.html|challenges\.cloudflare\.com\//i;
+const CUSTOM = "img[src*='captcha' i], img[alt*='captcha' i], img[alt*='security code' i], input[name*='captcha' i], input[id*='captcha' i]";
+
+// Geometry of an element in its own frame; "shown" means a human could see and click it.
+const geometry = (e) => {
+  const r = e.getBoundingClientRect(); const cs = getComputedStyle(e);
+  return { w: Math.round(r.width), h: Math.round(r.height),
+    shown: r.width >= 100 && r.height >= 40 && r.x > -r.width && r.y > -r.height && cs.visibility !== "hidden" && cs.display !== "none" && cs.opacity !== "0" };
+};
+
+// Does `scope` (a Locator for the form, or body) contain the element the frame hangs from? Walks out of shadow roots.
+async function inScope(frameEl, scope) {
+  const scopeEl = await scope.elementHandle().catch(() => null);
+  if (!scopeEl) return false;
+  return frameEl.evaluate((el, s) => {
+    let host = el;
+    for (;;) { const root = host.getRootNode(); if (root instanceof ShadowRoot) host = root.host; else break; }
+    return s.contains(host);
+  }, scopeEl).catch(() => false);
+}
+
+// Returns a reason string when an interactive challenge is in (or attached to) the chosen form, else null.
+//   page - Playwright page; root - the frame holding the form; scope - Locator of the form (or that frame's body)
+//   opts.tokenWait - how long to give a visible Turnstile to finish its own managed check (ms, default 12000)
+export async function interactiveChallenge(page, root, scope, opts = {}) {
+  const tokenWait = opts.tokenWait ?? 12000;
+  // 1. Custom image/text captchas ("Security code", captcha image) in the form.
+  if (await scope.locator(CUSTOM).filter({ visible: true }).count()) return "captcha: security-code field";
+  // 2. Vendor widgets, located through their iframes so shadow DOM (Turnstile, Shopify Forms) is covered.
+  let turnstileVisible = false;
+  for (const f of page.frames()) {
+    const url = f.url();
+    if (!VENDOR_FRAME.test(url)) continue;
+    const el = await f.frameElement().catch(() => null);
+    if (!el) continue;
+    const parent = f.parentFrame();
+    // Only widgets hanging off the form's own frame (or an iframe that itself sits in the form) count.
+    let attached = parent === root && (await inScope(el, scope));
+    if (!attached && parent && parent.parentFrame() === root) {
+      const outer = await parent.frameElement().catch(() => null);
+      attached = !!outer && (await inScope(outer, scope));
+    }
+    if (!attached) continue;
+    const g = await el.evaluate(geometry).catch(() => ({ shown: false }));
+    if (!g.shown) continue;                                      // invisible/v3/badge/interaction-only: passive, carry on
+    const size = (() => { try { return new URL(url).searchParams.get("size") || ""; } catch { return ""; } })();
+    if (/\/recaptcha\//.test(url)) {
+      if (/anchor/.test(url) && size !== "invisible") return "captcha: reCAPTCHA v2 checkbox";
+      if (/bframe/.test(url)) return "captcha: reCAPTCHA challenge open";
+      continue;                                                  // visible v3/invisible badge: passive
+    }
+    if (/hcaptcha/.test(url)) return "captcha: hCaptcha checkbox";
+    if (/challenges\.cloudflare/.test(url)) turnstileVisible = true;
+  }
+  // 3. A visible Turnstile widget is interactive only if its managed check does not complete by itself.
+  if (turnstileVisible) {
+    const token = scope.locator("[name='cf-turnstile-response']");
+    const deadline = Date.now() + tokenWait;
+    while (Date.now() < deadline) {
+      const vals = await token.evaluateAll((els) => els.map((e) => e.value || "")).catch(() => []);
+      if (vals.some((v) => v.length > 20)) return null;          // passed on its own: no interaction needed
+      await page.waitForTimeout(500);
+    }
+    return "captcha: Turnstile awaiting interaction";
+  }
+  // 4. Visible "I'm not a robot" host without an iframe we could map (defensive).
+  if (await scope.locator(".g-recaptcha:not([data-size='invisible']), .h-captcha:not([data-size='invisible'])").filter({ visible: true })
+        .filter({ has: root.locator("iframe") }).count()) return "captcha: visible checkbox widget";
+  return null;
+}
+
+// Post-submit: a challenge the site opened after the click (reCAPTCHA bframe pop-up, hCaptcha challenge, Turnstile, Shopify /challenge).
+export async function challengeAfterSubmit(page) {
+  if (/\/challenge\b/.test(new URL(page.url()).pathname)) return "captcha: /challenge page";
+  if (/just a moment|attention required/i.test(await page.title().catch(() => ""))) return "captcha: interstitial";
+  for (const f of page.frames()) {
+    if (!VENDOR_FRAME.test(f.url())) continue;
+    if (/\/recaptcha\/.*anchor/.test(f.url())) continue;         // the anchor/badge is never a challenge by itself
+    const el = await f.frameElement().catch(() => null);
+    const g = el ? await el.evaluate(geometry).catch(() => ({ shown: false })) : { shown: false };
+    if (g.shown) return "captcha: challenge opened after submit";
+  }
+  return null;
+}
+
+// A Cloudflare/hCaptcha interstitial in front of the whole page (gleam.io and the like), not a form widget.
+async function interstitial(page) {
+  if (/just a moment|attention required/i.test(await page.title().catch(() => ""))) return true;
+  if (/complete this security check to access/i.test(await page.locator("body").innerText().catch(() => ""))) return true;
+  for (const f of page.frames()) {
+    if (!/challenges\.cloudflare\.com\/|hcaptcha\.com\/.*hcaptcha\.html/i.test(f.url())) continue;
+    const el = await f.frameElement().catch(() => null);
+    if (el && (await el.evaluate(geometry).catch(() => ({ shown: false }))).shown) return true;
+  }
+  return false;
+}
+
 // Fill one form. Returns {result, reason, fields} without any of the owner's values.
 export async function fillForm(page, item, who, live) {
-  const html = await page.content();
-  const frames = page.frames().map((f) => f.url()).join(" ");
-  if (CAPTCHA.test(frames) || /class="[^"]*(g-recaptcha|h-captcha|cf-turnstile)/i.test(html)) {
-    return { result: "skipped", reason: "captcha", fields: [] };
-  }
   if (await page.locator("input[type=password]:visible").count()) return { result: "skipped", reason: "login", fields: [] };
   if (await page.locator("input[autocomplete^=cc-]:visible, input[name*=card i]:visible, input[id*=cardnumber i]:visible").count()) {
     return { result: "skipped", reason: "payment", fields: [] };
@@ -181,11 +274,10 @@ export async function fillForm(page, item, who, live) {
     if (await opener.count()) {
       await opener.click({ timeout: 5000 }).catch(() => {});
       await page.waitForTimeout(4000);
-      if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" "))) return { result: "skipped", reason: "captcha", fields: [] };
       found = await findEmail(page);
     }
   }
-  if (!found) return { result: "skipped", reason: "no_form", fields: [] };
+  if (!found) return { result: "skipped", reason: (await interstitial(page)) ? "blocked" : "no_form", fields: [] };
   const { root, box: emailBox } = found;
   if (await root.locator("input[type=password]:visible").count()) return { result: "skipped", reason: "login", fields: [] };
   const form = root.locator("form").filter({ has: emailBox }).first();
@@ -265,6 +357,8 @@ export async function fillForm(page, item, who, live) {
     }
   }
   if (!filled.has("email")) return { result: "skipped", reason: "unfillable", fields: ["email"] };
+  const why = await interactiveChallenge(page, root, scope);
+  if (why) return { result: "skipped", reason: "captcha", fields: [...filled], said: why };
   if (!live) {
     const t = await submitButton(scope);
     const label = t ? ((await t.innerText().catch(() => "")) || (await t.getAttribute("value")) || "submit").trim().slice(0, 30) : "";
@@ -290,15 +384,14 @@ export async function fillForm(page, item, who, live) {
   }
   await page.waitForTimeout(8000);
   const post = await textNow();
-  if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" ")) || /\/challenge\b/.test(new URL(page.url()).pathname)) {
-    return { result: "skipped", reason: "captcha", fields: [...filled] };        // e.g. Shopify's bot check after submit
-  }
+  const after = await challengeAfterSubmit(page);
+  if (after) return { result: "skipped", reason: "captcha", fields: [...filled], said: after };   // e.g. Shopify /challenge
   const err = post.match(new RegExp(ERROR.source, "i"));
   if (err && /already/i.test(err[0])) return { result: "entered", reason: "already entered", fields: [...filled] };
   if (page.url() !== before || count(SUCCESS, post) > count(SUCCESS, pre)) return { result: "entered", reason: "", fields: [...filled] };
   if (err && count(ERROR, post) > count(ERROR, pre)) {
     const said = errorLine(pre, post);
-    if (/try again|something went wrong|unable to (submit|process)|blocked|suspicious|unusual/i.test(said)) {
+    if (/blocked|suspicious|unusual|robot|automated|verify you are human/i.test(said)) {
       return { result: "skipped", reason: "human_check", fields: [...filled], said };   // anti-bot rejection
     }
     return { result: "failed", reason: `form said: ${err[0].toLowerCase()}`, fields: [...filled], said };

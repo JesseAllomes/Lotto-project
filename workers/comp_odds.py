@@ -104,6 +104,11 @@ def bonus(sec, desc):
                               r"|entries (?:can|may) be earned", t) else "no"
 
 
+# "Each individual is allowed one entry", "entrants are permitted only one entry", "limited to a single entry".
+ALLOWED_ONE = (r"(?:allowed|permitted|entitled to|limited to|may submit|can submit) (?:only )?(?:one|1|a single|"
+               r"a maximum of one) (?:\(1\) )?entr")
+
+
 def entry_limit(sec, desc):
     """(limit, n): how often one person may enter."""
     t = sec.get("enter") or desc or ""
@@ -120,7 +125,7 @@ def entry_limit(sec, desc):
              ("unlimited", r"(?i)multiple entries (?:are )?(?:allowed|permitted|accepted)|unlimited entr|as many "
                            r"(?:times|entries)|enter (?:as often|multiple times)"),
              ("once", r"(?i)(?:one|single|only 1|1) entry (?:per|only)|enter once|only (?:one|1) entry|limited to "
-                      r"one|once only|one entry per (?:person|entrant|household)")]
+                      r"one|once only|one entry per (?:person|entrant|household)|" + ALLOWED_ONE)]
     for name, pat in rules:
         if re.search(pat, t):
             return name, None
@@ -153,7 +158,7 @@ def terms_limit(text):
                            r"(?:may|can) enter (?:as many times|multiple times|more than once)"),
              ("once", r"(?i)(?:one|single|only 1|1) (?:\(1\) )?entry (?:per|only)|(?:may|can) (?:only )?enter once|"
                       r"only (?:one|1) (?:\(1\) )?entry|limited to one|once only|one entry per " + who +
-                      r"|more than one entry[^.]{0,60}(?:invalid|void|disqualif)")]
+                      r"|more than one entry[^.]{0,60}(?:invalid|void|disqualif)|" + ALLOWED_ONE)]
     for name, pat in rules:
         if re.search(pat, text):
             return name, None

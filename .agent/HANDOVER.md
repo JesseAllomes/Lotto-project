@@ -51,10 +51,13 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   Re-enter button -> pre-filled issue "reenter: <ids>" -> reenter.yml (owner's issues only) -> log_reenter.jsonl.
   Freebies: workers/freebies.py reads OzBargain /freebies (VIC + national) in site.yml. OzCoupons does not resolve
   (www.ozcoupons.com.au, ozcoupons.com: no DNS from GitHub runners).
-- PENDING (2026-10-31): Fable is checking CAPTCHA false positives (owner entered 25-words comps by hand with no
-  challenge). Output: data/analysis/CAPTCHA_CHECK.md with a detection spec + fixtures. Then: apply it in
-  workers/entrant.mjs (skip only for a visible interactive challenge on the form; invisible/passive checks -> submit,
-  site decides), add fixtures/tests, reset those captcha blocks (RETRY_FROM-style), commit, push.
+- 2026-10-31 (c5/c6): Fable CAPTCHA_CHECK.md applied: skip only a visible interactive challenge on the chosen form
+  (entrant.mjs interactiveChallenge/challengeAfterSubmit); page interstitials log `blocked`; "try again" = failed;
+  earlier captcha/human_check skips reset (entry_queue.CHECK_FIX_FROM). Last-day rules (entry_queue): stated close
+  time from the summary (closes_at), 5/hour bursts for no-limit comps, cautious pace for unread terms, one more try
+  for failing/no_form; pace.json makes entries.yml chain hourly. "allowed one entry" wording now reads as once
+  (Wild Earth 75870 had 11 entries before this). Winners tracker workers/winners.py -> data/entries/winners.csv
+  (comps.yml runs --check with ENTRANT_LAST_NAME: surname yes/no on winners pages, never the name); site Winners tab.
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
