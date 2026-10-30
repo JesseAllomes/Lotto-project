@@ -1,0 +1,7 @@
+000000 0 https://www.ozcoupons.com/
+000000 0 https://ozcoupons.com/
+000000 0 https://www.ozcoupon.com.au/
+200 75604 https://www.ozbargain.com.au/freebies
+404 1007 https://www.ozbargain.com.au/deals/freebies/feed
+200 253 https://www.ozbargain.com.au/robots.txt
+404 1007 https://www.ozbargain.com.au/competitions/feed
