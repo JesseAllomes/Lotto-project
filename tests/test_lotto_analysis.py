@@ -7,7 +7,7 @@ import random
 
 import numpy as np
 
-from analysis import lotto_blind, lotto_blind_fixed, lotto_games, lotto_numbers
+from analysis import lotto_blind, lotto_blind_fixed, lotto_exhaustive, lotto_games, lotto_numbers
 
 
 class Odds(unittest.TestCase):
@@ -114,6 +114,23 @@ class BlindFixed(unittest.TestCase):
         o, x, v, n, system = res[("fixed_hot", "system_24")]
         self.assertEqual(n, 10)
         self.assertEqual(o, sum(len(set(system) & {7, 8, 9, 10, 11, 12}) for _ in range(10)))
+
+
+
+class Exhaustive(unittest.TestCase):
+    def test_every_line_is_generated_once_and_scored_like_brute_force(self):
+        lines = np.concatenate(list(lotto_exhaustive.chunks(9, 4)))
+        self.assertEqual(len(lines), math.comb(9, 4))
+        self.assertEqual(len(set(lines.tolist())), len(lines))
+        draws = [[1, 2, 3, 4], [2, 5, 7, 9], [1, 3, 8, 9]]
+        h, t = lotto_exhaustive.hits(lines, lotto_exhaustive.masks_of(draws))
+        for i, line in enumerate(lines):
+            got = set(lotto_exhaustive.numbers(line))
+            self.assertEqual(h[i], sum(len(got & set(d)) >= 3 for d in draws))
+            self.assertEqual(t[i], sum(len(got & set(d)) for d in draws))
+
+    def test_chance_of_three_or_more(self):
+        self.assertAlmostEqual(lotto_exhaustive.p_hit(45, 6, 6), 0.023834, places=6)
 
 
 if __name__ == "__main__":
