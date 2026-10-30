@@ -39,6 +39,14 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   "error"/"try again" (Shopify bot protection). Now: a /challenge redirect = captcha, "try again/something went
   wrong/blocked" = human_check (manual list); failures log a masked `said` line for diagnosis. Next: read `said`
   lines from the next live run and fix real form errors ("is required"/"please fill" on komo, eva, getit).
+- 2026-10-31: owner approved this round's 25-words answers: 8 in data/entries/answers.json (one entry per skill
+  comp). Website https://jesseallomes.github.io/Lotto-project/ (workers/site.py, site.yml; Pages source = Actions):
+  auto-entry register (data/entries/register.csv) at top, answers beside their buttons, manual list with Done ticks.
+  entries.yml refreshes the site after each burst.
+- Fable ENTRY_ROUTES.md: alternative entry routes rare (4/245). Fixed routing bugs ("phone" and "follow" too broad;
+  bonus-entry sentences ignored): ~62 comps moved manual -> agent_ok.
+- Second source: workers/source_auscomps.py (AusComps sitemaps + pages, ids 10,000,000 + post id, dedup vs
+  competitions.com.au); probe.yml fetches candidate pages to the `probe` branch for parser work.
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
