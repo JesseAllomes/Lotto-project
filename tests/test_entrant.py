@@ -21,14 +21,22 @@ def rec(i, desc=FORM, **kw):
 
 class Limits(unittest.TestCase):
     def test_entry_limits(self):
-        d = TODAY - dt.timedelta(days=1)
-        self.assertTrue(entry_queue.may_enter("once", [], TODAY))
-        self.assertFalse(entry_queue.may_enter("once", [d], TODAY))
-        self.assertTrue(entry_queue.may_enter("unknown", [d], TODAY))       # unstated limit: daily
-        self.assertFalse(entry_queue.may_enter("unknown", [TODAY], TODAY))
-        self.assertTrue(entry_queue.may_enter("daily", [d], TODAY))
-        self.assertFalse(entry_queue.may_enter("daily", [TODAY], TODAY))
-        self.assertFalse(entry_queue.may_enter("weekly", [d], TODAY))
+        now = dt.datetime(2026, 10, 30, 3, 0, tzinfo=dt.timezone.utc)            # 2pm in Melbourne
+        earlier_today = now - dt.timedelta(hours=3)
+        yesterday = now - dt.timedelta(days=1)
+        may = entry_queue.may_enter
+        self.assertTrue(may("once", [], now))
+        self.assertFalse(may("once", [yesterday], now))
+        self.assertTrue(may("daily", [yesterday], now))
+        self.assertFalse(may("daily", [earlier_today], now))
+        self.assertTrue(may("daily", [earlier_today], now, n=3))
+        self.assertFalse(may("weekly", [yesterday], now))
+        self.assertTrue(may("capped", [yesterday], now, n=2))
+        self.assertFalse(may("capped", [yesterday, earlier_today], now, n=2))
+        for limit in ("unlimited", "unknown"):                                 # no limit: up to PER_DAY a day
+            self.assertTrue(may(limit, [earlier_today] * 3, now, per_day=4))
+            self.assertFalse(may(limit, [earlier_today] * 4, now, per_day=4))
+            self.assertTrue(may(limit, [yesterday] * 9, now, per_day=4))
 
 
 class TermsLimit(unittest.TestCase):
@@ -66,7 +74,7 @@ class Queue(unittest.TestCase):
                 json.dumps({"id": 6, "time_utc": "2026-10-20T01:00:00Z", "mode": "live", "result": "entered"}) + "\n" +
                 json.dumps({"id": 8, "time_utc": "2026-10-29T01:00:00Z", "mode": "dry", "result": "skipped",
                             "reason": "captcha"}) + "\n")
-            queue, manual = entry_queue.build(store, entries, TODAY)
+            queue, manual = entry_queue.build(store, entries, dt.datetime(2026, 10, 30, 3, tzinfo=dt.timezone.utc))
             self.assertEqual([(q["id"], q["needs_answer"]) for q in queue], [(1, False), (4, True)])
             self.assertEqual({m["id"]: m["reason"] for m in manual},
                              {2: "entry route manual", 3: "terms ban automated entry", 8: "entrant blocked: captcha"})

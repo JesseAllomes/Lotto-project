@@ -1,12 +1,13 @@
 # Auto-entry of free web-form competitions (m9): workers/entry_queue.py picks what may be entered today,
-# workers/entrant.mjs fills each form with the owner's details from secrets. Daily at 22:47 UTC (about 9:47am
-# Melbourne in summer), after comps.yml. Submits only when the repository variable ENTRANT_LIVE is 1; otherwise a
+# workers/entrant.mjs fills each form with the owner's details from secrets. Four runs a day, six hours apart
+# (about 9:47am, 3:47pm, 9:47pm, 3:47am Melbourne in summer), so comps with no stated limit get up to
+# ENTRIES_PER_DAY entries (repository variable, default 4) spread across the day. About 5 runner minutes a run. Submits only when the repository variable ENTRANT_LIVE is 1; otherwise a
 # dry run. Token-free. The log in data/entries/ holds no personal details; screenshots (which do) are kept 3 days
 # as a run artifact only.
 name: entries
 on:
   schedule:
-    - cron: "47 22 * * *"
+    - cron: "47 4,10,16,22 * * *"
   workflow_dispatch: {}
 permissions:
   contents: write
@@ -28,6 +29,7 @@ jobs:
       ENTRANT_ADDRESS: ${{ secrets.ENTRANT_ADDRESS }}
       ENTRANT_DOB: ${{ secrets.ENTRANT_DOB }}
       ENTRANT_LIVE: ${{ vars.ENTRANT_LIVE }}
+      ENTRIES_PER_DAY: ${{ vars.ENTRIES_PER_DAY }}
     steps:
       - uses: actions/checkout@v4
       - name: Build today's queue and the manual list

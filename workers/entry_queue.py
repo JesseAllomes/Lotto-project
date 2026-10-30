@@ -5,8 +5,10 @@
 A listing joins the queue when it is open, a Victorian can enter, entry is free, the entry is a web form
 (entry_route agent_ok), its terms do not ban automated or third-party entry (comp_odds and comp_terms), and its
 entry limit allows another entry now (log.jsonl). The limit comes from the full terms when they state one
-(comp_terms), else from the listing summary: once -> one entry ever; daily -> one a day; weekly -> one a week;
-unlimited, or no limit stated anywhere (owner's call: an unstated limit is no limit) -> one a day, to stay reasonable. Skill competitions also need an answer the
+(comp_terms), else from the listing summary: once -> one entry ever; daily -> one per Melbourne day; weekly -> one
+a week; capped N -> N in total; unlimited, or no limit stated anywhere (owner's call: an unstated limit is no limit)
+-> up to ENTRIES_PER_DAY a Melbourne day (repository variable, default 4), one per entrant run, so the entries are
+spread across the day by the runs in entries.yml. Skill competitions also need an answer the
 owner has approved (data/entries/answers.json, filled from the approval issues).
 Every other open, Victorian, free competition goes on manual.csv with the reason, as does any listing the entrant
 had to skip (CAPTCHA, login, human check, a required field it could not fill).
@@ -15,8 +17,10 @@ No personal details are read or written here.
 import csv
 import datetime as dt
 import json
+import os
 import sys
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from workers import comp_odds, comps, comp_terms
 
@@ -25,7 +29,8 @@ ENTRIES = comps.ROOT / "data" / "entries"
 QUEUE_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "entry_limit", "needs_answer",
                 "question", "terms_checked", "entry_url"]
 MANUAL_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "reason", "entry_platform", "entry_url"]
-GAP_DAYS = {"once": None, "unknown": 1, "daily": 1, "weekly": 7, "unlimited": 1, "per_purchase": 1, "capped": 1}
+MELB = ZoneInfo("Australia/Melbourne")
+PER_DAY = int(os.environ.get("ENTRIES_PER_DAY") or 4)
 BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed"}
 
 
@@ -33,19 +38,25 @@ def read_jsonl(path):
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()] if path.exists() else []
 
 
-def may_enter(limit, entered_dates, today):
-    """Whether the entry limit allows another entry today, given the dates of past successful entries."""
-    if not entered_dates:
-        return True
-    gap = GAP_DAYS.get(limit)
-    if gap is None:
-        return False
-    return (today - max(entered_dates)).days >= gap
+def may_enter(limit, entered, now, n=None, per_day=None):
+    """Whether the entry limit allows another entry now, given the UTC datetimes of past successful entries."""
+    per_day = PER_DAY if per_day is None else per_day
+    day = now.astimezone(MELB).date()
+    today = [t for t in entered if t.astimezone(MELB).date() == day]
+    if limit == "once":
+        return not entered
+    if limit == "daily":
+        return len(today) < (n or 1)
+    if limit == "weekly":
+        return not entered or (now - max(entered)).days >= 7
+    if limit == "capped":
+        return len(entered) < (n or 1) and len(today) < per_day
+    return len(today) < per_day                       # unlimited, unknown (no stated limit)
 
 
-def build(store=STORE, entries=ENTRIES, today=None):
-    today = today or dt.date.today()
-    iso = today.isoformat()
+def build(store=STORE, entries=ENTRIES, now=None):
+    now = now or dt.datetime.now(dt.timezone.utc)
+    iso = now.astimezone(MELB).date().isoformat()
     tags, caps = comp_odds.tags(store), comp_odds.caps(store)
     terms = comp_terms.history(store)
     log = read_jsonl(entries / "log.jsonl")
@@ -53,7 +64,8 @@ def build(store=STORE, entries=ENTRIES, today=None):
     entered, blocked = {}, {}
     for e in log:
         if e.get("mode") == "live" and e.get("result") == "entered":
-            entered.setdefault(e["id"], []).append(dt.date.fromisoformat(e["time_utc"][:10]))
+            entered.setdefault(e["id"], []).append(
+                dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
         if e.get("result") == "skipped" and e.get("reason") in BLOCKING:
             blocked[e["id"]] = e["reason"]
     queue, manual = [], []
@@ -78,10 +90,11 @@ def build(store=STORE, entries=ENTRIES, today=None):
             continue
         if r["id"] not in terms:
             continue                      # wait until comp_terms has looked for an automation ban
-        limit = next((h["entry_limit_terms"] for h in reversed(terms[r["id"]]) if h.get("entry_limit_terms")),
-                     a["entry_limit"])
+        stated = next((h for h in reversed(terms[r["id"]]) if h.get("entry_limit_terms")), None)
+        limit = stated["entry_limit_terms"] if stated else a["entry_limit"]
+        n = stated.get("entry_limit_terms_n") if stated else a["entry_limit_n"]
         row["entry_limit"] = limit
-        if not may_enter(limit, entered.get(r["id"], []), today):
+        if not may_enter(limit, entered.get(r["id"], []), now, n):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)
