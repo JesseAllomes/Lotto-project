@@ -12,12 +12,16 @@
 
 **In progress: m7 lotto opportunities** (chunks in `.agent/drainclamp-project.json`)
 - c1 done: `analysis/lotto_games.py` (division rules, fund shares, exact odds, current-format start draws).
-- c2 next: `analysis/lotto_sales.py`. Every division bar a fixed Div 1 is pari-mutuel: prize fund F = winners x dividend / share
-  (consistent across divisions); entries index from F; jackpot reconstruction for Oz Lotto / Powerball (J grows by Div1 share x F).
-- c3: `analysis/popularity.py`. log(winners / expected) per draw per division, regressed on the drawn numbers -> per-number
-  popularity; payout uplift of least-popular picks; backtest. This changes the payout when winning, not the chance.
-- c4: fairness tests and `analysis/lotto_ev.py` (ticket value by game and jackpot); `data/analysis/LOTTO.md`.
+- c3 done: `analysis/lotto_numbers.py` -> `data/analysis/NUMBERS.md`: least-picked set per game (high numbers 37-47;
+  estimated +24% to +51% per division win; holdout r 0.18-0.66) and most-drawn set (chi-square p 0.08-0.94: random).
+  Prize fund per draw = median(winners x dividend / share) is in `prize_fund()`.
+- c2 next: `analysis/lotto_sales.py` (entries index per draw, jackpot reconstruction for Oz Lotto / Powerball).
+- c4: `analysis/lotto_ev.py` ticket value by game and jackpot, ranked opportunities; `data/analysis/LOTTO.md`.
+- Ideas not done: model Powerball's PB-number popularity; pattern effects (runs, multiples of 5) on sharing.
 - Then m8: competition value per entry (prize vs cap x price) and `REPORT.md`.
+
+**Competitions extra (2026-10-30)**: odds.csv / skill lists carry entry_route (agent_ok 149, agent_assist 33,
+manual 288, unknown 42) and automation_banned (from full terms when fetched). Decision stands: the owner enters.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
 chance, skill and overall; lotto: analyse the data for optimised opportunities.

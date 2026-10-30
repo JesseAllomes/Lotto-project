@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=23 -->
+<!-- drainclamp-build: state; schema=1; generation=24 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -53,4 +53,5 @@
 - 2026-10-30T12:33:21+00:00 bd84fbac m3 done: competition register, 512 open listings (485 open to Vic; 22 Facebook, 2 Instagram); daily comps.yml verified (run 41054436595)
 - 2026-10-30T13:01:35+00:00 97eaab02 m5 done: odds.csv (draw type, purchase, entry limit, bonus entries, prizes, entry types) and skill.csv (84 open skill comps for Vic); tags.jsonl; comps.yml run 41058728219 ok
 - 2026-10-30T13:18:15+00:00 bc2ad015 m6 done: comp_terms caps for 9/169 paid listings (every charity lottery and prize home; rest are trade promotions); m4 done: skill_ranked.csv (84 ranked); run 41059812922 ok
+- 2026-10-30T13:21:45+00:00 ac6b56e6 entry_route + automation_banned on competitions; m7 c3: NUMBERS.md least-picked and most-drawn sets
 <!-- /DC:LOG -->
