@@ -85,3 +85,15 @@ test("an 'already entered' reply counts as entered once", async () => {
   const [r] = await run({ queue: [{ id: 31, entry_url: url("already.html") }], live: true, logPath: tmpLog() });
   assert.deepEqual([r.result, r.reason], ["entered", "already entered"]);
 });
+
+test("a bounce to a /challenge page or a 'try again' rejection is a human check, not a retry", async () => {
+  const out = await run({ queue: [{ id: 40, entry_url: url("shopify_challenge.html") }, { id: 41, entry_url: url("rejected.html") }],
+                          live: true, logPath: tmpLog() });
+  assert.deepEqual(out.map((r) => [r.result, r.reason]), [["skipped", "captcha"], ["skipped", "human_check"]]);
+  assert.match(out[1].said, /try again/);
+});
+
+test("error lines are masked before logging", async () => {
+  const { errorLine } = await import("../workers/entrant.mjs");
+  assert.equal(errorLine("a\nb", "a\nb\nError: jo@x.com already used, call 0412 345 678"), "Error: <email> already used, call <number>");
+});

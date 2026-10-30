@@ -13,6 +13,6 @@ entry_queue: 1 ready to enter, 1 waiting for an approved answer, 3 on the manual
 .entry_queue: 1 ready to enter, 0 waiting for an approved answer, 1 on the manual list
 .........................
 ----------------------------------------------------------------------
-Ran 56 tests in 121.358s
+Ran 56 tests in 142.238s
 
 OK

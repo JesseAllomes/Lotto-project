@@ -25,6 +25,13 @@ const EMAIL = ["input[type=email]", "input[name*=mail i]", "input[id*=mail i]", 
                "input[autocomplete=email]", "input[aria-label*=mail i]"].map((s) => s + ":visible").join(", ");
 const OPEN = /^\s*(enter( now| here| today| the (competition|draw|giveaway)| to win)?|click here to enter|get started|start( now)?|join now|i want to win)\s*[!>→]*\s*$/i;
 
+// The first new line of text that reads like an error, with emails and long numbers masked (the log is public).
+export function errorLine(pre, post) {
+  const seen = new Set(pre.split("\n").map((l) => l.trim()));
+  const line = post.split("\n").map((l) => l.trim()).find((l) => l && !seen.has(l) && ERROR.test(l)) || "";
+  return line.replace(/[^\s@]+@[^\s@]+/g, "<email>").replace(/\+?\d[\d\s-]{5,}\d/g, "<number>").slice(0, 100);
+}
+
 // The form's submit control: a button or link whose text reads like entering, else a submit-type button.
 async function submitButton(scope) {
   const cands = scope.locator("button:visible, input[type=submit]:visible, input[type=button]:visible, [role=button]:visible, a.button:visible, a.btn:visible");
@@ -283,12 +290,18 @@ export async function fillForm(page, item, who, live) {
   }
   await page.waitForTimeout(8000);
   const post = await textNow();
-  if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" "))) return { result: "skipped", reason: "captcha", fields: [...filled] };
+  if (CAPTCHA.test(page.frames().map((f) => f.url()).join(" ")) || /\/challenge\b/.test(new URL(page.url()).pathname)) {
+    return { result: "skipped", reason: "captcha", fields: [...filled] };        // e.g. Shopify's bot check after submit
+  }
   const err = post.match(new RegExp(ERROR.source, "i"));
   if (err && /already/i.test(err[0])) return { result: "entered", reason: "already entered", fields: [...filled] };
   if (page.url() !== before || count(SUCCESS, post) > count(SUCCESS, pre)) return { result: "entered", reason: "", fields: [...filled] };
   if (err && count(ERROR, post) > count(ERROR, pre)) {
-    return { result: "failed", reason: `form said: ${err[0].toLowerCase()}`, fields: [...filled] };
+    const said = errorLine(pre, post);
+    if (/try again|something went wrong|unable to (submit|process)|blocked|suspicious|unusual/i.test(said)) {
+      return { result: "skipped", reason: "human_check", fields: [...filled], said };   // anti-bot rejection
+    }
+    return { result: "failed", reason: `form said: ${err[0].toLowerCase()}`, fields: [...filled], said };
   }
   const gone = !(await emailBox.isVisible().catch(() => false)) || !(await emailBox.inputValue().catch(() => ""));
   if (gone) return { result: "entered", reason: "form cleared", fields: [...filled] };

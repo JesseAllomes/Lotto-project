@@ -33,6 +33,12 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   "Sign up"/"Subscribe" labels, overlays dismissed + JS-click fallback, success = new thank-you text, URL change or
   form cleared; "already entered" = one entry; two failures in a row -> manual list; pre-fix failures reset
   (RETRY_FROM). Dry re-check on the 30 failing pages: 23 pick the right button. Next: check the 18:05 UTC run.
+- 2026-10-30 19:05 UTC: GitHub's scheduler skipped the 15:05/18:05 runs (draws/jackpots ran ~6 h late). entries.yml
+  now chains itself (commit, sleep to next 3-h window, `gh workflow run`), cron kept as backup.
+- Run 41112453305 (first with fixes): 6 entered (3 comps); most failures are Shopify `/pages/` forms answering
+  "error"/"try again" (Shopify bot protection). Now: a /challenge redirect = captcha, "try again/something went
+  wrong/blocked" = human_check (manual list); failures log a masked `said` line for diagnosis. Next: read `said`
+  lines from the next live run and fix real form errors ("is required"/"please fill" on komo, eva, getit).
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
