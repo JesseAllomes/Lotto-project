@@ -120,6 +120,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
         stated = next((h for h in reversed(terms[r["id"]]) if h.get("entry_limit_terms")), None)
         limit = stated["entry_limit_terms"] if stated else a["entry_limit"]
         n = stated.get("entry_limit_terms_n") if stated else a["entry_limit_n"]
+        if a["draw_type"] == "skill":
+            limit = "once"                    # one judged answer per competition: repeats of it add nothing
         row["entry_limit"] = limit
         excessive = banned or any(h.get("excessive_clause") for h in terms[r["id"]])
         if r["id"] in done_once or not may_enter(limit, entered.get(r["id"], []), now, n, excessive):

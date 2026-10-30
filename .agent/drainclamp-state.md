@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=37 -->
+<!-- drainclamp-build: state; schema=1; generation=38 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -33,6 +33,8 @@
 - Unstated or unlimited entry limits? -> no limit (owner: an allowed loophole); bursts of 5 per 3-hour window, 5 minutes apart; where the terms let the promoter act on excessive or bulk entries, 4 a day, 5 hours apart; daily = once a day, weekly = once a week, capped N = N total; a limit in the full terms wins over the summary. GitHub free minutes allow 4 runs a day; full bursts need another host (owner choosing: free cloud VM, public repo, lighter replays, or manual tap list) (source: user, 2026-10-30)
 - Hosting for bursts? -> make Lotto-project public (unlimited Actions minutes); no screenshots, nothing personal logged; a free cloud VM later (source: user, 2026-10-30)
 - Go live? -> yes, live by default (ENTRANT_LIVE=0 for dry run); 'enter everything': comps whose terms ban automated entry are entered too at the cautious pace (4 a day), ENTER_BANNED=0 to stop; CAPTCHAs and human checks are never bypassed (source: user, 2026-10-30)
+- Skill answers, this round? -> owner approved all 25-words-style answers (2026-10-31); 8 written to data/entries/answers.json, within word limits, no invented personal facts; one entry per skill comp; future rounds still need approval (source: user)
+- Manual entries? -> a website (GitHub Pages, workers/site.py, site.yml) listing every open comp to enter by hand, tick-off saved on the owner's phone (source: user, 2026-10-31)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->
