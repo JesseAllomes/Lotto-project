@@ -401,34 +401,48 @@ export async function fillForm(page, item, who, live) {
   return { result: "failed", reason: "no confirmation seen", fields: [...filled] };
 }
 
-export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max = 40, shots = process.env.ENTRANT_SHOTS,
-                            logPath = process.env.ENTRANT_LOG || path.join(ENTRIES, "log.jsonl"), launch } = {}) {
+// Forms are filled CONCURRENCY at a time, each in its own browser context (separate cookies), so a round of 50
+// comps takes minutes, not a quarter of an hour; results keep the queue's order. Pacing between entries to the
+// same comp is entry_queue's job and is unchanged.
+const CONCURRENCY = Math.max(1, +(process.env.ENTRANT_CONCURRENCY || 6));
+
+export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max = 200, shots = process.env.ENTRANT_SHOTS,
+                            logPath = process.env.ENTRANT_LOG || path.join(ENTRIES, "log.jsonl"), launch,
+                            concurrency = CONCURRENCY } = {}) {
   const who = profile();
   if (!who.email || !who.first || !who.last) throw new Error("owner details missing: set the ENTRANT_* secrets");
   const qfile = process.env.ENTRANT_QUEUE || path.join(ENTRIES, "queue.json");
   const items = (queue ?? JSON.parse(fs.readFileSync(qfile, "utf8"))).slice(0, max);
   const { chromium } = require("playwright");
   const browser = await (launch ? launch() : chromium.launch());
-  const out = [];
-  try {
-    for (const item of items) {
-      const page = await browser.newPage();
-      let r;
-      try {
-        await page.goto(item.entry_url, { waitUntil: "domcontentloaded", timeout: 45000 });
-        await page.waitForTimeout(2500);
-        r = await fillForm(page, item, who, live);
-        if (shots) await page.screenshot({ path: path.join(shots, `${item.id}.png`), fullPage: true });
-      } catch (e) {
-        r = { result: "failed", reason: String(e.message || e).split("\n")[0].slice(0, 120), fields: [] };
-      } finally {
-        await page.close();
-      }
-      const rec = { time_utc: new Date().toISOString().slice(0, 19) + "Z", id: item.id, mode: live ? "live" : "dry", ...r };
-      fs.appendFileSync(logPath, JSON.stringify(rec) + "\n");
-      out.push(rec);
-      console.log(`${rec.id}: ${rec.result}${rec.reason ? " (" + rec.reason + ")" : ""}`);
+  const out = new Array(items.length);
+  let next = 0;
+  async function one(item) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    let r;
+    try {
+      await page.goto(item.entry_url, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForTimeout(2500);
+      r = await fillForm(page, item, who, live);
+      if (shots) await page.screenshot({ path: path.join(shots, `${item.id}.png`), fullPage: true });
+    } catch (e) {
+      r = { result: "failed", reason: String(e.message || e).split("\n")[0].slice(0, 120), fields: [] };
+    } finally {
+      await context.close().catch(() => {});
     }
+    const rec = { time_utc: new Date().toISOString().slice(0, 19) + "Z", id: item.id, mode: live ? "live" : "dry", ...r };
+    fs.appendFileSync(logPath, JSON.stringify(rec) + "\n");
+    console.log(`${rec.id}: ${rec.result}${rec.reason ? " (" + rec.reason + ")" : ""}`);
+    return rec;
+  }
+  try {
+    await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await one(items[i]);
+      }
+    }));
   } finally {
     await browser.close();
   }
