@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=34 -->
+<!-- drainclamp-build: state; schema=1; generation=35 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -31,6 +31,7 @@
 - Approval? -> free chance comps are entered automatically, re-entered as often as each allows (daily, weekly, one-off); only skill comps wait for the owner's tick on a daily GitHub-issue checklist with the drafted answer (source: user, 2026-10-30)
 - Pattern numbers? -> build pattern-based number sets and test them blind: methods fixed and pre-registered before scoring, scored only on held-out draws, against the exact random expectation; both 24 games per draw and one System 24 (source: user, 2026-10-30)
 - Unstated or unlimited entry limits? -> no limit (owner: an allowed loophole); bursts of 5 per 3-hour window, 5 minutes apart; where the terms let the promoter act on excessive or bulk entries, 4 a day, 5 hours apart; daily = once a day, weekly = once a week, capped N = N total; a limit in the full terms wins over the summary. GitHub free minutes allow 4 runs a day; full bursts need another host (owner choosing: free cloud VM, public repo, lighter replays, or manual tap list) (source: user, 2026-10-30)
+- Hosting for bursts? -> make Lotto-project public (unlimited Actions minutes); no screenshots, nothing personal logged; a free cloud VM later (source: user, 2026-10-30)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->

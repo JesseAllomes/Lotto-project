@@ -1,14 +1,13 @@
-# Auto-entry of free web-form competitions (m9): workers/entry_queue.py picks what may be entered today,
-# workers/entrant.mjs fills each form with the owner's details from secrets. Four runs a day, six hours apart
-# (about 9:47am, 3:47pm, 9:47pm, 3:47am Melbourne in summer): about 5 runner minutes a run, inside the free
-# allowance. The queue allows bursts (5 per 3 hours, 5 minutes apart) for comps with no stated limit, but these
-# runs only reach one entry per comp per run; a host running the entrant every 5 minutes gets the full pattern. Submits only when the repository variable ENTRANT_LIVE is 1; otherwise a
-# dry run. Token-free. The log in data/entries/ holds no personal details; screenshots (which do) are kept 3 days
-# as a run artifact only.
+# Auto-entry of free web-form competitions (m9). Every 3 hours (UTC 00:05, 03:05, ...) one job runs up to 5 rounds,
+# about 5 minutes apart: each round rebuilds today's queue (workers/entry_queue.py decides what is due: bursts of 5
+# per 3-hour window for comps with no stated limit, 4 a day where the terms flag excessive entries, the stated limit
+# otherwise) and runs workers/entrant.mjs, which fills each form with the owner's details from secrets.
+# Submits only when the repository variable ENTRANT_LIVE is 1; a dry run does one round. The repository is public:
+# no screenshots are kept and nothing personal is logged (the log holds listing ids, results and field kinds).
 name: entries
 on:
   schedule:
-    - cron: "47 4,10,16,22 * * *"
+    - cron: "5 */3 * * *"
   workflow_dispatch: {}
 permissions:
   contents: write
@@ -18,7 +17,7 @@ concurrency:
 jobs:
   enter:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       ENTRANT_FIRST_NAME: ${{ secrets.ENTRANT_FIRST_NAME }}
       ENTRANT_LAST_NAME: ${{ secrets.ENTRANT_LAST_NAME }}
@@ -33,31 +32,33 @@ jobs:
       ENTRY_BURST: ${{ vars.ENTRY_BURST }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build today's queue and the manual list
+      - name: Build the queue and the manual list
         run: python3 -m workers.entry_queue
       - name: Install the browser
         if: env.ENTRANT_EMAIL != ''
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright@1.63.0 > /dev/null
           "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium > /dev/null
-      - name: Enter
+      - name: Enter (up to 5 rounds, about 5 minutes apart)
         if: env.ENTRANT_EMAIL != ''
         run: |
-          mkdir -p "$RUNNER_TEMP/shots"
-          NODE_PATH="$RUNNER_TEMP/pw/node_modules" ENTRANT_SHOTS="$RUNNER_TEMP/shots" node workers/entrant.mjs
-      - name: Keep the screenshots for 3 days
-        if: always() && env.ENTRANT_EMAIL != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: entry-screenshots
-          path: ${{ runner.temp }}/shots
-          retention-days: 3
-          if-no-files-found: ignore
+          rounds=1; [ "$ENTRANT_LIVE" = "1" ] && rounds=${ENTRY_BURST:-5}
+          for i in $(seq 1 "$rounds"); do
+            start=$(date +%s)
+            python3 -m workers.entry_queue
+            NODE_PATH="$RUNNER_TEMP/pw/node_modules" node workers/entrant.mjs
+            if [ "$i" -lt "$rounds" ]; then
+              wait=$(( 300 - ($(date +%s) - start) ))
+              if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
+            fi
+          done
+          python3 -m workers.entry_queue
       - name: Commit the queue, manual list and log
+        if: always()
         run: |
           git config user.name "lotto-entries-worker"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/entries
-          git diff --cached --quiet || git commit -m "entries: $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "entries: $(date -u +%F' '%H:%M)"
           git pull --rebase origin main
           git push

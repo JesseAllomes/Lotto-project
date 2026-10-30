@@ -33,12 +33,14 @@ class Limits(unittest.TestCase):
         self.assertFalse(may("weekly", [yesterday], now))
         self.assertTrue(may("capped", [yesterday], now, n=2))
         self.assertFalse(may("capped", [yesterday, earlier_today], now, n=2))
-        mins = lambda m: now - dt.timedelta(minutes=m)
+        burst = now.replace(minute=30)                           # 03:30 UTC: window 03:00-05:59 UTC
+        mins = lambda m: burst - dt.timedelta(minutes=m)
         for limit in ("unlimited", "unknown"):                    # no limit: bursts of 5 per 3-hour window, 5 min apart
-            self.assertTrue(may(limit, [mins(5), mins(10), mins(15), mins(20)], now))
-            self.assertFalse(may(limit, [mins(5), mins(10), mins(15), mins(20), mins(25)], now))
-            self.assertFalse(may(limit, [mins(3)], now))
-            self.assertTrue(may(limit, [mins(181), mins(186), mins(191), mins(196), mins(201)], now))
+            self.assertTrue(may(limit, [mins(5), mins(10), mins(15), mins(20)], burst))
+            self.assertFalse(may(limit, [mins(5), mins(10), mins(15), mins(20), mins(25)], burst))
+            self.assertFalse(may(limit, [mins(3)], burst))
+            self.assertTrue(may(limit, [mins(181), mins(186), mins(191), mins(196), mins(201)], burst))
+            self.assertTrue(may(limit, [mins(31), mins(36), mins(41), mins(46), mins(51)], burst))   # last window
         hrs = lambda h: now - dt.timedelta(hours=h)
         self.assertTrue(may("unknown", [hrs(5)], now, excessive=True))     # excessive clause: 4 a day, 5 h apart
         self.assertFalse(may("unknown", [hrs(2)], now, excessive=True))

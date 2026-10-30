@@ -7,8 +7,8 @@ A listing joins the queue when it is open, a Victorian can enter, entry is free,
 entry limit allows another entry now (log.jsonl). The limit comes from the full terms when they state one
 (comp_terms), else from the listing summary: once -> one entry ever; daily -> one per Melbourne day; weekly -> one
 a week; capped N -> N in total; unlimited, or no limit stated anywhere (owner's call: an unstated limit is no limit)
--> bursts: up to BURST entries in each BURST_HOURS window of the Melbourne day, at least GAP_MINUTES apart (owner:
-5 every 3 hours, 5 minutes apart); but where the terms say the promoter may act on excessive or bulk entries, at
+-> bursts: up to BURST entries in each BURST_HOURS window (UTC clock windows, matching the entries.yml schedule, so
+daylight saving never splits a burst), at least GAP_MINUTES apart (owner: 5 every 3 hours, 5 minutes apart); but where the terms say the promoter may act on excessive or bulk entries, at
 most EXCESSIVE_PER_DAY a day, at least EXCESSIVE_GAP_HOURS apart. The queue only says whether a listing is due now;
 how often the entrant runs (entries.yml, or a machine running it every 5 minutes) sets the actual pace. Skill competitions also need an answer the
 owner has approved (data/entries/answers.json, filled from the approval issues).
@@ -58,7 +58,8 @@ def may_enter(limit, entered, now, n=None, excessive=False):
     if excessive:
         ok = len(today) < EXCESSIVE_PER_DAY and (last is None or now - last >= dt.timedelta(hours=EXCESSIVE_GAP_HOURS))
         return ok and (limit != "capped" or len(entered) < (n or 1))
-    window = [t for t in today if t.astimezone(MELB).hour // BURST_HOURS == local.hour // BURST_HOURS]
+    slot = lambda t: (t.astimezone(dt.timezone.utc).date(), t.astimezone(dt.timezone.utc).hour // BURST_HOURS)
+    window = [t for t in entered if slot(t) == slot(now)]
     ok = len(window) < BURST and (last is None or now - last >= dt.timedelta(minutes=GAP_MINUTES))
     return ok and (limit != "capped" or len(entered) < (n or 1))     # unlimited, unknown, capped
 
