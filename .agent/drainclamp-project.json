@@ -69,12 +69,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T12:33:21+00:00",
         "est_min": 10,
         "goal": ".github/workflows/comps.yml daily; verify on GitHub",
         "id": "c2",
-        "note": "",
+        "note": "comps.yml run 41054436595 committed 512 listings (485 open to Vic; 22 Facebook, 2 Instagram)",
         "targets": [
           ".github/workflows/comps.yml"
         ]
@@ -82,11 +82,11 @@
     ]
   },
   "errors": [],
-  "rev": 13,
+  "rev": 14,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T12:19:04+00:00",
+      "end": "2026-10-30T12:33:21+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",

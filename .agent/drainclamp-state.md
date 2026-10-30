@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=11 -->
+<!-- drainclamp-build: state; schema=1; generation=14 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -6,9 +6,10 @@
 - work/scripts/ev_models.py → EV models per game; writes work/ev_results.md → `python3 -I work/scripts/ev_models.py`
 - work/data/ → source documents and The Lott API snapshots (opendraws.json, latest10_*.json, lucky_*.json)
 - workers/lott.py → shared The Lott API client (89-day windows, retries); workers/draws.py → data/draws/ (daily, draws.yml)
-- workers/jackpots.py → data/jackpots/ (Lucky Lotteries2 = Super, LuckyLotteries5 = Mega; jackpot = division 11, from 2015; STATUS.md; open.jsonl) → daily jackpots.yml, GitHub issue per cycle and level
-- planned workers/comps.py → data/comps/ (m3); planned analysis/ → fairness tests and competition value (m4)
-- optimisation: one shared HTTP client; append-only registers de-duplicated by draw or competition id; run Python with -B
+- workers/jackpots.py → data/jackpots/ (LuckyLotteries2 = Super, LuckyLotteries5 = Mega; jackpot = division 11, from 2015; STATUS.md; open.jsonl) → daily jackpots.yml, GitHub issue per cycle and level
+- workers/comps.py → data/comps/comps.jsonl + comps.csv from competitions.com.au (sitemap → new listing pages; Event JSON-LD + facts block; open_to_vic; entry_platform) → daily comps.yml. Category slug is unreliable for charity lotteries (RSL, Mater, yourtown filed under cash/car): classify by brand in m4. Facebook/Instagram only via the aggregator (Meta terms forbid scraping)
+- planned analysis/ → fairness tests on the draws register and competition value per entry (m4)
+- optimisation: one shared HTTP client for The Lott; append-only registers de-duplicated by draw or listing id; run Python with -B; commit messages via quoted heredoc
 <!-- /DC:ARCH -->
 
 <!-- DC:DECISIONS -->
@@ -27,7 +28,7 @@
 |---|---|---|---|---|
 | m1 | Winning-numbers register: full draw history for The Lott draw games, backfilled, updated by a scheduled worker | workers/lott.py;workers/draws.py;data/draws/;.github/workflows/draws.yml;tests/test_draws.py | done |  |
 | m2 | Lucky Lotteries Mega and Super jackpot tracker with history and alerts at $30M and $23M | workers/jackpots.py;data/jackpots/;.github/workflows/jackpots.yml;tests/test_jackpots.py | done | m1 |
-| m3 | Competition register: competitions enterable from Victoria (prize homes, art unions, membership draws, trade promotions), scraped from public pages | workers/comps.py;data/comps/;.github/workflows/comps.yml;tests/test_comps.py | pending |  |
+| m3 | Competition register: competitions enterable from Victoria (prize homes, art unions, membership draws, trade promotions), scraped from public pages | workers/comps.py;data/comps/;.github/workflows/comps.yml;tests/test_comps.py | done |  |
 | m4 | Analysis: draw fairness tests on the register; odds and value per entry for competitions; plain report | analysis/fairness.py;analysis/comps_value.py;REPORT.md | pending | m1;m3 |
 <!-- /DC:ROADMAP -->
 
@@ -40,4 +41,5 @@
 <!-- DC:LOG -->
 - 2026-10-30T11:46:36+00:00 cca33c7c m1 done: winning-numbers register of 10,157 Lott draws (1996/97 to now), daily token-free workflow verified on GitHub
 - 2026-10-30T12:11:01+00:00 09e79993 m2 done: Lucky Lotteries jackpot tracker; 1,311 Mega + 3,882 Super draws (jackpots from 2015), daily jackpots.yml verified on GitHub (run 41052762530)
+- 2026-10-30T12:33:21+00:00 bd84fbac m3 done: competition register, 512 open listings (485 open to Vic; 22 Facebook, 2 Instagram); daily comps.yml verified (run 41054436595)
 <!-- /DC:LOG -->
