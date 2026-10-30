@@ -436,8 +436,12 @@ export async function fillForm(page, item, who, live) {
   if (page.url() !== before || count(SUCCESS, post) > count(SUCCESS, pre)) return { result: "entered", reason: "", fields: [...filled] };
   if (err && count(ERROR, post) > count(ERROR, pre)) {
     const said = errorLine(pre, post);
-    if (/blocked|suspicious|unusual|robot|automated|verify you are human/i.test(said)) {
-      return { result: "skipped", reason: "human_check", fields: [...filled], said };   // anti-bot rejection
+    if (/captcha|recaptcha|hcaptcha/i.test(said)) {
+      return { result: "skipped", reason: "captcha", fields: [...filled], said };       // the site's invisible check said no
+    }
+    if (/blocked|suspicious|unusual|robot|automated|verify you are human/i.test(said) ||
+        (/\/pages\//.test(item.entry_url) && /an error occurred when submitting/i.test(said))) {
+      return { result: "skipped", reason: "human_check", fields: [...filled], said };   // anti-bot rejection (Shopify's)
     }
     return { result: "failed", reason: `form said: ${err[0].toLowerCase()}`, fields: [...filled], said };
   }

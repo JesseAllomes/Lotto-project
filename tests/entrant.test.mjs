@@ -88,6 +88,11 @@ test("Mantine-style forms: untyped answer box, label-marked required, State and 
   for (const f of ["answer", "state", "phone", "email"]) assert.ok(r.fields.includes(f), f);
 });
 
+test("a 'captcha validation failed' reply is the site's bot check: skipped, not retried", async () => {
+  const [r] = await run({ queue: [{ id: 51, entry_url: url("captcha_rejected.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["skipped", "captcha"]);
+});
+
 test("an 'already entered' reply counts as entered once", async () => {
   const [r] = await run({ queue: [{ id: 31, entry_url: url("already.html") }], live: true, logPath: tmpLog() });
   assert.deepEqual([r.result, r.reason], ["entered", "already entered"]);
