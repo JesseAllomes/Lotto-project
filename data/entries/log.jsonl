@@ -198,3 +198,64 @@
 {"time_utc":"2026-10-30T15:14:18Z","id":76083,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email"]}
 {"time_utc":"2026-10-30T15:14:22Z","id":72517,"mode":"live","result":"skipped","reason":"no_submit","fields":["first","email"]}
 {"time_utc":"2026-10-30T15:14:56Z","id":75325,"mode":"live","result":"failed","reason":"locator.click: Timeout 30000ms exceeded.","fields":[]}
+{"time_utc":"2026-10-30T19:07:06Z","id":76090,"mode":"live","result":"failed","reason":"form said: try again","fields":["email"]}
+{"time_utc":"2026-10-30T19:07:19Z","id":76086,"mode":"live","result":"failed","reason":"form said: try again","fields":["email"]}
+{"time_utc":"2026-10-30T19:07:47Z","id":76042,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","dob","email","postcode","phone"]}
+{"time_utc":"2026-10-30T19:08:00Z","id":75978,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T19:08:12Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T19:08:24Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T19:08:40Z","id":75794,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T19:08:44Z","id":75641,"mode":"live","result":"skipped","reason":"unfillable","fields":["country_01M3RCGSRFSBK4SQZGF4R2N63G Country country Country"]}
+{"time_utc":"2026-10-30T19:08:56Z","id":75364,"mode":"live","result":"failed","reason":"form said: please fill","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T19:09:11Z","id":75274,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","state","postcode","email","phone","consent"]}
+{"time_utc":"2026-10-30T19:09:34Z","id":76091,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T19:09:46Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T19:09:59Z","id":76022,"mode":"live","result":"failed","reason":"form said: try again","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:10:02Z","id":76004,"mode":"live","result":"skipped","reason":"unfillable","fields":["downshift-0-input COUNTRY off Country"]}
+{"time_utc":"2026-10-30T19:10:15Z","id":75726,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T19:10:27Z","id":76115,"mode":"live","result":"failed","reason":"form said: error","fields":["email"]}
+{"time_utc":"2026-10-30T19:10:40Z","id":76054,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T19:11:06Z","id":76094,"mode":"live","result":"failed","reason":"form said: error","fields":["email","phone"]}
+{"time_utc":"2026-10-30T19:11:18Z","id":75918,"mode":"live","result":"failed","reason":"form said: error","fields":["email"]}
+{"time_utc":"2026-10-30T19:11:27Z","id":75687,"mode":"live","result":"skipped","reason":"unfillable","fields":["select: field198468931-muiPickersPrimary Date of birth-Day"]}
+{"time_utc":"2026-10-30T19:11:41Z","id":76137,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T19:11:47Z","id":75699,"mode":"live","result":"skipped","reason":"unfillable","fields":["review_title review_title Title For Comment"]}
+{"time_utc":"2026-10-30T19:12:12Z","id":76029,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","suburb","postcode"]}
+{"time_utc":"2026-10-30T19:12:28Z","id":75636,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email","phone","country","state","postcode"]}
+{"time_utc":"2026-10-30T19:12:40Z","id":75349,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","consent","email"]}
+{"time_utc":"2026-10-30T19:12:53Z","id":76058,"mode":"live","result":"entered","reason":"form cleared","fields":["first","postcode","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T19:13:06Z","id":75365,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:13:18Z","id":76037,"mode":"live","result":"failed","reason":"form said: error","fields":["email","first","last","postcode","phone","required_marketing"]}
+{"time_utc":"2026-10-30T19:13:30Z","id":75611,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T19:13:42Z","id":76083,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:13:54Z","id":72517,"mode":"live","result":"entered","reason":"","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:13:57Z","id":76063,"mode":"live","result":"skipped","reason":"unfillable","fields":["select: field_membership_and_tickets_2027 membership_and_tickets_202"]}
+{"time_utc":"2026-10-30T19:14:26Z","id":75325,"mode":"live","result":"failed","reason":"form said: error","fields":["dob","first","email"]}
+{"time_utc":"2026-10-30T19:14:39Z","id":76090,"mode":"live","result":"failed","reason":"form said: try again","fields":["email"]}
+{"time_utc":"2026-10-30T19:14:52Z","id":76086,"mode":"live","result":"failed","reason":"form said: try again","fields":["email"]}
+{"time_utc":"2026-10-30T19:15:20Z","id":76042,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","dob","email","postcode","phone"]}
+{"time_utc":"2026-10-30T19:15:33Z","id":75978,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","dob","phone","email","postcode","consent"]}
+{"time_utc":"2026-10-30T19:15:45Z","id":75924,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","email","phone"]}
+{"time_utc":"2026-10-30T19:15:57Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T19:16:13Z","id":75794,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T19:16:25Z","id":75364,"mode":"live","result":"failed","reason":"form said: please fill","fields":["first","email","postcode","required_marketing"]}
+{"time_utc":"2026-10-30T19:16:38Z","id":75274,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","state","postcode","email","phone","consent"]}
+{"time_utc":"2026-10-30T19:17:01Z","id":76091,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email","first","last","state"]}
+{"time_utc":"2026-10-30T19:17:13Z","id":76046,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["email"]}
+{"time_utc":"2026-10-30T19:17:26Z","id":76022,"mode":"live","result":"failed","reason":"form said: try again","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:17:38Z","id":75726,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","phone","required_marketing"]}
+{"time_utc":"2026-10-30T19:17:50Z","id":76115,"mode":"live","result":"failed","reason":"form said: error","fields":["email"]}
+{"time_utc":"2026-10-30T19:18:03Z","id":76054,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","email","phone","state"]}
+{"time_utc":"2026-10-30T19:18:29Z","id":76094,"mode":"live","result":"failed","reason":"form said: error","fields":["email","phone"]}
+{"time_utc":"2026-10-30T19:18:42Z","id":75918,"mode":"live","result":"failed","reason":"form said: error","fields":["email"]}
+{"time_utc":"2026-10-30T19:18:55Z","id":76137,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email","required_marketing"]}
+{"time_utc":"2026-10-30T19:19:20Z","id":76029,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","email","phone","suburb","postcode"]}
+{"time_utc":"2026-10-30T19:19:35Z","id":75636,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email","phone","country","state","postcode"]}
+{"time_utc":"2026-10-30T19:19:47Z","id":75349,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","consent","email"]}
+{"time_utc":"2026-10-30T19:20:09Z","id":75365,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:20:21Z","id":76037,"mode":"live","result":"failed","reason":"form said: error","fields":["email","first","last","postcode","phone","required_marketing"]}
+{"time_utc":"2026-10-30T19:20:33Z","id":75611,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T19:20:46Z","id":76083,"mode":"live","result":"failed","reason":"form said: error","fields":["first","email"]}
+{"time_utc":"2026-10-30T19:21:15Z","id":75325,"mode":"live","result":"failed","reason":"form said: error","fields":["dob","first","email"]}
+{"time_utc":"2026-10-30T19:21:28Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T19:31:28Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
