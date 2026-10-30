@@ -259,3 +259,17 @@
 {"time_utc":"2026-10-30T19:21:15Z","id":75325,"mode":"live","result":"failed","reason":"form said: error","fields":["dob","first","email"]}
 {"time_utc":"2026-10-30T19:21:28Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
 {"time_utc":"2026-10-30T19:31:28Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T21:05:53Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T21:06:11Z","id":75768,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone","answer","required_marketing"]}
+{"time_utc":"2026-10-30T21:06:17Z","id":75822,"mode":"live","result":"skipped","reason":"unfillable","fields":["What_is_your_dream_holiday_destination?_01M5KF7CPAD7G5GRDRA2"]}
+{"time_utc":"2026-10-30T21:06:20Z","id":76056,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T21:06:34Z","id":76136,"mode":"live","result":"skipped","reason":"human_check","fields":["email","phone","required_marketing"],"said":"Something went wrong. Please try again."}
+{"time_utc":"2026-10-30T21:06:47Z","id":76026,"mode":"live","result":"skipped","reason":"human_check","fields":["first","email","phone"],"said":"An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-30T21:06:51Z","id":76163,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T21:06:55Z","id":76162,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T21:06:59Z","id":76125,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T21:07:04Z","id":76099,"mode":"live","result":"skipped","reason":"captcha","fields":[]}
+{"time_utc":"2026-10-30T21:07:26Z","id":76141,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","dob","phone","email","postcode","consent"],"said":"Field is required"}
+{"time_utc":"2026-10-30T21:11:01Z","id":76141,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","dob","phone","email","postcode","consent"],"said":"Field is required"}
+{"time_utc":"2026-10-30T21:15:52Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}
+{"time_utc":"2026-10-30T21:25:52Z","id":75870,"mode":"live","result":"entered","reason":"","fields":["first","last","email"]}

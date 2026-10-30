@@ -1,33 +1,25 @@
 id,title,brand,prize_pool,closes,draw_type,entry_limit,needs_answer,question,terms_checked,entry_url
-75926,Win a St John Pocket AED,St John Ambulance,1995.0,2026-10-31T23:59:59+10:00,skill,unknown,True,,True,https://www.stjohnvic.com.au/shocktober-1/
-75768,Win a Cruise with Explorations by Norwegian,My Cruises,30000.0,2026-10-31T23:59:59+10:00,skill,unknown,True,,True,https://mycruises.com.au/clia-cruise-month/
-75557,Win a Herms Birkin 25 Black Togo PHW Bag,White Fox Boutique,46000.0,2026-10-31T23:59:59+10:00,skill,unknown,True,,True,https://whitefoxboutique.com.au/pages/hermes-birkin-25-giveaway-terms-2026
-75822,"Win a $5,000 Holiday Voucher",Black Pepper,5000.0,2026-11-01T23:59:59+10:00,skill,unknown,True,"Where would you go on your next holiday, and why?",True,https://www.blackpepper.com.au/pages/competition
-75819,Win a 2026 NAB AFLW Grand Final Experience for 2,QBE Insurance Australia,3000.0,2026-11-01T23:59:59+10:00,skill,unknown,True,,True,https://qbeswanshub.com.au/card/019f2179-a2b9-73ea-803e-45b38fd9ebd3
-73713,Win $100K,Beauty Heaven,100000.0,2026-11-01T23:59:59+10:00,skill,unknown,True,,False,https://www.beautyheaven.com.au/competitions-events/chance-to-win-one-hundred-thousand/
-76124,Win a Bucket List Experience to Share with your Grandparent,Omoda Jaecoo Australia,15000.0,2026-11-08T23:59:59+10:00,skill,unknown,True,,True,https://www.omodajaecoo.com.au/campaigns/bucket-list
-76056,Win an Ultimate Rugby League World Cup Prize Pack,Harvey Norman,4605.0,2026-11-08T23:59:59+10:00,skill,once,True,,False,https://www.harveynorman.com.au/promos/jillaroos
-75962,"Win a $20,000 Fiji Escape",Bohemian Traders,20000.0,2026-11-08T23:59:59+10:00,skill,unknown,True,,True,https://bohemiantraders.com/high-summer-escape/
-74660,Win 1 of 10 Allen & Unwin Book Packs,Mouths of Mums,1049.0,2026-11-14T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-10-book-packs-packed-with-compelling-reads-from-allen-unwin/
-74504,Win a $6K UluṟU Adventure for Two,The Urban List,6704.0,2026-11-15T23:59:59+10:00,skill,unknown,True,,True,https://www.theurbanlist.com/competitions/win-a-6k-uluru-adventure
-76163,Win 1 of 2 Panasonic 4K Blu-Ray Players,Panasonic,938.0,2026-11-18T23:59:59+10:00,skill,unlimited,True,"If you win this Blu-ray player, which movie would you watch first, and why?",False,https://blogs.panasonic.com.au/consumer/win-a-panasonic-4k-blu-ray-player/
-76162,Win 1 of 4 Panasonic Garment Steamers,Panasonic,556.0,2026-11-18T23:59:59+10:00,skill,unlimited,True,"Which garments and fabrics would you steam with the Panasonic NI-GHF025WSJ, and why?",False,https://blogs.panasonic.com.au/consumer/win-a-panasonic-garment-steamer/
-75026,Win 1 of 4 Taiter Tots Rail Huggies to Transform your Toddlers Bedtime,Mouths of Mums,129.0,2026-11-18T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-4-taiter-tots-rail-huggies-to-transform-your-toddlers-bedtime/
+75926,Win a St John Pocket AED,St John Ambulance,1995.0,2026-10-31T23:59:59+10:00,skill,once,True,,True,https://www.stjohnvic.com.au/shocktober-1/
+75557,Win a Herms Birkin 25 Black Togo PHW Bag,White Fox Boutique,46000.0,2026-10-31T23:59:59+10:00,skill,once,True,,True,https://whitefoxboutique.com.au/pages/hermes-birkin-25-giveaway-terms-2026
+75819,Win a 2026 NAB AFLW Grand Final Experience for 2,QBE Insurance Australia,3000.0,2026-11-01T23:59:59+10:00,skill,once,True,,True,https://qbeswanshub.com.au/card/019f2179-a2b9-73ea-803e-45b38fd9ebd3
+73713,Win $100K,Beauty Heaven,100000.0,2026-11-01T23:59:59+10:00,skill,once,True,,False,https://www.beautyheaven.com.au/competitions-events/chance-to-win-one-hundred-thousand/
+76124,Win a Bucket List Experience to Share with your Grandparent,Omoda Jaecoo Australia,15000.0,2026-11-08T23:59:59+10:00,skill,once,True,,True,https://www.omodajaecoo.com.au/campaigns/bucket-list
+75962,"Win a $20,000 Fiji Escape",Bohemian Traders,20000.0,2026-11-08T23:59:59+10:00,skill,once,True,,True,https://bohemiantraders.com/high-summer-escape/
+74660,Win 1 of 10 Allen & Unwin Book Packs,Mouths of Mums,1049.0,2026-11-14T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-10-book-packs-packed-with-compelling-reads-from-allen-unwin/
+74504,Win a $6K UluṟU Adventure for Two,The Urban List,6704.0,2026-11-15T23:59:59+10:00,skill,once,True,,True,https://www.theurbanlist.com/competitions/win-a-6k-uluru-adventure
+75026,Win 1 of 4 Taiter Tots Rail Huggies to Transform your Toddlers Bedtime,Mouths of Mums,129.0,2026-11-18T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-4-taiter-tots-rail-huggies-to-transform-your-toddlers-bedtime/
 76087,Win an Ultimate 4-Night Hobart Getaway,Hunter Hunter,4300.0,2026-11-19T23:59:59+10:00,skill,once,True,,True,https://www.hunterhunter.com.au/newcastle/life-style/win-a-4-night-getaway-to-hobart/
-76043,Win a Crime Book Pack,Hachette,,2026-11-22T23:59:59+10:00,skill,unlimited,True,,True,https://www.hachette.com.au/win/entryform?id=1507
-76125,Win VIP Tickets to Spilt Milk for You & a Friend or GA Tickets,Advil AU,31114.0,2026-11-25T23:59:59+10:00,skill,once,True,Why you can’t miss Spilt Milk,True,https://www.advilspiltmilk2026.com.au/
-76099,Win 1 of 3 Restful Retreat Packages,Sheridan,18000.0,2026-11-29T23:59:59+10:00,skill,unknown,True,,True,https://www.sheridan.com.au/competition/gift-of-rest?ranMID=40637&ranEAID=2688195&ranSiteID=WJXsbMyHnaw-v3ds_4SkSY_O5QUNj9H_fQ
-76033,Win 4 Tickets to see the Wiggles Live & a Meet and Greet,The Wiggles,2500.0,2026-12-05T23:59:59+10:00,skill,unknown,True,,True,https://thewiggles.com/pages/fruit-and-veggies
-75332,Win an Ezviz HB90 Dual 3K Camera,Mouths of Mums,549.0,2026-12-09T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-an-ezviz-hb90-dual-3k-camera-worth-549-95/
-76141,Win an Ultimate Hobart Cup Trip for You and a Mate,SEN 1116,4500.0,2026-12-13T23:59:59+10:00,skill,unknown,True,,False,https://winwithsen.au1.komo.site/card/01a0fa4f-42f3-77b1-ad76-7bc92611f8f4
-75491,Win 1 of 2 Snotty Noses Co Starter Bundles,Mouths of Mums,749.0,2026-12-28T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-snotty-noses-co-starter-bundles/
-75490,Win 1 of 6 Rad Kids Zippy Hooded Towels,Mouths of Mums,479.0,2026-12-28T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-6-rad-kids-zippy-hooded-towels-to-make-beach-pool-bath-time-a-breeze/
-75489,Win 1 of 6 Winning Parenting Educator Michelle Mitchell,Mouths of Mums,,2026-12-28T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-6-book-packs-from-award-winning-parenting-educator-michelle-mitchell/
-75523,Win a Dreame Technology T16 Pro Triforce Wet & Dry Vacuum,Mouths of Mums,1499.0,2026-12-30T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-a-dreame-technology-t16-pro-triforce-wet-dry-vacuum-worth-1499/
-75572,Win 1 of 2 Vtech Kidimusic Prize Packs,Mouths of Mums,699.0,2027-01-01T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-vtech-kidimusic-prize-packs-worth-349-97-each/
-75703,Win a Lovevery Reading Skill Set,Mouths of Mums,840.0,2027-01-09T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-a-lovevery-reading-skill-set-worth-840/
-75826,Win 1 of 2 Full Shadybaby Outdoor Kits,Mouths of Mums,574.0,2027-01-12T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-full-shadybaby-outdoor-kits-worth-287-each/
-75875,Win 1 of 3 Golden Hour Jewellery Gift Vouchers,Mouths of Mums,500.0,2027-01-15T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-3-golden-hour-jewellery-gift-vouchers/
-76084,Win 1 of 3 PokéMon Sleeping Plush Prize Packs,Mouths of Mums,600.0,2027-01-21T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-3-pokemon-sleeping-plush-prize-packs-worth-200-each/
-76130,Win 1 of 2 Sunbeam Alinea Wide Ceramic Air Fryers,Mouths of Mums,498.0,2027-01-28T23:59:59+10:00,skill,unknown,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-sunbeam-alinea-wide-ceramic-air-fryers-worth-249-each/
-75581,Win $100K & More Prizes,NBL,120000.0,2027-03-15T23:59:59+10:00,skill,unknown,True,,False,https://www.nbl.com.au/mvc
+76043,Win a Crime Book Pack,Hachette,,2026-11-22T23:59:59+10:00,skill,once,True,,True,https://www.hachette.com.au/win/entryform?id=1507
+76033,Win 4 Tickets to see the Wiggles Live & a Meet and Greet,The Wiggles,2500.0,2026-12-05T23:59:59+10:00,skill,once,True,,True,https://thewiggles.com/pages/fruit-and-veggies
+75332,Win an Ezviz HB90 Dual 3K Camera,Mouths of Mums,549.0,2026-12-09T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-an-ezviz-hb90-dual-3k-camera-worth-549-95/
+75491,Win 1 of 2 Snotty Noses Co Starter Bundles,Mouths of Mums,749.0,2026-12-28T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-snotty-noses-co-starter-bundles/
+75490,Win 1 of 6 Rad Kids Zippy Hooded Towels,Mouths of Mums,479.0,2026-12-28T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-6-rad-kids-zippy-hooded-towels-to-make-beach-pool-bath-time-a-breeze/
+75489,Win 1 of 6 Winning Parenting Educator Michelle Mitchell,Mouths of Mums,,2026-12-28T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-6-book-packs-from-award-winning-parenting-educator-michelle-mitchell/
+75523,Win a Dreame Technology T16 Pro Triforce Wet & Dry Vacuum,Mouths of Mums,1499.0,2026-12-30T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-a-dreame-technology-t16-pro-triforce-wet-dry-vacuum-worth-1499/
+75572,Win 1 of 2 Vtech Kidimusic Prize Packs,Mouths of Mums,699.0,2027-01-01T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-vtech-kidimusic-prize-packs-worth-349-97-each/
+75703,Win a Lovevery Reading Skill Set,Mouths of Mums,840.0,2027-01-09T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-a-lovevery-reading-skill-set-worth-840/
+75826,Win 1 of 2 Full Shadybaby Outdoor Kits,Mouths of Mums,574.0,2027-01-12T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-full-shadybaby-outdoor-kits-worth-287-each/
+75875,Win 1 of 3 Golden Hour Jewellery Gift Vouchers,Mouths of Mums,500.0,2027-01-15T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-3-golden-hour-jewellery-gift-vouchers/
+76084,Win 1 of 3 PokéMon Sleeping Plush Prize Packs,Mouths of Mums,600.0,2027-01-21T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-3-pokemon-sleeping-plush-prize-packs-worth-200-each/
+76130,Win 1 of 2 Sunbeam Alinea Wide Ceramic Air Fryers,Mouths of Mums,498.0,2027-01-28T23:59:59+10:00,skill,once,True,,False,https://mouthsofmums.com.au/competition/win-1-of-2-sunbeam-alinea-wide-ceramic-air-fryers-worth-249-each/
+75581,Win $100K & More Prizes,NBL,120000.0,2027-03-15T23:59:59+10:00,skill,once,True,,False,https://www.nbl.com.au/mvc
