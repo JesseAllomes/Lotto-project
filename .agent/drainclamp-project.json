@@ -175,12 +175,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T13:21:31+00:00",
         "est_min": 25,
         "goal": "analysis/popularity.py: per-number popularity from winner counts vs expected (regression over current-format draws), payout uplift of least-popular picks, backtest",
         "id": "c3",
-        "note": "",
+        "note": "lotto_numbers: least-picked sets (high numbers 37-47; uplift +24..+51%, holdout r 0.18-0.66) and most-drawn sets (all chi-square p>0.05: random); prize fund per draw from pari-mutuel pools (c2 part)",
         "targets": [
           "analysis/popularity.py",
           "data/analysis/"
@@ -202,11 +202,11 @@
     ]
   },
   "errors": [],
-  "rev": 30,
+  "rev": 31,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T13:18:14+00:00",
+      "end": "2026-10-30T13:21:31+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",
