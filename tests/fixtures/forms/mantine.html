@@ -1,0 +1,17 @@
+<html><body>
+<!-- Mantine-style form (komo.site): untyped text inputs, required marked on the label, State and dial code as custom
+     listbox pickers whose options appear on click. -->
+<form id="f" onsubmit="event.preventDefault(); const ok = document.querySelector('#answer').value && document.querySelector('#state').innerText === 'VIC' && document.querySelector('#cc').innerText === '+61'; document.getElementById('m').innerText = ok ? 'Thank you for entering!' : 'Field is required';">
+<label for="first" data-required="true">First name *</label><input id="first" name="first_name">
+<label for="email" data-required="true">Email *</label><input id="email" name="email" type="email">
+<label for="mob" data-required="true">Mobile *</label><div><div role="button" id="cc" onclick="show('ccl')">+1</div><input id="mob" type="tel" name="mobile"></div>
+<div id="ccl" role="listbox" hidden><div role="option" onclick="pick('cc','+61','ccl')">Australia +61</div><div role="option" onclick="pick('cc','+1','ccl')">United States +1</div></div>
+<label for="state" data-required="true">State *</label><button type="button" id="state" aria-haspopup="listbox" onclick="show('stl')"></button>
+<div id="stl" role="listbox" hidden><div role="option" onclick="pick('state','NSW','stl')">NSW</div><div role="option" onclick="pick('state','VIC','stl')">VIC</div></div>
+<label for="answer" data-required="true">In 25 words or less, tell us your favourite racing moment *</label><input id="answer" name="answer_q">
+<label><input type="checkbox" name="tc"> I agree with the Terms &amp; Conditions</label>
+<button type="submit">Enter now</button><p id="m"></p></form>
+<script>
+function show(id) { document.getElementById(id).hidden = false; }
+function pick(id, v, list) { document.getElementById(id).innerText = v; document.getElementById(list).hidden = true; }
+</script></body></html>

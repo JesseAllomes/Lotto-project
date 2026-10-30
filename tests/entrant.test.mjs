@@ -82,6 +82,12 @@ test("picks the competition form over a discount pop-up and a footer sign-up; JS
   assert.deepEqual([r.result, r.reason], ["entered", "form cleared"]);
 });
 
+test("Mantine-style forms: untyped answer box, label-marked required, State and dial-code pickers", async () => {
+  const [r] = await run({ queue: [{ id: 50, entry_url: url("mantine.html"), answer: "A test answer" }], live: true, logPath: tmpLog() });
+  assert.equal(r.result, "entered", JSON.stringify(r));
+  for (const f of ["answer", "state", "phone", "email"]) assert.ok(r.fields.includes(f), f);
+});
+
 test("an 'already entered' reply counts as entered once", async () => {
   const [r] = await run({ queue: [{ id: 31, entry_url: url("already.html") }], live: true, logPath: tmpLog() });
   assert.deepEqual([r.result, r.reason], ["entered", "already entered"]);

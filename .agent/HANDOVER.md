@@ -58,6 +58,12 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   for failing/no_form; pace.json makes entries.yml chain hourly. "allowed one entry" wording now reads as once
   (Wild Earth 75870 had 11 entries before this). Winners tracker workers/winners.py -> data/entries/winners.csv
   (comps.yml runs --check with ENTRANT_LAST_NAME: surname yes/no on winners pages, never the name); site Winners tab.
+- 2026-10-31 later: entrant fills 6 forms at once (ENTRANT_CONCURRENCY), cap 200/round. Commit step is now
+  workers/commit_entries.sh (keeps the run's new log lines, resets to main, re-appends, rebuilds, pushes); run
+  41135966222's log was lost to a rebase conflict and is recorded as result "unknown" (counts against stated limits
+  only). comp_terms follows "T&Cs"/"TCs" links (Bunnings 75274: one entry; owner's 200-entry request declined).
+  Mantine/komo forms: untyped text inputs, label data-required, listbox pickers (State -> VIC, country -> Australia)
+  and "+NN" dial-code buttons switched to +61 (fixes 76141 "Field is required").
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,

@@ -257,6 +257,48 @@ async function interstitial(page) {
   return false;
 }
 
+// Custom dropdowns (Mantine, Headless UI, React Select): a button or combobox that opens a list of role=option
+// items. State gets VIC, country gets Australia; another required one the entrant cannot answer stops the entry.
+// Returns a description of an unfillable required picker, else null.
+async function fillPickers(root, scope, filled) {
+  const pickers = scope.locator("button[aria-haspopup=listbox]:visible, [role=combobox]:visible:not(input):not(select)");
+  const n = await pickers.count();
+  for (let i = 0; i < n; i++) {
+    const el = pickers.nth(i);
+    const info = await el.evaluate((e) => {
+      const lab = (e.id && document.querySelector(`label[for="${CSS.escape(e.id)}"]`)) ||
+        (e.getAttribute("aria-labelledby") && document.getElementById(e.getAttribute("aria-labelledby")));
+      return { desc: [e.getAttribute("aria-label"), e.name, lab ? lab.innerText : ""].filter(Boolean).join(" "),
+               value: (e.innerText || e.value || "").trim(), required: lab?.dataset?.required === "true" || e.getAttribute("aria-required") === "true" };
+    });
+    if (info.value) continue;                                   // already chosen
+    const kind = classify(info.desc, "") === "state" ? "state" : COUNTRY.test(info.desc) || /country/i.test(info.desc) ? "country" : null;
+    const want = kind === "state" ? /^\s*(vic|victoria)\s*$/i : kind === "country" ? /^\s*australia\b/i : null;
+    if (want) {
+      await el.click({ timeout: 5000 }).catch(() => {});
+      const opt = root.getByRole("option").filter({ hasText: want }).first();
+      if (await opt.count()) { await opt.click({ timeout: 5000 }).catch(() => {}); filled.add(kind); continue; }
+      await root.locator("body").press("Escape").catch(() => {});
+    }
+    if (info.required) return `picker: ${info.desc.slice(0, 60)}`;
+  }
+  return null;
+}
+
+// A dial-code button beside a phone box ("+1" with a country list): switch it to Australia. True when switched or
+// already +61, so the number goes in without the country code.
+async function dialCodeAustralia(root, phoneBox) {
+  const wrap = phoneBox.locator("xpath=ancestor::*[.//*[@role='button' or self::button]][1]");
+  const btn = wrap.locator("[role=button], button").filter({ hasText: /^\s*\+\s?\d{1,4}\s*$/ }).first();
+  if (!(await btn.count())) return false;
+  if (/\+\s?61\b/.test(await btn.innerText().catch(() => ""))) return true;
+  await btn.click({ timeout: 5000 }).catch(() => {});
+  const opt = root.getByRole("option").filter({ hasText: /australia/i }).first();
+  if (!(await opt.count())) { await root.locator("body").press("Escape").catch(() => {}); return false; }
+  await opt.click({ timeout: 5000 }).catch(() => {});
+  return /\+\s?61\b/.test(await btn.innerText().catch(() => ""));
+}
+
 // Fill one form. Returns {result, reason, fields} without any of the owner's values.
 export async function fillForm(page, item, who, live) {
   if (await page.locator("input[type=password]:visible").count()) return { result: "skipped", reason: "login", fields: [] };
@@ -294,7 +336,7 @@ export async function fillForm(page, item, who, live) {
       const lab = (e.id && document.querySelector(`label[for="${CSS.escape(e.id)}"]`)) || e.closest("label");
       return {
         tag: e.tagName.toLowerCase(), type: (e.getAttribute("type") || "").toLowerCase(),
-        required: e.required || e.getAttribute("aria-required") === "true",
+        required: e.required || e.getAttribute("aria-required") === "true" || lab?.dataset?.required === "true",
         desc: [e.name, e.id, e.placeholder, e.getAttribute("aria-label"), e.getAttribute("autocomplete"),
                lab ? lab.innerText : ""].filter(Boolean).join(" "),
         hint: [e.placeholder, e.getAttribute("pattern"), e.getAttribute("title")].filter(Boolean).join(" "),
@@ -317,7 +359,7 @@ export async function fillForm(page, item, who, live) {
       }
       continue;
     }
-    if (info.tag === "textarea" || (info.type === "text" && /answer|why|tell us|words|response|question/i.test(info.desc))) {
+    if (info.tag === "textarea" || (["text", ""].includes(info.type) && /answer|why|tell us|words|response|question/i.test(info.desc))) {
       if (item.answer) {
         await el.fill(item.answer);
         filled.add("answer");
@@ -340,7 +382,8 @@ export async function fillForm(page, item, who, live) {
       continue;
     }
     if (kind === "phone" && who.phone) {
-      const tries = phoneOrder(phoneVariants(who.phone), info.hint + " " + info.desc, hasCC);
+      const cc = await dialCodeAustralia(root, el);
+      const tries = phoneOrder(phoneVariants(who.phone), info.hint + " " + info.desc, hasCC || cc);
       for (const v of tries) {
         await el.fill(v);
         if (await el.evaluate((e) => e.checkValidity())) break;
@@ -357,6 +400,8 @@ export async function fillForm(page, item, who, live) {
     }
   }
   if (!filled.has("email")) return { result: "skipped", reason: "unfillable", fields: ["email"] };
+  const picked = await fillPickers(root, scope, filled);
+  if (picked) return { result: "skipped", reason: "unfillable", fields: [picked] };
   const why = await interactiveChallenge(page, root, scope);
   if (why) return { result: "skipped", reason: "captcha", fields: [...filled], said: why };
   if (!live) {
