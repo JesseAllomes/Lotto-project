@@ -2,25 +2,27 @@
 
 **Done**
 - `SURVEY.md`: ranked survey of Australian lotteries.
-- m1: winning-numbers register, 10,157 draws in `data/draws/`. Updated daily by `.github/workflows/draws.yml` (token-free; verified).
-- m2: Lucky Lotteries jackpot tracker in `data/jackpots/` (1,311 Mega and 3,882 Super draws, gap-free; jackpot amounts from 2015).
-  `STATUS.md` shows the live jackpots. `.github/workflows/jackpots.yml` runs daily at 12:41 UTC and opens one GitHub issue per
-  jackpot cycle at the alert level ($30M Mega / $23M Super) and at break-even ($35M / $27.2M). Run 41052762530 verified.
-  - Finding: Super Jackpot reached $33.0M (Oct 2022, above break-even for 45 draws); Mega $96M (Aug 2019, 255 draws above).
+- m1: winning-numbers register, 10,157 draws in `data/draws/` (daily `draws.yml`).
+- m2: Lucky Lotteries jackpot tracker, `data/jackpots/STATUS.md`; GitHub issue at $30M Mega / $23M Super and at break-even (daily `jackpots.yml`).
+- m3: competition register `data/comps/comps.jsonl` + `comps.csv` (competitions.com.au; 512 listings, 485 open to Vic).
+- m5: `data/comps/odds.csv` (draw type, purchase, entry limit, bonus entries, prizes, entry types, cap) and `skill.csv`.
+- m6: `data/comps/terms.jsonl`: ticket caps from promoters' terms (9 caps: RSL 10.76M, Mater 30.1M, Endeavour 1.5M/1.35M, yourtown 500k ...).
+- m4: `data/comps/skill_ranked.csv`: effort, chance, skill (1-5) and overall (0-10) for each open skill comp.
+- `comps.yml` (daily 21:17 UTC) runs comps -> comp_terms -> comp_odds --tags -> skill_rank. Run 41059812922 verified.
 
-- m3: competition register in `data/comps/` (512 open listings from competitions.com.au; 485 open to Victoria; 22 enter on
-  Facebook, 2 on Instagram). `.github/workflows/comps.yml` adds new listings daily at 21:17 UTC. Run 41054436595 verified.
-  - Charity prize homes (RSL Art Union $14.7M, Mater $7.1M, Endeavour, yourtown) are filed under cash/car categories: classify by brand.
-  - Facebook is covered only through the aggregator; Meta's terms forbid scraping it directly.
+**In progress: m7 lotto opportunities** (chunks in `.agent/drainclamp-project.json`)
+- c1 done: `analysis/lotto_games.py` (division rules, fund shares, exact odds, current-format start draws).
+- c2 next: `analysis/lotto_sales.py`. Every division bar a fixed Div 1 is pari-mutuel: prize fund F = winners x dividend / share
+  (consistent across divisions); entries index from F; jackpot reconstruction for Oz Lotto / Powerball (J grows by Div1 share x F).
+- c3: `analysis/popularity.py`. log(winners / expected) per draw per division, regressed on the drawn numbers -> per-number
+  popularity; payout uplift of least-popular picks; backtest. This changes the payout when winning, not the chance.
+- c4: fairness tests and `analysis/lotto_ev.py` (ticket value by game and jackpot); `data/analysis/LOTTO.md`.
+- Then m8: competition value per entry (prize vs cap x price) and `REPORT.md`.
 
-**Decisions**: in `.agent/drainclamp-state.md`, section DC:DECISIONS.
-- Competitions: anything enterable from Victoria, not just cash.
-- Data: public pages first; accounts are fine where they are worth it (the owner creates them; logins in environment secrets).
-- Keno deferred.
-- Alerts as GitHub issues.
+**Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
+chance, skill and overall; lotto: analyse the data for optimised opportunities.
 
-**Next**: m4 analysis (`analysis/fairness.py`, `analysis/comps_value.py`, `REPORT.md`). Open to-dos t1 (membership draws such as
-LMCT+, not on the aggregator) and t2 (prize-home ticket caps from permit T&Cs) in `.agent/drainclamp-project.json`.
+**Open to-dos**: t1 membership draws (LMCT+ etc.; not on the aggregator), t2 closed by m6.
 
 Resume: invoke the drainclamp-build-adhd skill, choose lotto-project, then `dc_project.py next`.
-Run Python with `-B` so no `__pycache__` files are created. Quote commit messages with a heredoc (`$30M` gets expanded).
+Run Python with `-B`. Quote commit messages with a heredoc (`$30M` gets expanded).

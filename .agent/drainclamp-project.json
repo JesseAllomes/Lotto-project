@@ -138,12 +138,12 @@
         ]
       },
       {
-        "done": false,
-        "done_at": null,
+        "done": true,
+        "done_at": "2026-10-30T13:18:14+00:00",
         "est_min": 15,
         "goal": "run comp_terms in comps.yml (poppler for PDFs); verify on GitHub; report caps found vs listings",
         "id": "c2",
-        "note": "",
+        "note": "comps.yml run 41059812922: 169 looked up, 9 caps (all charity lotteries/prize homes), 6 Vic permits",
         "targets": [
           ".github/workflows/comps.yml"
         ]
@@ -202,11 +202,11 @@
     ]
   },
   "errors": [],
-  "rev": 28,
+  "rev": 30,
   "schema": 1,
   "time": [
     {
-      "end": "2026-10-30T13:17:43+00:00",
+      "end": "2026-10-30T13:18:14+00:00",
       "id": "s1",
       "note": "",
       "source": "auto",
@@ -224,8 +224,8 @@
     },
     {
       "at": "2026-10-30T12:19:31+00:00",
-      "done": false,
-      "done_at": null,
+      "done": true,
+      "done_at": "2026-10-30T13:18:15+00:00",
       "id": "t2",
       "milestone": "m4",
       "text": "Prize-home value per ticket needs each draw's ticket cap (in the permit T&Cs, not the listing). Charity raffles in comps.jsonl give prize value, price range and dates."

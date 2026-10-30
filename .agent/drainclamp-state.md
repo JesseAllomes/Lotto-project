@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=21 -->
+<!-- drainclamp-build: state; schema=1; generation=23 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -35,8 +35,8 @@
 | m2 | Lucky Lotteries Mega and Super jackpot tracker with history and alerts at $30M and $23M | workers/jackpots.py;data/jackpots/;.github/workflows/jackpots.yml;tests/test_jackpots.py | done | m1 |
 | m3 | Competition register: competitions enterable from Victoria (prize homes, art unions, membership draws, trade promotions), scraped from public pages | workers/comps.py;data/comps/;.github/workflows/comps.yml;tests/test_comps.py | done |  |
 | m5 | Odds variables per competition (chance or skill, purchase needed, entry limit, number of prizes, entry types) and a separate skill-competition list | workers/comp_odds.py;data/comps/odds.csv;data/comps/skill.csv;tests/test_comp_odds.py | done | m3 |
-| m6 | Ticket and entry caps from promoters' own terms (charity lotteries and art unions first): cap, ticket price, prize value, permit, evidence | workers/comp_terms.py;data/comps/terms.jsonl;.github/workflows/comps.yml;tests/test_comp_terms.py | pending | m3 |
-| m4 | Skill-competition ranking: effort required, chance of winning, skill level required, overall score, for every open skill comp; rebuilt daily | analysis/skill_rank.py;data/comps/skill_ranked.csv;tests/test_skill_rank.py;.github/workflows/comps.yml | pending | m5 |
+| m6 | Ticket and entry caps from promoters' own terms (charity lotteries and art unions first): cap, ticket price, prize value, permit, evidence | workers/comp_terms.py;data/comps/terms.jsonl;.github/workflows/comps.yml;tests/test_comp_terms.py | done | m3 |
+| m4 | Skill-competition ranking: effort required, chance of winning, skill level required, overall score, for every open skill comp; rebuilt daily | analysis/skill_rank.py;data/comps/skill_ranked.csv;tests/test_skill_rank.py;.github/workflows/comps.yml | done | m5 |
 | m7 | Lotto opportunities from the draw register: sales and prize pools inferred from dividends, ticket value per draw by game and jackpot, number-popularity model (division-1 sharing) to pick less-shared numbers, randomness checks, ranked opportunities | analysis/lotto_ev.py;analysis/popularity.py;analysis/fairness.py;data/analysis/;tests/test_lotto_analysis.py | pending | m1;m2 |
 | m8 | Competition value per entry (prize value against cap and ticket price) and the plain-English REPORT.md over lotto and competitions | analysis/comps_value.py;REPORT.md | pending | m4;m6;m7 |
 <!-- /DC:ROADMAP -->
@@ -52,4 +52,5 @@
 - 2026-10-30T12:11:01+00:00 09e79993 m2 done: Lucky Lotteries jackpot tracker; 1,311 Mega + 3,882 Super draws (jackpots from 2015), daily jackpots.yml verified on GitHub (run 41052762530)
 - 2026-10-30T12:33:21+00:00 bd84fbac m3 done: competition register, 512 open listings (485 open to Vic; 22 Facebook, 2 Instagram); daily comps.yml verified (run 41054436595)
 - 2026-10-30T13:01:35+00:00 97eaab02 m5 done: odds.csv (draw type, purchase, entry limit, bonus entries, prizes, entry types) and skill.csv (84 open skill comps for Vic); tags.jsonl; comps.yml run 41058728219 ok
+- 2026-10-30T13:18:15+00:00 bc2ad015 m6 done: comp_terms caps for 9/169 paid listings (every charity lottery and prize home; rest are trade promotions); m4 done: skill_ranked.csv (84 ranked); run 41059812922 ok
 <!-- /DC:LOG -->
