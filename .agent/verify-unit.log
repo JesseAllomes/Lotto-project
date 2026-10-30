@@ -11,11 +11,11 @@ comps: 0 new listings (0 open to Victoria), 0 failed, 2 in register
 ........entry_queue: 2 ready to enter, 1 waiting for an approved answer, 2 on the manual list
 entry_queue: 1 ready to enter, 1 waiting for an approved answer, 3 on the manual list
 .entry_queue: 1 ready to enter, 0 waiting for an approved answer, 1 on the manual list
-...................../home/user/lotto-project/workers/site.py:59: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpiox2rpkq/manual.csv' mode='r' encoding='utf-8'>
-  rows = list(csv.DictReader(open(path))) if path.exists() else []
+....................../home/user/lotto-project/workers/site.py:117: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpyj64s1j8/manual.csv' mode='r' encoding='utf-8'>
+  for r in (csv.DictReader(open(path)) if path.exists() else []):
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-.....
+......
 ----------------------------------------------------------------------
-Ran 59 tests in 141.972s
+Ran 61 tests in 141.548s
 
 OK

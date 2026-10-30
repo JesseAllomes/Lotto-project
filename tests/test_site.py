@@ -1,42 +1,72 @@
-"""Offline test for the owner's competition page."""
+"""Offline tests for the owner's competition page and the re-entry queue."""
 import csv
 import datetime as dt
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
 
-from workers import site
+from workers import reenter, site
+
+
+def write_manual(e, rows):
+    with open(e / "manual.csv", "w", newline="") as fh:
+        w = csv.DictWriter(fh, list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
 
 
 class Page(unittest.TestCase):
-    def test_lists_open_manual_comps_grouped_and_holds_no_personal_details(self):
+    def test_lists_open_manual_comps_with_categories_and_no_personal_details(self):
         with tempfile.TemporaryDirectory() as d:
             e = Path(d)
-            rows = [
-                {"id": "1", "title": "Win a sofa", "brand": "Eva", "prize_pool": "3790", "closes": "2026-11-03T23:59",
-                 "draw_type": "chance", "reason": "entrant blocked: captcha", "entry_platform": "web",
-                 "entry_url": "https://eva.example/pages/giveaway"},
-                {"id": "2", "title": "Win merch", "brand": "Shop", "prize_pool": "100", "closes": "2026-11-01T23:59",
-                 "draw_type": "chance", "reason": "entry route manual", "entry_platform": "instagram",
-                 "entry_url": "https://www.instagram.com/p/x/"},
+            write_manual(e, [
+                {"id": "1", "title": "Win a 4 Seater Sofa", "brand": "Eva", "prize_pool": "3790",
+                 "closes": "2026-11-03T23:59", "draw_type": "chance", "reason": "entrant blocked: captcha",
+                 "entry_platform": "web", "entry_url": "https://eva.example/pages/giveaway"},
+                {"id": "2", "title": "Win VIP Festival Tickets", "brand": "Shop", "prize_pool": "100",
+                 "closes": "2026-11-01T23:59", "draw_type": "chance", "reason": "entry route manual",
+                 "entry_platform": "instagram", "entry_url": "https://www.instagram.com/p/x/"},
                 {"id": "3", "title": "Closed one", "brand": "Old", "prize_pool": "9", "closes": "2026-10-01T23:59",
                  "draw_type": "chance", "reason": "entry route manual", "entry_platform": "web",
-                 "entry_url": "https://old.example/"},
-            ]
-            with open(e / "manual.csv", "w", newline="") as fh:
-                w = csv.DictWriter(fh, list(rows[0]))
-                w.writeheader()
-                w.writerows(rows)
+                 "entry_url": "https://old.example/"}])
+            (e / "answers.json").write_text(json.dumps({"1": "Comfy, deep and built for movie nights."}))
             (e / "log.jsonl").write_text(json.dumps({"id": 9, "mode": "live", "result": "entered",
                                                      "time_utc": "2026-10-30T01:00:00Z"}) + "\n")
-            it = site.items(e, dt.date(2026, 10, 31))
-            self.assertEqual([(x["id"], x["group"]) for x in it], [("2", "social"), ("1", "web")])
+            (e / "log_reenter.jsonl").write_text(json.dumps({"id": 9, "mode": "live", "result": "entered",
+                                                             "time_utc": "2026-10-30T02:00:00Z"}) + "\n")
+            it = {x["id"]: x for x in site.items(e, dt.date(2026, 10, 31), recs={})}
+            self.assertEqual(sorted(it), ["1", "2"])
+            self.assertEqual((it["1"]["g"], it["1"]["k"], it["1"]["a"]), ("web", "Home & garden",
+                                                                          "Comfy, deep and built for movie nights."))
+            self.assertEqual((it["2"]["g"], it["2"]["k"]), ("social", "Tickets & experiences"))
+            self.assertEqual(site.stats(e), {"entries": 2, "comps": 1})
             html = site.page(e, dt.date(2026, 10, 31), built="t")
-            self.assertIn("Win a sofa", html)
-            self.assertNotIn("Closed one", html)
-            self.assertIn("made\n1 entries in 1 competitions", html)
-            self.assertNotIn("@", html.split("<script>")[0].replace("@media", ""))
+            data = json.loads(re.search(r"const D = (\{.*?\});\n", html).group(1))
+            self.assertEqual(len(data["todo"]), 2)
+            self.assertNotIn("@example", html)
+
+    def test_categories(self):
+        self.assertEqual(site.category("Win a $3.4M Mooloolaba Prize Home"), "Prize homes & lotteries")
+        self.assertEqual(site.category("Win a Custom Toyota Landcruiser"), "Cars & vehicles")
+        self.assertEqual(site.category("Win $5,000 Cash"), "Cash & vouchers")
+        self.assertEqual(site.category("Win something", "travel-competitions"), "Travel")
+
+
+class Reenter(unittest.TestCase):
+    def test_ids_are_read_from_the_issue_title_and_only_open_listings_queued(self):
+        from workers import comps
+        with tempfile.TemporaryDirectory() as d:
+            store, e = Path(d) / "comps", Path(d) / "entries"
+            e.mkdir()
+            comps.append(store, [
+                {"id": 75870, "title": "A", "entry_url": "https://a.example/", "closes": "2026-11-30T23:59", "url": "u1"},
+                {"id": 76000, "title": "B", "entry_url": "https://b.example/", "closes": "2026-10-01T23:59", "url": "u2"}],
+                "t")
+            (e / "answers.json").write_text(json.dumps({"75870": "Because."}))
+            q = reenter.build("reenter: 75870 76000 12345", store, e, dt.date(2026, 10, 31))
+            self.assertEqual(q, [{"id": 75870, "entry_url": "https://a.example/", "answer": "Because."}])
 
 
 if __name__ == "__main__":

@@ -309,10 +309,11 @@ export async function fillForm(page, item, who, live) {
 }
 
 export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max = 40, shots = process.env.ENTRANT_SHOTS,
-                            logPath = path.join(ENTRIES, "log.jsonl"), launch } = {}) {
+                            logPath = process.env.ENTRANT_LOG || path.join(ENTRIES, "log.jsonl"), launch } = {}) {
   const who = profile();
   if (!who.email || !who.first || !who.last) throw new Error("owner details missing: set the ENTRANT_* secrets");
-  const items = (queue ?? JSON.parse(fs.readFileSync(path.join(ENTRIES, "queue.json"), "utf8"))).slice(0, max);
+  const qfile = process.env.ENTRANT_QUEUE || path.join(ENTRIES, "queue.json");
+  const items = (queue ?? JSON.parse(fs.readFileSync(qfile, "utf8"))).slice(0, max);
   const { chromium } = require("playwright");
   const browser = await (launch ? launch() : chromium.launch());
   const out = [];

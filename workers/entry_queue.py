@@ -98,7 +98,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
     iso = now.astimezone(MELB).date().isoformat()
     tags, caps = comp_odds.tags(store), comp_odds.caps(store)
     terms = comp_terms.history(store)
-    log = read_jsonl(entries / "log.jsonl")
+    log = sorted((x for f in sorted(entries.glob("log*.jsonl")) for x in read_jsonl(f)),   # main and re-enter logs
+                 key=lambda x: x.get("time_utc", ""))
     answers = json.loads((entries / "answers.json").read_text()) if (entries / "answers.json").exists() else {}
     entered, blocked, fails, done_once = {}, {}, {}, set()
     for e in log:
