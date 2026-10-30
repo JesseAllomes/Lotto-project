@@ -21,7 +21,10 @@ ROOT = Path(__file__).resolve().parent.parent
 STORE = ROOT / "data" / "draws"
 SOURCE = lott.BASE + "results/search/daterange"
 # First year to search for each game (a little before its known launch; empty windows cost one request).
-PRODUCTS = {"TattsLotto": 1972, "MonWedLotto": 1978, "OzLotto": 1994, "Powerball": 1996, "SetForLife": 2015}
+# Product ids are The Lott's own: Monday/Wednesday Lotto became MondayWednesdayFridayLotto in May 2024,
+# and Set for Life is SetForLife744. The API's history starts around 1997 for the older games.
+PRODUCTS = {"TattsLotto": 1972, "MonWedLotto": 1978, "MondayWednesdayFridayLotto": 2024, "OzLotto": 1994,
+            "Powerball": 1996, "SetForLife744": 2015}
 FIELDS = ["product", "draw_number", "draw_date", "primary", "secondary", "div1_winners", "div1_dividend"]
 
 
