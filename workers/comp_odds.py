@@ -127,6 +127,35 @@ def entry_limit(sec, desc):
     return "unknown", None
 
 
+def terms_limit(text):
+    """(limit, n) from explicit entry-limit wording in full terms, or (None, None) when the terms set none.
+    Stricter than entry_limit: only sentences about entries per person, day or week count."""
+    who = r"(?:person|entrant|individual|household|e-?mail(?: address)?|participant)"
+    n_ = r"(\d+|" + "|".join(NUM) + r")"
+    m = re.search(r"(?i)(?:maximum|max\.?|up to|limit(?:ed)? to|no more than) (?:of )?" + n_ +
+                  r" (?:valid )?entr(?:y|ies) (?:per|each|a) (" + who + r"|day|week|month)", text)
+    if m:
+        n = m.group(1).lower()
+        n = int(n) if n.isdigit() else NUM[n]
+        unit = m.group(2).lower()
+        if unit in ("day", "week"):
+            return ("daily" if unit == "day" else "weekly"), (n if n > 1 else None)
+        return ("once", None) if n == 1 else ("capped", n)
+    rules = [("daily", r"(?i)(?:once|one (?:\(1\) )?entry) (?:per|a|each) (?:calendar )?day|enter (?:once )?(?:daily|"
+                       r"each day|every day)|one entry per " + who + r" per day"),
+             ("weekly", r"(?i)(?:once|one (?:\(1\) )?entry) (?:per|a|each) (?:calendar )?week|one entry per " + who +
+                        r" per week"),
+             ("unlimited", r"(?i)multiple entries (?:are |will be )?(?:allowed|permitted|accepted)|unlimited entr|"
+                           r"(?:may|can) enter (?:as many times|multiple times|more than once)"),
+             ("once", r"(?i)(?:one|single|only 1|1) (?:\(1\) )?entry (?:per|only)|(?:may|can) (?:only )?enter once|"
+                      r"only (?:one|1) (?:\(1\) )?entry|limited to one|once only|one entry per " + who +
+                      r"|more than one entry[^.]{0,60}(?:invalid|void|disqualif)")]
+    for name, pat in rules:
+        if re.search(pat, text):
+            return name, None
+    return None, None
+
+
 MANUAL = (r"(?i)in[- ]store|stores?'s?\b|outlet|venue|retailer|receipt|scan|barcode|social (?:media )?(?:channel|"
           r"post|page)|install|"
           r"\bsms\b|text (?:the|your|a) |phone|call |by post|mail (?:in|your)|post (?:your|the) entry|download the "

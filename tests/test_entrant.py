@@ -24,10 +24,24 @@ class Limits(unittest.TestCase):
         d = TODAY - dt.timedelta(days=1)
         self.assertTrue(entry_queue.may_enter("once", [], TODAY))
         self.assertFalse(entry_queue.may_enter("once", [d], TODAY))
-        self.assertFalse(entry_queue.may_enter("unknown", [d], TODAY))
+        self.assertTrue(entry_queue.may_enter("unknown", [d], TODAY))       # unstated limit: daily
+        self.assertFalse(entry_queue.may_enter("unknown", [TODAY], TODAY))
         self.assertTrue(entry_queue.may_enter("daily", [d], TODAY))
         self.assertFalse(entry_queue.may_enter("daily", [TODAY], TODAY))
         self.assertFalse(entry_queue.may_enter("weekly", [d], TODAY))
+
+
+class TermsLimit(unittest.TestCase):
+    def test_explicit_wording_only(self):
+        from workers import comp_odds
+        lim = comp_odds.terms_limit
+        self.assertEqual(lim("Entrants are limited to one entry per person."), ("once", None))
+        self.assertEqual(lim("Only one (1) entry per person is permitted."), ("once", None))
+        self.assertEqual(lim("Entrants may enter once per day during the promotional period."), ("daily", None))
+        self.assertEqual(lim("A maximum of 3 entries per day."), ("daily", 3))
+        self.assertEqual(lim("Maximum of 5 entries per person."), ("capped", 5))
+        self.assertEqual(lim("Multiple entries are permitted."), ("unlimited", None))
+        self.assertEqual(lim("Prizes are drawn daily at 10am. Winners notified each day."), (None, None))
 
 
 class Queue(unittest.TestCase):
@@ -40,12 +54,13 @@ class Queue(unittest.TestCase):
                 rec(3, desc=FORM + " Entries made using automated software or bots are invalid."),
                 rec(4, desc=FORM.replace("Random draw.", "Judged on creativity and merit.")),  # needs an answer
                 rec(5, desc=FORM.replace("Complete the online entry form.", "Buy a ticket online.")),  # paid
-                rec(6),                                                                   # already entered once
+                rec(6),                                                                   # terms: once, entered
                 rec(7),                                                                   # terms not read yet
                 rec(8),                                                                   # entrant hit a captcha
             ], "t")
-            (store / "terms.jsonl").write_text("".join(json.dumps({"id": i, "tried": ["x"], "terms_read": True}) + "\n"
-                                                       for i in (1, 2, 3, 4, 6, 8)))
+            (store / "terms.jsonl").write_text("".join(json.dumps(
+                {"id": i, "tried": ["x"], "terms_read": True, "entry_limit_terms": "once" if i == 6 else None}) + "\n"
+                for i in (1, 2, 3, 4, 6, 8)))
             entries.mkdir()
             (entries / "log.jsonl").write_text(
                 json.dumps({"id": 6, "time_utc": "2026-10-20T01:00:00Z", "mode": "live", "result": "entered"}) + "\n" +

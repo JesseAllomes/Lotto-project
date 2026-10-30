@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=30 -->
+<!-- drainclamp-build: state; schema=1; generation=31 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -30,6 +30,7 @@
 - Skill-comp answers? -> drafted per competition and posted as a GitHub issue; submitted only after the owner approves or edits it (source: user, 2026-10-30)
 - Approval? -> free chance comps are entered automatically, re-entered as often as each allows (daily, weekly, one-off); only skill comps wait for the owner's tick on a daily GitHub-issue checklist with the drafted answer (source: user, 2026-10-30)
 - Pattern numbers? -> build pattern-based number sets and test them blind: methods fixed and pre-registered before scoring, scored only on held-out draws, against the exact random expectation; both 24 games per draw and one System 24 (source: user, 2026-10-30)
+- Unstated entry limits? -> treated as no limit (owner: an allowed loophole); entered once a day, as are stated-unlimited comps; a limit in the full terms always wins over the summary (source: user, 2026-10-30)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->

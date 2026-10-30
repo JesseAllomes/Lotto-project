@@ -4,8 +4,9 @@
 
 A listing joins the queue when it is open, a Victorian can enter, entry is free, the entry is a web form
 (entry_route agent_ok), its terms do not ban automated or third-party entry (comp_odds and comp_terms), and its
-entry limit allows another entry now (log.jsonl): once (or unstated) -> one entry ever; daily -> one a day;
-weekly -> one a week; unlimited or per-purchase -> one a day at most. Skill competitions also need an answer the
+entry limit allows another entry now (log.jsonl). The limit comes from the full terms when they state one
+(comp_terms), else from the listing summary: once -> one entry ever; daily -> one a day; weekly -> one a week;
+unlimited, or no limit stated anywhere (owner's call: an unstated limit is no limit) -> one a day, to stay reasonable. Skill competitions also need an answer the
 owner has approved (data/entries/answers.json, filled from the approval issues).
 Every other open, Victorian, free competition goes on manual.csv with the reason, as does any listing the entrant
 had to skip (CAPTCHA, login, human check, a required field it could not fill).
@@ -24,7 +25,7 @@ ENTRIES = comps.ROOT / "data" / "entries"
 QUEUE_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "entry_limit", "needs_answer",
                 "question", "terms_checked", "entry_url"]
 MANUAL_FIELDS = ["id", "title", "brand", "prize_pool", "closes", "draw_type", "reason", "entry_platform", "entry_url"]
-GAP_DAYS = {"once": None, "unknown": None, "daily": 1, "weekly": 7, "unlimited": 1, "per_purchase": 1, "capped": 1}
+GAP_DAYS = {"once": None, "unknown": 1, "daily": 1, "weekly": 7, "unlimited": 1, "per_purchase": 1, "capped": 1}
 BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed"}
 
 
@@ -77,7 +78,10 @@ def build(store=STORE, entries=ENTRIES, today=None):
             continue
         if r["id"] not in terms:
             continue                      # wait until comp_terms has looked for an automation ban
-        if not may_enter(a["entry_limit"], entered.get(r["id"], []), today):
+        limit = next((h["entry_limit_terms"] for h in reversed(terms[r["id"]]) if h.get("entry_limit_terms")),
+                     a["entry_limit"])
+        row["entry_limit"] = limit
+        if not may_enter(limit, entered.get(r["id"], []), today):
             continue
         row["needs_answer"] = a["draw_type"] == "skill" and str(r["id"]) not in answers
         queue.append(row)

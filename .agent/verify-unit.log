@@ -9,8 +9,8 @@ skip https://www.competitions.com.au/win-40k-prizes-weekly/76170/: not saved
 comps: 0 new listings (0 open to Victoria), 1 failed, 2 in register
 comps: 0 new listings (0 open to Victoria), 0 failed, 2 in register
 .......entry_queue: 1 ready to enter, 1 waiting for an approved answer, 3 on the manual list
-.................
+.........................
 ----------------------------------------------------------------------
-Ran 46 tests in 33.112s
+Ran 54 tests in 33.830s
 
 OK
