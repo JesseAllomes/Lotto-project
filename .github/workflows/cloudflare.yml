@@ -19,16 +19,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      CF_TOKEN: ${{ secrets.CLOUDFLARE_API || secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFLARE_TOKEN }}
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API || secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFLARE_TOKEN || secrets.CLOUDFLAREAPI || secrets.CLOUDFLARE_API_KEY || secrets.CF_API_TOKEN || secrets.CLOUDFLARE }}
       ACCESS_EMAIL: ${{ secrets.ENTRANT_EMAIL }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Secret names available (names only, never values)
+      - name: Which Cloudflare secret names are set (names only)
         env:
-          ALL: ${{ toJSON(secrets) }}
-        run: python3 -c "import json,os; print(sorted(k for k in json.loads(os.environ['ALL']) if k != 'github_token'))"
+          CLOUDFLARE_API: ${{ secrets.CLOUDFLARE_API }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+          CLOUDFLAREAPI: ${{ secrets.CLOUDFLAREAPI }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_KEY: ${{ secrets.CLOUDFLARE_KEY }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_API: ${{ secrets.CF_API }}
+          CF_TOKEN: ${{ secrets.CF_TOKEN }}
+          CLOUDFLARE: ${{ secrets.CLOUDFLARE }}
+          CLOUDFLARE_APITOKEN: ${{ secrets.CLOUDFLARE_APITOKEN }}
+          CLOUDFLAIR_API: ${{ secrets.CLOUDFLAIR_API }}
+          CLOUDFLARE_ENDPOINT: ${{ secrets.CLOUDFLARE_ENDPOINT }}
+          CLOUDFLAIR_ACCOUNTID: ${{ secrets.CLOUDFLAIR_ACCOUNTID }}
+          CLOUDFLARE_ACCOUNTID: ${{ secrets.CLOUDFLARE_ACCOUNTID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_SECRETACCESSID: ${{ secrets.CLOUDFLARE_SECRETACCESSID }}
+          CLOUDFLARE_ACCESSIDKEY: ${{ secrets.CLOUDFLARE_ACCESSIDKEY }}
+        run: python3 -c "import os; print('set:', [n for n in ['CLOUDFLARE_API', 'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_TOKEN', 'CLOUDFLAREAPI', 'CLOUDFLARE_API_KEY', 'CLOUDFLARE_KEY', 'CF_API_TOKEN', 'CF_API', 'CF_TOKEN', 'CLOUDFLARE', 'CLOUDFLARE_APITOKEN', 'CLOUDFLAIR_API', 'CLOUDFLARE_ENDPOINT', 'CLOUDFLAIR_ACCOUNTID', 'CLOUDFLARE_ACCOUNTID', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_SECRETACCESSID', 'CLOUDFLARE_ACCESSIDKEY'] if os.environ.get(n)])"
       - name: Token, Pages project and Access login
         run: python3 -m workers.cloudflare setup
       - name: Build the page
