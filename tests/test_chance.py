@@ -27,6 +27,13 @@ class Chance(unittest.TestCase):
         self.assertEqual(chance.winners({"title": "Win 5 x $100 vouchers"}), 5)
         self.assertEqual(chance.winners({"title": "Switch – Win 1/5 of La Bola Negra DPs"}), 5)
 
+    def test_audit_fixes(self):
+        self.assertEqual(chance.winners({"title": "Win a Pack", "description": "There will be 10 winners."}), 10)
+        self.assertEqual(chance.winners({"title": "Win a Bag", "description": "1 in 100 wins the bag."}), 100)
+        open_ = chance.estimate(rec("Win a $500 Voucher", 500), today=TODAY)[0]
+        gated = chance.estimate(rec("Win a $500 Voucher", 500, desc=FORM + " Existing customers only."), today=TODAY)[0]
+        self.assertGreater(gated, open_)
+
     def test_bands_by_fifths(self):
         b = chance.bands({i: i for i in range(10)})
         self.assertEqual([b[i] for i in (9, 8, 7, 4, 3, 0)], ["high", "high", "medium", "medium", "low", "low"])

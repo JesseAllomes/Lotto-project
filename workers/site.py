@@ -130,13 +130,20 @@ def melb(utc_text):
     return t.strftime("%a %d %b, %I:%M%p").replace(" 0", " ").replace("AM", "am").replace("PM", "pm")
 
 
+ROLLING = r"(?i)drawn monthly|monthly draws?|draws? (?:each|every) (?:month|week)|ongoing (?:promotion|competition)|no end date"
+
+
 def close_of(rec, fallback=""):
-    """(Melbourne closing date, '6:00pm' closing time) from the listing's stated or listed closing time."""
+    """(Melbourne closing date, closing time) from the listing; the time only when the summary states one, and
+    "ongoing" for rolling monthly/weekly draws that state no end date (audit 31 Oct: invented end dates)."""
     t = entry_queue.closes_at(rec) if rec else None
     if not t:
         return fallback[:10], ""
+    desc = (rec or {}).get("description") or ""
+    stated = re.search(entry_queue.STATED_CLOSE, desc)
+    rolling = re.search(ROLLING, desc) and not re.search(entry_queue.CLOSE_DATE, desc)
     t = t.astimezone(MELB)
-    return t.date().isoformat(), t.strftime("%I:%M%p").lstrip("0").lower()
+    return t.date().isoformat(), ("ongoing draws" if rolling else t.strftime("%I:%M%p").lstrip("0").lower() if stated else "")
 
 
 def removed(entries=ENTRIES):
@@ -419,7 +426,7 @@ function card(x) {
   const d = days(x.c), soon = d <= 2 ? "soon" : "";
   const ans = x.a ? `<div class="ans"><p>${esc(x.a)}</p><button class="ghost copy" data-copy="${esc(x.a)}">Copy answer</button></div>` : "";
   const at = x.ct ? " " + esc(x.ct) : "";
-  const when = x.c ? `<span class="${soon}">${d === 0 ? "closes today" + at : d === 1 ? "closes tomorrow" + at : "closes " + nice(x.c)}</span>` : "";
+  const when = x.ct === "ongoing draws" ? `<span>ongoing draws</span>` : x.c ? `<span class="${soon}">${d === 0 ? "closes today" + at : d === 1 ? "closes tomorrow" + at : "closes " + nice(x.c)}</span>` : "";
   if (S.tab === "win") {
     const st = x.seen === "yes" ? `<span class="soon">Your surname is on the winners page</span>` : `<span class="${/watch/.test(x.st) ? "soon" : ""}">${esc(x.st)}</span>`;
     const draw = x.c ? `${x.est ? "drawn by about" : "drawn"} ${esc(x.c)}` : "draw date not stated";

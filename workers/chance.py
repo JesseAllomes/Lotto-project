@@ -23,6 +23,15 @@ WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven"
 
 
 def winners(r, prizes=None):
+    """Prizes on offer: the larger of the title's count and the summary's ("10 winners", "1 in 100 wins")."""
+    d = (r.get("description") or "").lower()
+    found = [int(x) for x in re.findall(r"\b(\d{1,5}) (?:lucky )?(?:winners|prizes|prize packs|draws)\b", d)]
+    found += [int(x) for x in re.findall(r"\b1 in (\d{1,5}) (?:wins|win|entrants? wins?)\b", d)]
+    title_n = _title_winners(r)
+    return max([title_n] + [n for n in found if 1 < n <= 10000])
+
+
+def _title_winners(r):
     t = (r.get("title") or "").lower()
     m = re.search(r"\b1\s?(?:of|/)\s?(\d{1,5})\b|\b(\d{1,5})\s?x\b|\b(\d{1,5}) (?:winners|prizes|lucky)\b|"
                   r"\bone of (\w+)\b", t)
@@ -31,6 +40,11 @@ def winners(r, prizes=None):
         n = int(n) if n else WORDS.get(m.group(4) or "", 1)
         return max(1, n)
     return 1                  # comp_odds' prize count misreads amounts ("$2K" -> 2,000), so only the title counts
+
+
+GATED = (r"(?i)existing (?:customer|member)s?|members? only|must be an? (?:active |registered )?(?:member|customer|subscriber)|"
+         r"subscribers? (?:are|will be) (?:automatically )?entered|loyalty (?:program|member)|leave a (?:google )?review|"
+         r"proof of purchase|holders? of an? (?:eligible )?(?:account|card)")
 
 
 def effort(r, a):
@@ -60,6 +74,8 @@ def estimate(r, a=None, today=None):
         days_open = 30
     kind = effort(r, a)
     entrants = BASE * math.sqrt(max(value, 50) / 1000) * EFFORT[kind] * math.sqrt(days_open / 30)
+    if re.search(GATED, r.get("description") or ""):
+        entrants *= 0.5            # only members, customers or reviewers can enter: a smaller field (audit 31 Oct)
     mine = min(days_left, 30) if a["entry_limit"] == "daily" else 1
     n = winners(r, a.get("prizes"))
     return min(1.0, n * mine / max(entrants, 1.0)), kind, n

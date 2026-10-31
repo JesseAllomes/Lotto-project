@@ -53,6 +53,14 @@ def _detail(page, label):
     return html.unescape(re.sub(r"<[^>]+>", "", m.group(1))).strip() if m else None
 
 
+def brand_of(brand, title):
+    """The Brand detail, or the "Brand – Win ..." title prefix when the detail is missing or a placeholder ("Text")."""
+    if brand and brand.strip().lower() not in ("text", "brand", "n/a", "-"):
+        return brand.strip()
+    m = re.match(r"\s*([^–-]{2,60}?)\s+[–-]\s+", title or "")
+    return m.group(1).strip() if m else None
+
+
 def parse(page, url):
     post = re.search(r"rel=['\"]shortlink['\"] href=['\"]https://auscomps\.au/\?p=(\d+)['\"]", page)
     title = re.search(r'<h1 class="sc-title">(.*?)</h1>', page, re.S)
@@ -87,7 +95,7 @@ def parse(page, url):
         "id": ID_BASE + int(post.group(1)),
         "title": comps.clean_title(html.unescape(re.sub(r"<[^>]+>", "", title.group(1)))),
         "category": None, "category_slug": None,
-        "brand": _detail(page, "Brand"),
+        "brand": brand_of(_detail(page, "Brand"), html.unescape(re.sub(r"<[^>]+>", "", title.group(1)))),
         "prize_pool": float(value.group(1).replace(",", "")) if value and value.group(1).replace(",", "").replace(".", "").isdigit() else None,
         "states": states,
         "open_to_vic": None if not states else bool(re.search(r"(?i)all states|\bVIC\b|victoria|australia", states)),
