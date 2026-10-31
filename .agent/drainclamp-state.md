@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=51 -->
+<!-- drainclamp-build: state; schema=1; generation=53 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -40,6 +40,8 @@
 - Cutover? -> per service: verify, dry run, owner approves, then turn the Azure schedule on and disable the matching GitHub Actions workflow in the same step so nothing runs twice (source: repo decision)
 - Auto-entry on Azure? -> first Azure run is a dry run (ENTRANT_LIVE=0); live only after the owner approves and entries.yml is off (double entry would break stated entry limits) (source: repo decision)
 - Times shown to the owner? -> Melbourne time (AEDT/AEST) only, never UTC (source: user, 2026-10-31)
+- Where does data live? -> Azure Blob in the existing storage account (pennies a month); git keeps code only; OneDrive (owner's 1 TB) only for backups/archives because unattended jobs would need a rotating Microsoft login token (source: user "move everything possible, cheapest" + repo decision, 2026-10-31)
+- Site actions? -> no GitHub issues; on-site buttons via SWA API + owner-only login (source: user, 2026-10-31)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->
@@ -55,8 +57,12 @@
 | m8 | Competition value per entry (prize value against cap and ticket price) and the plain-English REPORT.md over lotto and competitions | analysis/comps_value.py;REPORT.md | pending | m4;m6;m7 |
 | m9 | Auto-entry of free web-form competitions: candidates (free, agent_ok, not banned, within entry limit), Playwright form filler with owner details from secrets, dry run then live, entry log without personal data, manual list for the rest, skill answers approved via GitHub issues | workers/entrant.py;workers/entry_queue.py;data/entries/;.github/workflows/entries.yml;tests/test_entrant.py | pending | m5;m6 |
 | az1 | Azure inventory and verification for Lotto: every resource Codex created mapped to the workflow it replaces (draws, jackpots, comps, entries, site, reenter, probe), checked against main for code version, schedule, settings and secret names; no changes | .agent/azure-inventory.md | done |  |
-| az2 | Azure dry runs for Lotto: each job run once on Azure without live entry; outputs and git pushes compared with the GitHub Actions run | .agent/azure-inventory.md | pending | az1 |
-| az3 | Lotto cutover: owner-approved Azure schedules on, matching GitHub Actions workflows off, first live runs checked | .github/workflows/;.agent/azure-inventory.md | pending | az2 |
+| az2 | Azure dry runs for Lotto: each job run once on Azure without live entry; outputs and git pushes compared with the GitHub Actions run | .agent/azure-inventory.md | done | az1 |
+| az3 | Lotto cutover: owner-approved Azure schedules on, matching GitHub Actions workflows off, first live runs checked | .github/workflows/;.agent/azure-inventory.md | done | az2 |
+| az4 | Data off git: registers (data/draws, jackpots, comps, entries, answers) live in Azure Blob container lotto-data (versioning on); workers read/write through one storage adapter; runner image carries the code (no clone, no push); one-time migration; git keeps code only | azure/runner.py;workers/store.py;workers/;azure/Dockerfile;azure/jobs/;tests/ | pending | az3 |
+| az5 | Site built in Azure: lotto-site Container Apps job builds from blob and deploys to the Static Web App (after entries/comps runs and every 2 h); site.yml and GitHub Pages retired | azure/jobs/lotto-site.json;azure/runner.py;workers/site.py | pending | az4 |
+| az6 | Site actions without GitHub: SWA managed API + built-in auth (owner-only invite) -> storage queue -> queue-triggered lotto-actions job applies remove/broken/reenter/answer/done; Done ticks sync; issue workflows (remove, reenter, answer) retired | workers/site.py;azure/site-api/;azure/jobs/lotto-actions.json;workers/actions.py | pending | az5 |
+| az7 | Retire GitHub data and workflows: data/ removed from main (tag last snapshot), only guard+deploy workflows remain; OneDrive monthly backup of the blob data | .github/workflows/;data/ | pending | az6 |
 <!-- /DC:ROADMAP -->
 
 <!-- DC:VERIFY -->
