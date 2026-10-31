@@ -11,10 +11,14 @@
 # nothing submitted), and ENTER_BANNED to 0 to stop entering comps whose terms ban automated entry. The repository is public:
 # no screenshots are kept and nothing personal is logged (the log holds listing ids, results and field kinds).
 name: entries
+# Runs on Azure now (azure/jobs/lotto-entries.json). Kept as a manual fallback only: run it by hand with
+# manual = yes, and only while the Azure job is parked, or the work is done twice.
 on:
-  schedule:
-    - cron: "5 */3 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: "yes = run on GitHub (only while the Azure job is parked)"
+        default: "no"
 permissions:
   contents: write
   actions: write
@@ -23,6 +27,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   enter:
+    if: github.event.inputs.manual == 'yes'
     runs-on: ubuntu-latest
     timeout-minutes: 300
     env:

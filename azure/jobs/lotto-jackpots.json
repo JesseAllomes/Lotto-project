@@ -61,7 +61,7 @@
             },
             {
               "name": "AZURE_JOBS_DISABLED",
-              "value": "1"
+              "value": "0"
             }
           ],
           "resources": {

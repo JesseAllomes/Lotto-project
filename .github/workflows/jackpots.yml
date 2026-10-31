@@ -2,10 +2,14 @@
 # Daily at 12:41 UTC (about 11:41pm Melbourne in summer). Token-free. An alert opens one GitHub issue per
 # jackpot cycle and level (Mega $30M / $35M, Super $23M / $27.2M); GitHub emails the owner.
 name: jackpots
+# Runs on Azure now (azure/jobs/lotto-jackpots.json). Kept as a manual fallback only: run it by hand with
+# manual = yes, and only while the Azure job is parked, or the work is done twice.
 on:
-  schedule:
-    - cron: "41 12 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: "yes = run on GitHub (only while the Azure job is parked)"
+        default: "no"
 permissions:
   contents: write
   issues: write
@@ -14,6 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   update:
+    if: github.event.inputs.manual == 'yes'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

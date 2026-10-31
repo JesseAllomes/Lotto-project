@@ -97,11 +97,18 @@ class AsDelivered(Fixture):
             code = guard.main(["--limits", str(REPO / "azure" / "limits.json"), "--base", "no-such-ref"])
         self.assertEqual(code, 0, out.getvalue())
 
-    def test_jobs_are_inert_until_the_owner_flips_the_switch(self):
+    def test_live_azure_job_has_no_scheduled_github_twin(self):
+        # An Azure job that is switched on and a scheduled GitHub workflow doing the same work would
+        # enter every competition twice and race each other's pushes.
         for path in (REPO / "azure" / "jobs").glob("*.json"):
-            env = {e["name"]: e.get("value") for e in guard.job_view(json.loads(path.read_text()))["env"].items()} \
-                if False else guard.job_view(json.loads(path.read_text()))["env"]
-            self.assertEqual(env["AZURE_JOBS_DISABLED"], {"value": "1"}, path.name)
+            env = guard.job_view(json.loads(path.read_text()))["env"]
+            if env["AZURE_JOBS_DISABLED"] != {"value": "0"}:
+                continue
+            twin = REPO / ".github" / "workflows" / (path.stem.removeprefix("lotto-") + ".yml")
+            if twin.exists():
+                text = twin.read_text()
+                self.assertNotIn("schedule:", text, twin.name)
+                self.assertIn("github.event.inputs.manual == 'yes'", text, twin.name)
 
     def test_profile_only_where_allowed(self):
         for path in (REPO / "azure" / "jobs").glob("*.json"):
