@@ -94,3 +94,18 @@ class Run(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TermsLinksAndProse(unittest.TestCase):
+    def test_link_text_and_page_code(self):
+        from workers import comp_terms, comp_odds
+        raw = ('<a href="/pages/privacy-policy-terms-and-conditions">Privacy</a>'
+               '<a href="/pages/ps5-giveaway-page">PS5 GIVEAWAY TERMS</a>')
+        self.assertEqual(comp_terms.terms_links(raw, "https://shop.example/pages/sign-up")[0],
+                         "https://shop.example/pages/ps5-giveaway-page")
+        body = b"<html><script>var s=e.scriptDataAttributes,u=void 0===d</script><p>Enter below.</p></html>"
+        self.assertTrue(comp_odds.re.search(comp_odds.BANNED, comp_terms.text_of(body)))      # page code reads as a ban
+        self.assertFalse(comp_odds.re.search(comp_odds.BANNED, comp_terms.prose_of(body)))   # prose does not
+        self.assertEqual(comp_odds.terms_limit("Entrants must join the Dr.Moose mailing list by providing an email."),
+                         ("once", None))
+

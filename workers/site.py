@@ -5,6 +5,9 @@
 
 One static page built from the registers after each run. All the data is embedded as JSON and the phone does the
 searching, filtering and sorting. Four tabs:
+  Remove       on To enter and Auto-entered: opens a pre-filled issue "remove: <ids>" (.github/workflows/remove.yml,
+               owner only) that stops entries, drops the comp from both lists and records it for the owner's pattern
+               of likes and dislikes (workers/removals.py -> data/entries/PREFERENCES.md); hidden on the phone at once.
   To enter     open competitions a Victorian can enter that the auto-entrant cannot (bot-checked web forms,
                social media, everything else), each with its prize category, Open button, approved answer with a
                Copy button, and a Done tick kept in the phone's browser storage.
@@ -107,6 +110,13 @@ def close_of(rec, fallback=""):
     return t.date().isoformat(), t.strftime("%I:%M%p").lstrip("0").lower()
 
 
+def removed(entries=ENTRIES):
+    """Ids the owner removed (data/entries/log_removed.jsonl, written by workers/removals.py)."""
+    path = entries / "log_removed.jsonl"
+    rows = (json.loads(l) for l in path.read_text().splitlines() if l.strip()) if path.exists() else ()
+    return {str(r["id"]) for r in rows if r.get("result") == "removed"}
+
+
 def load_answers(entries=ENTRIES):
     path = entries / "answers.json"
     return json.loads(path.read_text()) if path.exists() else {}
@@ -199,8 +209,10 @@ def stats(entries=ENTRIES):
 
 def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
     recs = records()
-    data = {"todo": items(entries, today, recs), "auto": autos(entries, today, recs), "free": freebies(freebie_path),
-            "win": winners(entries),
+    gone = removed(entries)
+    data = {"todo": [x for x in items(entries, today, recs) if x["id"] not in gone],
+            "auto": [x for x in autos(entries, today, recs) if x["id"] not in gone], "free": freebies(freebie_path),
+            "win": [x for x in winners(entries) if x["id"] not in gone], "removed": len(gone),
             "stats": stats(entries), "groups": GROUP_NAMES, "categories": [c for c, _ in CATEGORIES] + ["Other"],
             "repo": REPO, "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
     blob = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
@@ -250,7 +262,7 @@ ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px so
 <label class="done hint" style="margin-top:8px"><input type="checkbox" id="hide"> Hide done</label>
 </div></header>
 <main class="wrap"><div class="sub" id="count"></div><ul id="list"></ul></main>
-<div class="bar" id="bar"><span id="selcount"></span><a class="go" id="reselect" target="_blank" rel="noopener">Re-enter selected</a></div>
+<div class="bar" id="bar"><span id="selcount"></span><a class="ghost rmsel" id="rmselect" target="_blank" rel="noopener">Remove selected</a><a class="go" id="reselect" target="_blank" rel="noopener">Re-enter selected</a></div>
 <script>
 const D = __DATA__;
 const $ = (s) => document.querySelector(s);
@@ -263,8 +275,11 @@ const sel = new Set();
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const days = (c) => c ? Math.round((new Date(c.slice(0, 10) + "T00:00:00") - today) / 864e5) : 9999;
 const money = (p) => p ? "$" + Math.round(p).toLocaleString("en-AU") : "prize n/a";
+const rmIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("remove: " + ids.join(" "))}&body=${encodeURIComponent("Remove these competitions: no more entries, off both lists, and add them to the pattern of what I don't like. Submit this issue; the remove workflow does the rest.")}`;
+const gone = () => store.get("comps-removed", {});
+const rmBtn = (x) => `<a class="ghost rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Remove</a>`;
 const issue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("reenter: " + ids.join(" "))}&body=${encodeURIComponent("Re-enter these competitions now. Submit this issue; the reenter workflow does the rest and closes it.")}`;
-$("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps · updated ${D.built}`;
+$("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps` + (D.removed ? ` · ${D.removed} removed` : "") + ` · updated ${D.built}`;
 for (const [k, v] of Object.entries(D.groups)) $("#grp").insertAdjacentHTML("beforeend", `<option value="${k}">${esc(v)}</option>`);
 const pool = () => S.tab === "todo" ? D.todo : S.tab === "auto" ? D.auto : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
 function chips() {
@@ -293,7 +308,7 @@ function card(x) {
     <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
     <div class="meta">${x.n ? `<b>${x.n}</b> ${x.n === 1 ? "entry" : "entries"} · last ${esc(x.l)}` : "waiting for the next burst"}</div>${ans}
     <div class="acts"><a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>
-    ${x.open ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Re-enter</a><label class="done"><input type="checkbox" class="pick" data-id="${esc(x.id)}" ${sel.has(x.id) ? "checked" : ""}> Select</label>` : `<span class="meta">closed</span>`}</div></li>`;
+    ${rmBtn(x)}${x.open ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Re-enter</a><label class="done"><input type="checkbox" class="pick" data-id="${esc(x.id)}" ${sel.has(x.id) ? "checked" : ""}> Select</label>` : `<span class="meta">closed</span>`}</div></li>`;
   if (S.tab === "free") { const dn = !!done()["f:" + x.u];
     return `<li class="card ${dn ? "is-done" : ""}"><div class="top"><span class="tag">${esc(x.k)}</span><span class="meta">${esc(x.c)}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a><div class="meta">${esc(x.d)}</div>
@@ -302,14 +317,14 @@ function card(x) {
   return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>${ans}
-    <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open entry page</a><label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
+    <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open entry page</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
 }
 function render() {
   document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === S.tab));
   $("#q").value = S.q; $("#grp").value = S.grp; $("#close").value = S.close; $("#min").value = S.min; $("#sort").value = S.sort; $("#hide").checked = S.hide;
   $("#grp").style.display = S.tab === "todo" ? "" : "none";
   chips();
-  const q = S.q.trim().toLowerCase(), dn = done(), P = pool();
+  const q = S.q.trim().toLowerCase(), dn = done(), rm = gone(), P = pool().filter((x) => !rm[x.id]);
   const list = P.filter((x) => (!q || (x.t + " " + (x.b || "") + " " + (x.d || "") + " " + x.k).toLowerCase().includes(q))
     && (!S.cats.length || S.cats.includes(x.k)) && (S.tab !== "todo" || !S.grp || x.g === S.grp)
     && (S.close === "" || days(x.c) <= +S.close) && (S.tab === "free" || (x.p || 0) >= +S.min)
@@ -320,12 +335,17 @@ function render() {
   $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
   $("#list").innerHTML = list.map(card).join("") || `<li class="empty">${S.tab === "win" ? "Nothing entered yet. Tick Done on the To enter tab to track a comp here." : "Nothing matches. Clear a filter."}</li>`;
   $("#bar").classList.toggle("show", S.tab === "auto" && sel.size > 0);
-  $("#selcount").textContent = `${sel.size} selected`; $("#reselect").href = issue([...sel]);
+  $("#selcount").textContent = `${sel.size} selected`; $("#reselect").href = issue([...sel]); $("#rmselect").href = rmIssue([...sel]);
   store.set("comps-ui", S);
 }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest(".tab"); if (t) { S.tab = t.dataset.tab; S.cats = []; render(); return; }
   const c = e.target.closest(".chip"); if (c) { const k = c.dataset.cat; S.cats = S.cats.includes(k) ? S.cats.filter((x) => x !== k) : [...S.cats, k]; render(); return; }
+  const r = e.target.closest("a.rm, a.rmsel");
+  if (r) {   // hide at once on this phone; the submitted issue makes it permanent and records it for the pattern
+    const g = gone(); for (const id of (r.classList.contains("rmsel") ? [...sel] : [r.dataset.id])) g[id] = Date.now();
+    store.set("comps-removed", g); if (r.classList.contains("rmsel")) sel.clear(); setTimeout(render, 50); return;
+  }
   const b = e.target.closest("button.copy"); if (b) { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied"; } catch { b.textContent = "Select and copy the text"; } setTimeout(() => (b.textContent = "Copy answer"), 2000); }
 });
 document.addEventListener("change", (e) => {

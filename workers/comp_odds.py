@@ -106,7 +106,10 @@ def bonus(sec, desc):
 
 # "Each individual is allowed one entry", "entrants are permitted only one entry", "limited to a single entry".
 ALLOWED_ONE = (r"(?:allowed|permitted|entitled to|limited to|may submit|can submit) (?:only )?(?:one|1|a single|"
-               r"a maximum of one) (?:\(1\) )?entr")
+               r"a maximum of one) (?:\(1\) )?entr"
+               # entering is joining a mailing list: one sign-up per person ("Entrants must join the mailing list")
+               r"|(?:entrants?|participants?|you) (?:must|need to|should) (?:join|subscribe to|sign up (?:for|to)) "
+               r"(?:the|our) .{0,40}?(?:mailing list|newsletter|email list|database)")
 
 
 def entry_limit(sec, desc):
@@ -178,7 +181,7 @@ BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|(?:third[- ]party|agents?
           r"(?:accepted|permitted|valid)|prohibit|disqualif|rejected|ineligible(?! to enter))|(?:entries|entry) (?:made|"
           r"submitted|generated|lodged) (?:by|using|through|via) (?:any )?(?:automat|script|macro|bots?|bulk|third[- ]party|"
           r"agents?)")
-BAN_RULES = 2          # terms records read under older, broader ban wording are re-read
+BAN_RULES = 3          # terms records read under older, broader ban wording (or page code) are re-read
 
 
 def entry_route(sec, desc, platform, buy):

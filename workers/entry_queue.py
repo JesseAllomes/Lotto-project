@@ -165,8 +165,11 @@ def build(store=STORE, entries=ENTRIES, now=None):
     log = sorted((x for f in sorted(entries.glob("log*.jsonl")) for x in read_jsonl(f)),   # main and re-enter logs
                  key=lambda x: x.get("time_utc", ""))
     answers = json.loads((entries / "answers.json").read_text()) if (entries / "answers.json").exists() else {}
-    entered, blocked, fails, done_once, tried, maybe = {}, {}, {}, set(), {}, {}
+    entered, blocked, fails, done_once, tried, maybe, removed = {}, {}, {}, set(), {}, {}, set()
     for e in log:
+        if e.get("result") == "removed":                   # the owner removed it (site Remove button, log_removed)
+            removed.add(e["id"])
+            continue
         tried[e["id"]] = e.get("time_utc", "")
         if e.get("mode") == "live" and e.get("result") == "unknown":   # a run whose log was lost: may have entered
             maybe.setdefault(e["id"], []).append(dt.datetime.fromisoformat(e["time_utc"].replace("Z", "+00:00")))
@@ -195,6 +198,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
     queue, manual, last_day_ids = [], [], set()
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
         if not r.get("open_to_vic") or (r.get("closes") or "9")[:10] < iso or (closes_at(r) or now) < now:
+            continue
+        if r["id"] in removed:
             continue
         a = comp_odds.assess(r, tags.get(r["id"], ()), caps.get(r["id"]))
         final = last_day(r, now)

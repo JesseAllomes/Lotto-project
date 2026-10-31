@@ -1,0 +1,34 @@
+# Remove on request: the site's Remove button opens a pre-filled issue "remove: <ids>". When the repository owner
+# submits it, this records the removals (workers/removals.py -> data/entries/log_removed.jsonl): the queue never
+# enters those comps again, both lists drop them, and data/entries/PREFERENCES.md is rebuilt from the pattern of
+# what was removed. Then it comments, closes the issue and refreshes the site. Issues from anyone else are ignored.
+name: remove
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+  actions: write
+concurrency:
+  group: remove
+  cancel-in-progress: false
+jobs:
+  remove:
+    if: github.event.issue.user.login == github.repository_owner && startsWith(github.event.issue.title, 'remove')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record the removals
+        run: python3 -m workers.removals "$ISSUE_TITLE" | tee "$RUNNER_TEMP/result.txt"
+      - name: Commit, report and close the issue
+        run: |
+          bash workers/commit_entries.sh "remove: issue #$ISSUE_NUMBER"
+          gh issue comment "$ISSUE_NUMBER" --body "$(head -1 "$RUNNER_TEMP/result.txt"). No more entries for these; the pattern is in data/entries/PREFERENCES.md."
+          gh issue close "$ISSUE_NUMBER"
+          gh workflow run site.yml --ref main || true

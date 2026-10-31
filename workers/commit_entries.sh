@@ -24,6 +24,7 @@ for i in 1 2 3 4; do
     [ -s "$f" ] && cat "$f" >> "data/entries/$(basename "$f")"
   done
   python3 -m workers.entry_queue > /dev/null
+  python3 -m workers.removals > /dev/null || true     # PREFERENCES.md from the merged removals
   git add data/entries
   git diff --cached --quiet && exit 0
   git commit -q -m "$msg" && git push -q origin HEAD:main && exit 0

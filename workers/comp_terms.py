@@ -77,6 +77,14 @@ def text_of(body, content_type=""):
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", t)))
 
 
+def prose_of(body, content_type=""):
+    """The readable text only (scripts and their embedded data dropped), for wording rules such as the automation ban:
+    page code ("script ... void 0") must not read as terms."""
+    if body[:5] == b"%PDF-" or "pdf" in content_type:
+        return text_of(body, content_type)
+    return text_of(re.sub(rb"(?is)<(script|noscript|template)\b.*?</\1\s*>", b" ", body), content_type)
+
+
 def find_cap(text):
     """(cap, evidence) for the first cap stated in the text, else (None, None)."""
     for pat in CAP_PATTERNS:
@@ -102,17 +110,29 @@ def find_prices(raw, text):
     return sorted(out)
 
 
+TERMS_TEXT = r"""<a\b[^>]*href=["'](?P<u>[^"'\s]+)["'][^>]*>(?P<t>(?:(?!</a>).){0,120}?(?:terms|t\s?&(?:amp;)?\s?cs?\b|conditions|rules)(?:(?!</a>).){0,80}?)</a>"""
+
+
 def terms_links(raw, base):
-    """Candidate terms URLs on the page, those sharing words with the draw's own path first."""
+    """Candidate terms URLs on the page: links whose address or text says terms ("PS5 GIVEAWAY TERMS" ->
+    /pages/ps5-giveaway-page); those naming a giveaway or competition first, then those sharing words with the
+    draw's own path."""
     words = set(re.findall(r"[a-z]{4,}", urllib.parse.urlparse(base).path.lower())) - {"draw", "html"}
     host = urllib.parse.urlparse(base).hostname
-    found = []
+    found, comp = [], set()
+    for m in re.finditer(TERMS_TEXT, raw, re.I | re.S):
+        u = urllib.parse.urljoin(base, html.unescape(m.group("u")))
+        if urllib.parse.urlparse(u).hostname == host and u not in found:
+            found.append(u)
+            if re.search(r"(?i)giveaway|competition|comp\b|promotion|contest|win\b|draw", m.group("t")):
+                comp.add(u)
     for m in re.finditer(TERMS_LINK, raw, re.I):
         u = urllib.parse.urljoin(base, html.unescape(m.group("u")).replace("\\/", "/"))
         if urllib.parse.urlparse(u).hostname != host or u in found:
             continue
         found.append(u)
-    return sorted(found, key=lambda u: (-len(words & set(re.findall(r"[a-z]{4,}", u.lower()))), found.index(u)))
+    return sorted(found, key=lambda u: (u not in comp, -len(words & set(re.findall(r"[a-z]{4,}", u.lower()))),
+                                        found.index(u)))
 
 
 def fetch_bytes(url):
@@ -147,12 +167,13 @@ def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
         rec["prices"] = sorted(set(map(tuple, rec["prices"])) | set(find_prices(raw, text)))
         if url == entry_url:
             rec["per_ticket"] = sorted({float(m.group("p").replace(",", "")) for m in re.finditer(PER_TICKET, text, re.I)})
-        if re.search(comp_odds.BANNED, text):
+        prose = prose_of(body, ctype)
+        if re.search(comp_odds.BANNED, prose):
             rec["automation_banned"] = True
-        if re.search(comp_odds.EXCESSIVE, text):
+        if re.search(comp_odds.EXCESSIVE, prose):
             rec["excessive_clause"] = True
         if not rec["entry_limit_terms"]:
-            rec["entry_limit_terms"], rec["entry_limit_terms_n"] = comp_odds.terms_limit(text)
+            rec["entry_limit_terms"], rec["entry_limit_terms_n"] = comp_odds.terms_limit(prose)
         permit = re.search(PERMIT, text)
         if permit and not rec["permit_vic"]:
             rec["permit_vic"] = permit.group("v").rstrip(".,")
