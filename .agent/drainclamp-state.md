@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=50 -->
+<!-- drainclamp-build: state; schema=1; generation=51 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -84,4 +84,5 @@
 - 2026-10-31T05:36:57+00:00 ce8cd398 az1 done: runner review + fixes in azure/ (30 tests), image build workflow; az2 blocked on Azure write approval
 - 2026-10-31T07:19:13+00:00 3417cebd owner: launch all, cost audit first, auto-deploy main->Azure behind cost guard. Applied: budget AUD20 alerts 25/50/100%+forecast (both emails), func 512MB x1, storage lifecycle+1d soft delete, Foundry keys off, Log Analytics 0.1GB/day on jobs env, OIDC deploy app 7ab2c182 (Contributor on RG, main only)
 - 2026-10-31T07:47:00+00:00 23b6e8c7 az2 done: guarded deploy live (OIDC), dry runs ok (draws, jackpots, entries 11 queued/dry_ok); az3 partial: draws, jackpots, entries cut over to Azure 07:45Z, GitHub twins manual-only; comps pending dry run; reenter+site stay on GitHub
+- 2026-10-31T09:37:02+00:00 676ea787 az3: first live Azure entries burst 8:05-8:26 pm Melbourne: 5 runs ok, 9 entered / 7 failed / 3 skipped, every run's log committed, site rebuilt on both hosts after each push; ~3 forms per run within the 150 s budget
 <!-- /DC:LOG -->
