@@ -4,7 +4,8 @@
     python3 -m workers.site --out DIR       # somewhere else
 
 One static page built from the registers after each run. All the data is embedded as JSON and the phone does the
-searching, filtering and sorting. Five tabs:
+searching, filtering and sorting (gamer-chic theme: purple fuzz, neon orange, paint splatter). Tabs:
+  Social       the To enter list's Facebook / Instagram / TikTok competitions, on their own tab.
   Remove       (and Doesn't work: "broken: <ids>", not counted as a dislike)
                on To enter and Auto-entered: opens a pre-filled issue "remove: <ids>" (.github/workflows/remove.yml,
                owner only) that stops entries, drops the comp from both lists and records it for the owner's pattern
@@ -100,7 +101,8 @@ def category(title, slug=None):
 
 
 def group_of(reason, platform, url):
-    if platform in ("facebook", "instagram", "tiktok", "x", "youtube"):
+    if platform in ("facebook", "instagram", "tiktok", "x", "youtube") or \
+            re.search(r"(?i)//(?:[\w-]+\.)?(?:facebook|instagram|tiktok|threads)\.(?:com|net)/|//(?:www\.)?fb\.(?:com|me)/", url or ""):
         return "social"
     if any(k in reason for k in ("captcha", "human_check", "failing", "no_form", "unfillable", "login",
                                  "terms ban")) or "/pages/" in (url or ""):
@@ -300,37 +302,76 @@ def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
 
 TEMPLATE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Comps to enter</title>
+<title>Comp Quest</title><meta name="theme-color" content="#1a0b2e">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f5f2;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3e1dc;--accent:#0b6e4f;--chip:#ecebe6;--warn:#a15c00}
-@media (prefers-color-scheme:dark){:root{--bg:#121214;--card:#1c1c1f;--ink:#f2f2f4;--muted:#a1a1a8;--line:#2c2c31;--accent:#3ccf95;--chip:#26262b;--warn:#f0b35a}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,system-ui,Segoe UI,Roboto,sans-serif}
-header{background:var(--bg);border-bottom:1px solid var(--line)}
-.wrap{max-width:820px;margin:0 auto;padding:12px 16px}h1{font-size:1.35rem;margin:0}
+/* Gamer-chic retro: purple fuzz, neon orange, paint splatter. Dark by design. */
+:root{--bg:#1a0b2e;--bg2:#2b1150;--card:#241042;--card2:#2f1658;--ink:#f6efff;--muted:#bba6d9;--line:#4a2a7a;
+  --orange:#ff6b1a;--orange2:#ffa040;--purple:#b44dff;--pink:#ff3ea5;--lime:#c6ff3d;--accent:var(--orange);--chip:#341a5e;--warn:#ffb347}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font:16px/1.5 "Space Grotesk",system-ui,sans-serif;min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 110% -10%,rgba(180,77,255,.35),transparent 60%),
+    radial-gradient(900px 500px at -20% 30%,rgba(255,107,26,.18),transparent 60%),
+    radial-gradient(700px 700px at 50% 120%,rgba(255,62,165,.18),transparent 60%),var(--bg)}
+/* fuzz: fine grain over everything */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.16;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* paint splatter */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.55;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='%23ff6b1a' d='M100 30c18 0 22 22 40 26s34-8 36 10-22 20-20 38 26 30 12 44-30-6-46 2-18 32-36 28-8-30-24-38-40 2-42-16 24-20 22-38-24-30-10-42 30 8 44 0 6-14 24-14z'/%3E%3Ccircle cx='182' cy='34' r='7' fill='%23ff6b1a'/%3E%3Ccircle cx='24' cy='178' r='5' fill='%23ff6b1a'/%3E%3Ccircle cx='170' cy='176' r='3' fill='%23ff6b1a'/%3E%3C/svg%3E") -60px -50px/230px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='%23b44dff' d='M96 22c14 6 8 30 26 34s30-16 40-2-12 26 0 40 34 6 30 26-30 10-38 26 8 36-10 40-20-24-38-22-30 26-44 14 8-30-6-42-40-4-38-22 30-12 30-30-24-36-6-44 26 18 40 12 14-36 34-28z'/%3E%3Ccircle cx='20' cy='30' r='6' fill='%23b44dff'/%3E%3Ccircle cx='186' cy='150' r='8' fill='%23b44dff'/%3E%3C/svg%3E") calc(100% + 70px) 38%/260px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='%23ff3ea5' d='M104 40c12 4 6 24 22 28s28-10 32 4-18 18-10 32 30 14 22 28-28-2-38 10 0 32-16 30-12-26-26-26-28 20-38 8 10-24-2-36-34-14-26-28 30 0 34-14-14-30 0-36 22 12 34 6 0-10 12-6z'/%3E%3Ccircle cx='160' cy='30' r='5' fill='%23ff3ea5'/%3E%3C/svg%3E") -70px calc(100% + 60px)/240px no-repeat}
+header,main,.bar{position:relative;z-index:1}
+header{background:linear-gradient(180deg,rgba(26,11,46,.92),rgba(26,11,46,.75));backdrop-filter:blur(6px);border-bottom:2px solid var(--purple);box-shadow:0 0 24px rgba(180,77,255,.35)}
+.wrap{max-width:820px;margin:0 auto;padding:14px 16px}
+h1{font-family:Bungee,"Space Grotesk",sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:.02em;margin:0;line-height:1.1;
+  color:var(--orange);text-shadow:0 0 10px rgba(255,107,26,.7),3px 3px 0 var(--purple)}
 .sub,.meta,.hint{color:var(--muted);font-size:.88rem}
-.tabs{display:flex;gap:6px;margin:10px 0 8px;overflow-x:auto;scrollbar-width:none}.tab{flex:1 0 auto;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600}
-.tab[aria-selected=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
-input[type=search],select{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-input[type=search]{width:100%}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1 1 auto}
-.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}.chip{white-space:nowrap;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:inherit;font-size:.85rem}
-.chip[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
-ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
-.top{display:flex;justify-content:space-between;gap:8px}.prize{font-weight:700;color:var(--accent)}.soon{color:var(--warn);font-weight:600}
-.title{display:block;font-weight:600;color:var(--ink);text-decoration:none;margin:4px 0}
-.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted);margin-right:4px}
-.tag.ch-high{background:var(--accent);color:#fff}.tag.ch-medium{background:var(--chip);color:var(--ink)}.tag.ch-low{background:transparent;border:1px solid var(--line)}
-.acts{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
-.go{background:var(--accent);color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:600;border:0;font:inherit}
-.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:7px 11px;border-radius:8px;font:inherit;font-weight:600;text-decoration:none}
-.done{display:flex;gap:6px;align-items:center}.done input{width:22px;height:22px}
+.tabs{display:flex;gap:8px;margin:12px 0 10px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}
+.tab{flex:1 0 auto;padding:9px 12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);
+  font:inherit;font-weight:700;letter-spacing:.02em;cursor:pointer;box-shadow:3px 3px 0 #0b0418}
+.tab[aria-selected=true]{background:var(--orange);color:#1a0b2e;border-color:var(--orange2);box-shadow:3px 3px 0 var(--purple),0 0 16px rgba(255,107,26,.6)}
+input[type=search],select{font:inherit;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);color:var(--ink)}
+input[type=search]:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,26,.25)}
+input[type=search]{width:100%}input::placeholder{color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1 1 auto}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.chip{white-space:nowrap;padding:6px 12px;border-radius:999px;border:2px solid var(--purple);background:transparent;color:var(--ink);font:inherit;font-size:.85rem;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--purple);color:#fff;box-shadow:0 0 12px rgba(180,77,255,.7)}
+ul{list-style:none;padding:0;margin:0}
+.card{background:linear-gradient(160deg,var(--card2),var(--card));border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin:14px 0;
+  box-shadow:5px 5px 0 #0b0418,0 0 0 1px rgba(180,77,255,.15) inset;transition:transform .12s,box-shadow .12s}
+.card:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--purple),0 0 22px rgba(255,107,26,.25)}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.prize{font-family:Bungee,sans-serif;font-weight:400;font-size:1.15rem;color:var(--orange);text-shadow:0 0 8px rgba(255,107,26,.55)}
+.soon{color:var(--lime);font-weight:700;text-shadow:0 0 8px rgba(198,255,61,.45)}
+.title{display:block;font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none;margin:6px 0}
+.title:hover{color:var(--orange2)}
+.tag{display:inline-block;font-size:.74rem;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--chip);color:var(--muted);margin:2px 4px 2px 0;letter-spacing:.02em}
+.tag.ch-high{background:var(--orange);color:#1a0b2e;box-shadow:0 0 10px rgba(255,107,26,.7)}
+.tag.ch-medium{background:var(--purple);color:#fff}
+.tag.ch-low{background:transparent;border:1px solid var(--line)}
+.acts{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:8px;margin-top:12px}.acts .done{margin-left:auto}
+.go{background:var(--orange);color:#1a0b2e;text-decoration:none;padding:9px 14px;border-radius:10px;font:inherit;font-weight:700;border:0;
+  box-shadow:3px 3px 0 var(--purple);cursor:pointer}
+.go:active,.ghost:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--purple)}
+.ghost{background:transparent;color:var(--orange2);border:2px solid var(--orange);padding:7px 12px;border-radius:10px;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+a{color:var(--orange2)}
+.done{display:flex;gap:6px;align-items:center}.done input{width:22px;height:22px;accent-color:var(--orange)}
 .card.is-done{opacity:.45}.card.is-done .title{text-decoration:line-through}
-.ans{background:var(--bg);border-radius:8px;padding:8px 10px;margin:8px 0}.ans p{margin:0 0 6px}
-.bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;display:none}
-.bar.show{display:flex;justify-content:space-between;align-items:center;gap:8px}.empty{color:var(--muted);text-align:center;padding:30px 0}
+.ans{background:rgba(11,4,24,.55);border:1px dashed var(--purple);border-radius:12px;padding:10px 12px;margin:10px 0}.ans p{margin:0 0 8px}
+.bar{position:sticky;bottom:0;background:var(--bg2);border-top:2px solid var(--orange);padding:10px 16px;display:none;box-shadow:0 -6px 20px rgba(255,107,26,.25)}
+.bar.show{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+#count .go{display:inline-block;margin:8px 0 2px}
 </style></head><body>
 <header><div class="wrap">
 <h1>Comps to enter</h1><div class="sub" id="summary"></div>
-<div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="auto">Entered</button><button class="tab" data-tab="appr">Approvals</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
+<div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="social">Social</button><button class="tab" data-tab="auto">Entered</button><button class="tab" data-tab="appr">Approvals</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
 <input type="search" id="q" placeholder="Search prize, brand or title">
 <div class="chips" id="cats"></div>
 <div class="row" style="margin-top:6px">
@@ -356,6 +397,7 @@ const sel = new Set();
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const days = (c) => c ? Math.round((new Date(c.slice(0, 10) + "T00:00:00") - today) / 864e5) : 9999;
 const chanceTag = (x) => x.cb ? `<span class="tag ch-${x.cb}" title="Estimated from the number of prizes, the prize size, how much effort entering takes and how long it runs. A ranking, not real odds.">${x.cb} chance${x.cw > 1 ? ` · ${x.cw} prizes` : ""}</span>` : "";
+const nice = (c) => { const t = new Date(c.slice(0, 10) + "T00:00:00"); return isNaN(t) ? esc(c) : t.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + (t.getFullYear() !== new Date().getFullYear() ? " " + t.getFullYear() : ""); };
 const money = (p, est) => p ? (est ? "~$" : "$") + Math.round(p).toLocaleString("en-AU") : "prize n/a";   // ~ = estimated from the title
 const rmIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("remove: " + ids.join(" "))}&body=${encodeURIComponent("Remove these competitions: no more entries, off both lists, and add them to the pattern of what I don't like. Submit this issue; the remove workflow does the rest.")}`;
 const gone = () => store.get("comps-removed", {});
@@ -367,7 +409,7 @@ const answerIssue = (x) => `https://github.com/${D.repo}/issues/new?title=${enco
 const issue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("reenter: " + ids.join(" "))}&body=${encodeURIComponent("Re-enter these competitions now. Submit this issue; the reenter workflow does the rest and closes it.")}`;
 $("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps` + (D.removed ? ` · ${D.removed} removed` : "") + ` · updated ${D.built}`;
 for (const [k, v] of Object.entries(D.groups)) $("#grp").insertAdjacentHTML("beforeend", `<option value="${k}">${esc(v)}</option>`);
-const pool = () => S.tab === "todo" ? D.todo : S.tab === "auto" ? D.auto : S.tab === "appr" ? D.appr : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
+const pool = () => S.tab === "todo" ? D.todo.filter((x) => x.g !== "social") : S.tab === "social" ? D.todo.filter((x) => x.g === "social") : S.tab === "auto" ? D.auto : S.tab === "appr" ? D.appr : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
 function chips() {
   const src = S.tab === "free" ? [...new Set(D.free.map((x) => x.k))] : D.categories;
   $("#cats").innerHTML = src.map((c) => { const n = pool().filter((x) => x.k === c).length;
@@ -377,7 +419,7 @@ function card(x) {
   const d = days(x.c), soon = d <= 2 ? "soon" : "";
   const ans = x.a ? `<div class="ans"><p>${esc(x.a)}</p><button class="ghost copy" data-copy="${esc(x.a)}">Copy answer</button></div>` : "";
   const at = x.ct ? " " + esc(x.ct) : "";
-  const when = x.c ? `<span class="${soon}">${d === 0 ? "closes today" + at : d === 1 ? "closes tomorrow" + at : "closes " + esc(x.c.slice(0, 10))}</span>` : "";
+  const when = x.c ? `<span class="${soon}">${d === 0 ? "closes today" + at : d === 1 ? "closes tomorrow" + at : "closes " + nice(x.c)}</span>` : "";
   if (S.tab === "win") {
     const st = x.seen === "yes" ? `<span class="soon">Your surname is on the winners page</span>` : `<span class="${/watch/.test(x.st) ? "soon" : ""}">${esc(x.st)}</span>`;
     const draw = x.c ? `${x.est ? "drawn by about" : "drawn"} ${esc(x.c)}` : "draw date not stated";
@@ -429,11 +471,11 @@ function render() {
   const list = P.filter((x) => (!q || (x.t + " " + (x.b || "") + " " + (x.d || "") + " " + x.k).toLowerCase().includes(q))
     && (!S.cats.length || S.cats.includes(x.k)) && (S.tab !== "todo" || !S.grp || x.g === S.grp)
     && (S.close === "" || days(x.c) <= +S.close) && (S.tab === "free" || inBand(x.p || 0))
-    && !(S.hide && S.tab === "todo" && dn[x.id]) && !(S.hide && S.tab === "free" && dn["f:" + x.u]));
+    && !(S.hide && (S.tab === "todo" || S.tab === "social") && dn[x.id]) && !(S.hide && S.tab === "free" && dn["f:" + x.u]));
   const by = { chance: (a, b) => (b.ch || 0) - (a.ch || 0) || days(a.c) - days(b.c), close: (a, b) => days(a.c) - days(b.c) || (b.p || 0) - (a.p || 0), prize: (a, b) => (b.p || 0) - (a.p || 0), az: (a, b) => a.t.localeCompare(b.t) };
   list.sort(by[S.sort]);
   const total = list.reduce((s, x) => s + (x.p || 0), 0);
-  $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
+  $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" || S.tab === "social" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
   const ok = S.tab === "appr" ? list.filter((x) => x.st === "ok" && !x.hand) : [];
   $("#count").innerHTML = esc($("#count").textContent) + (S.tab === "appr"
     ? ` · ${list.filter((x) => x.st === "ok").length} approved, ${list.filter((x) => x.st !== "ok").length} need an answer` + (ok.length ? ` <a class="go" href="${issue(ok.map((x) => x.id))}" target="_blank" rel="noopener">Submit all approved (${ok.length})</a>` : "")
