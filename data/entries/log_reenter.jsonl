@@ -1,1 +1,6 @@
 {"time_utc":"2026-10-30T21:58:20Z","id":75768,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone","answer","required_marketing"]}
+{"time_utc":"2026-10-31T07:44:10Z","id":76125,"mode":"live","result":"skipped","reason":"captcha","fields":["answer","first","last","email","phone","postcode","state","required_marketing","consent"],"said":"captcha: reCAPTCHA v2 checkbox"}
+{"time_utc":"2026-10-31T07:44:12Z","id":76099,"mode":"live","result":"skipped","reason":"captcha","fields":["email","first","last","answer"],"said":"captcha: visible checkbox widget"}
+{"time_utc":"2026-10-31T07:44:23Z","id":76056,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T07:44:25Z","id":76163,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T07:44:25Z","id":76162,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
