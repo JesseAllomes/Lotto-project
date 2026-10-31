@@ -444,7 +444,7 @@ class C8(Fixture):
         self.assertIn("C8", self.rules())
 
     def test_cron_volume(self):
-        self.workflow(name="busy", on='  schedule:\n    - cron: "*/5 * * * *"')
+        self.workflow(name="busy", on='  schedule:\n    - cron: "* * * * *"')
         self.assertTrue(any("times a day" in m for m in self.messages()))
 
     def test_issue_title_in_a_workflow(self):

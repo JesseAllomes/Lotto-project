@@ -4,10 +4,14 @@
 # skill list (workers/comp_odds.py).
 # Daily at 21:17 UTC (about 8:17am Melbourne in summer). Token-free; about one page a second.
 name: comps
+# Runs on Azure now (azure/jobs/lotto-comps.json). Kept as a manual fallback only: run it by hand with
+# manual = yes, and only while the Azure job is parked, or the work is done twice.
 on:
-  schedule:
-    - cron: "17 21 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: "yes = run on GitHub (only while the Azure job is parked)"
+        default: "no"
 permissions:
   contents: write
 concurrency:
@@ -15,6 +19,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   update:
+    if: github.event.inputs.manual == 'yes'
     runs-on: ubuntu-latest
     timeout-minutes: 110
     steps:
