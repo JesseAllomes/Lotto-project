@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=49 -->
+<!-- drainclamp-build: state; schema=1; generation=50 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -39,6 +39,7 @@
 - Azure auth? -> Azure CLI device-code login by the owner, CLI config in session scratch only; no credentials, tokens or secret values in the repo, chat or logs; secret and setting names only (source: user + repo decision)
 - Cutover? -> per service: verify, dry run, owner approves, then turn the Azure schedule on and disable the matching GitHub Actions workflow in the same step so nothing runs twice (source: repo decision)
 - Auto-entry on Azure? -> first Azure run is a dry run (ENTRANT_LIVE=0); live only after the owner approves and entries.yml is off (double entry would break stated entry limits) (source: repo decision)
+- Times shown to the owner? -> Melbourne time (AEDT/AEST) only, never UTC (source: user, 2026-10-31)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->
