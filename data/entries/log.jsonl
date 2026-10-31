@@ -401,3 +401,15 @@
 {"time_utc":"2026-10-31T00:25:45Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
 {"time_utc":"2026-10-31T00:25:45Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
 {"time_utc":"2026-10-31T00:25:46Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T01:05:44Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T01:05:51Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T01:05:51Z","id":76110,"mode":"live","result":"skipped","reason":"captcha","fields":["first","last","email"],"said":"Captcha validation failed. Please try again."}
+{"time_utc":"2026-10-31T01:05:51Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T01:05:51Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T01:10:40Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T01:15:41Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T01:15:46Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T01:15:47Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T01:15:48Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T01:20:40Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T01:25:40Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
