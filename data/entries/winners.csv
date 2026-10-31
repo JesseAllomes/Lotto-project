@@ -251,7 +251,7 @@ id,title,brand,prize_pool,closes,auto_entries,status,draw_date,draw_estimated,no
 75364,Win a Morro & Co Luxury Home Fragrance Collection,Get It Magazine,242.0,2026-10-31,0,open,2026-11-08,False,email,,14,,,,,,https://www.competitions.com.au/win-morro-co-luxury-home-fragrance-collection/75364/
 75359,Win a $1K Society of Wolves Voucher,Society Of Wolves,1000.0,2026-10-31,0,open,2026-11-08,True,email,5,,,,,,,https://www.competitions.com.au/win-1k-society-wolves-voucher/75359/
 75328,Win a $500 Calexico Voucher,Calexico Australia,500.0,2026-10-31,0,open,2026-11-08,True,"email, SMS",,,,,,,,https://www.competitions.com.au/win-500-calexico-voucher/75328/
-75327,Win a PS5 Disk Edition,Dr. Moose,999.0,2026-10-31,1,open,2026-11-08,True,"email, phone",,,,,,,,https://www.competitions.com.au/win-ps5-disk-edition/75327/
+75327,Win a PS5 Disk Edition,Dr. Moose,999.0,2026-10-31,2,open,2026-11-08,True,"email, phone",,,,,,,,https://www.competitions.com.au/win-ps5-disk-edition/75327/
 74560,Win One Year of Free Chocolate,Choc'd Full,1000.0,2026-10-31,0,open,2026-11-08,True,email,,,,,,,,https://www.competitions.com.au/win-one-year-free-chocolate/74560/
 74271,Win 1 of 4 $10K Freedom Vouchers on The Block,The Block,40000.0,2026-11-08,0,open,2026-11-08,False,"email, phone",2,,,,"Winners will be notified by phone and email within two business days of the draw, and their names will be published by 11/11/26.",,,https://www.competitions.com.au/win-freedom-vouchers-on-the-block/74271/
 73712,Win $100K to Make your Biggest Dreams a Reality,Home Beautiful,100000.0,2026-11-01,0,open,2026-11-08,True,,,,,,,,,https://www.competitions.com.au/win-make-biggest-dreams-reality/73712/
@@ -288,6 +288,7 @@ id,title,brand,prize_pool,closes,auto_entries,status,draw_date,draw_estimated,no
 75601,Win a LEGO® Halloween Bundle,LEGO Certified Stores Australia & New Zealand,1049.0,2026-10-31,0,open,2026-11-09,False,social DM,3,,2026-11-09,,"Additionally, their name will be published on the official website from Monday, 9th November 2026.",,,https://www.competitions.com.au/win-lego-halloween-bundle/75601/
 75454,Win a Pack of YA New Releases,Hachette,139.0,2026-11-02,0,open,2026-11-09,True,email,3,,,,,,,https://www.competitions.com.au/win-pack-ya-new-releases/75454/
 73713,Win $100K,Beauty Heaven,100000.0,2026-11-01,0,open,2026-11-09,True,,,,,,,,,https://www.competitions.com.au/beauty-heaven-win-100k/73713/
+76218,Win a $2.1k UPPAbaby Vista V3 Pram & Bassinet,Nodiee,2100.0,2026-11-07,0,open,2026-11-09,False,email,7,7,,,,,,https://www.competitions.com.au/win-2-1k-uppababy-vista-v3-pram-bassinet/76218/
 76205,Win a $2.6k Motherhood Prize Package,Legoe Heritage,2599.0,2026-11-08,0,open,2026-11-09,False,email,2,,,,,,,https://www.competitions.com.au/win-2-6k-motherhood-prize-package/76205/
 76204,Win a $1K Caprini Gift Card,Caprini,1000.0,2026-11-08,0,open,2026-11-09,False,email,2,,,,,,,https://www.competitions.com.au/win-1k-caprini-gift-card/76204/
 10007457,"Win a $10,000 RACQ Travel Voucher from RACQ [Membership Required]",,10000.0,2026-11-02,0,open,2026-11-09,True,,,,,,,,,https://auscomps.au/competition/win-a-10000-racq-travel-voucher-from-racq-membership-required/
@@ -392,6 +393,7 @@ id,title,brand,prize_pool,closes,auto_entries,status,draw_date,draw_estimated,no
 75880,Win 1 of 5 CLR Cleaning Kits,Mindfood,250.0,2026-11-08,0,open,2026-11-30,False,email,,,,,,,,https://www.competitions.com.au/win-clr-cleaning-kits/75880/
 75589,Win a $1000 Funky Monkey Bars Gift Card & More,Funky Monkey Bars,2250.0,2026-11-22,0,open,2026-11-30,True,email,5,,,,,,,https://www.competitions.com.au/win-1k-funky-monkey-bars-gift-card-more/75589/
 75484,Win $5K Cash or 1 of 108 $250 Spotlight Vouchers Instantly,Seven Network,32000.0,2026-11-29,0,open,2026-11-30,False,"email, phone",2,,2027-03-01,,,,,https://www.competitions.com.au/win-5k-cash-or-250-spotlight-vouchers-instantly/75484/
+76220,Win a $1k EOS Footwear Voucher,EOS Footwear,1000.0,2026-11-29,0,open,2026-11-30,False,email,7,14,,,The winner will be announced on the 30th of November 2026.,,,https://www.competitions.com.au/win-1k-eos-footwear-voucher/76220/
 76213,Win a $6.6k Ultimate Backyard Makeover,Coochie HydroGreen Lawn Services,6592.0,2026-11-23,0,open,2026-11-30,True,"email, phone",,,,,,,,https://www.competitions.com.au/win-6-6k-backyard-makeover/76213/
 76190,Win an Ultimate Hairhouse Haul,Hairhouse Australia,1006.0,2026-11-22,0,open,2026-11-30,True,,,,,,,,,https://www.competitions.com.au/win-hairhouse-haul/76190/
 10007944,Sunday – Win Free Holiday to Bali or Byron Bay,Sunday,3000.0,2026-11-23,0,open,2026-11-30,True,,,,,,,,,https://auscomps.au/competition/sunday-win-free-holiday-to-bali-or-byron-bay/
@@ -427,11 +429,14 @@ id,title,brand,prize_pool,closes,auto_entries,status,draw_date,draw_estimated,no
 75349,Win 1 of 3 1-Year Snap Fitness Memberships,Aqua Cooler,3000.0,2026-11-30,0,open,2026-12-08,True,"email, social DM",2,,,,"Winners may also be announced on the Aqua Cooler Direct website and social media channels, in accordance with privacy requirements.",,,https://www.competitions.com.au/win-1-year-snap-fitness-memberships/75349/
 74232,Win a Share of $35K,Colorbond,35000.0,2026-11-30,0,open,2026-12-08,True,"email, phone",,,,,,,,https://www.competitions.com.au/win-35k/74232/
 74216,Win a Coach Tabby Handbag,Dream Queen Co.,,2026-11-30,3,open,2026-12-08,True,,7,,,,,,,https://www.competitions.com.au/win-coach-tabby-handbag/74216/
+76219,Win your Top of the South NZ Road Trip,Camper Mate,5200.0,2026-11-30,0,open,2026-12-08,True,,,,,,,,,https://www.competitions.com.au/win-top-south-nz-road-trip/76219/
 10008053,Silver Cross – WIN a Silver Cross Cove 2 Pram,,1499.0,2026-12-01,0,open,2026-12-08,True,,,,,,,,,https://auscomps.au/competition/silver-cross-win-a-silver-cross-cove-2-pram/
+76222,Win a Puzzle of your Choice,Hachette,,2026-12-01,0,open,2026-12-09,True,,,,,,,,,https://www.competitions.com.au/win-puzzle-choice/76222/
 76037,Win an Ultimate Christmas Entertaining Set,Good Food and Wine Show,3881.0,2026-12-09,0,open,2026-12-10,False,"email, social DM",,,,,The winner's name will also be published on the Good Food & Wine Show social media channels.,,,https://www.competitions.com.au/win-christmas-entertaining-set/76037/
 72669,Win a Beautiful Boori Toy at Our Kids Morning,Westfield,349.0,2026-12-03,0,open,2026-12-10,True,post,2,,,,,,,https://www.competitions.com.au/win-beautiful-boori-toy-at-our-kids-morning/72669/
 76200,Win a Share of over $230k in Prizes,Channel Nine,230800.0,2026-12-08,0,open,2026-12-10,False,"email, phone",2,,,https://www.budgetbattlers.com,Their names will be published on www.budgetbattlers.com from the applicable winner publication date for at least 28 days.,,,https://www.competitions.com.au/win-over-230k-prizes/76200/
 75007,Win a Share of $45K Travel-Related Prizes,Visa,45047.0,2026-11-27,0,open,2026-12-11,False,email,,14,2026-12-26,,,,,https://www.competitions.com.au/win-travel-related-prizes/75007/
+76223,Win a Wotnot Mineral SPF 40 Bundle,Beauty Truth,554.0,2026-12-03,0,open,2026-12-11,True,,,,,,,,,https://www.competitions.com.au/win-wotnot-mineral-spf-40-bundle/76223/
 76215,Win a 24k Gold Magimix 5200xl Food Processor,Magimix Australia,5000.0,2026-12-03,0,open,2026-12-11,True,"email, SMS",,,,,,,,https://www.competitions.com.au/win-24k-gold-magimix-5200xl-food-processor/76215/
 75024,Win 1 of 5 Funko Bitty Pop! Prize Packs,Mouths of Mums,500.0,2026-12-04,0,open,2026-12-12,True,,,,,,"Winners of the Funko Bitty Pop competition will be selected based on a game of skill, with their names published on the competition page.",,,https://www.competitions.com.au/win-funko-bitty-pop-prize-packs/75024/
 76033,Win 4 Tickets to see the Wiggles Live & a Meet and Greet,The Wiggles,2500.0,2026-12-05,0,open,2026-12-13,True,email,,,,,,,,https://www.competitions.com.au/win-4-tickets-see-wiggles-live-meet-greet/76033/
