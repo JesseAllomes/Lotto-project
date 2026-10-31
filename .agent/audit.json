@@ -1,32 +1,37 @@
 {
   "schema": 1,
-  "root": "/home/user/lotto-project",
-  "head": "bb7edb2c7ed64f7602459862b57f3d3198689f2b",
+  "root": "/home/user/Lotto-project",
+  "head": "33a375cb35f6e3b82dce4382ccff771cc8e754da",
   "dirty_fingerprint": "b9a8816e585d5eaae36410a797c929afa619999265d5b3e4b5cebab270c98a51",
   "dirty_files": 0,
   "verify_config_fingerprint": "00ce9ee58ad8770625f9898500af160bb6ba911f48358a89368194ce77da1176",
   "verify_block_fingerprint": "ffe5d65d034d27d94795a91754613e8c2eec3bcd1b5cb8b91d602812ce402d59",
   "verify_entries": 1,
   "config_files": [],
-  "generated": "2026-10-30T12:00:10+00:00",
+  "generated": "2026-10-31T05:02:47+00:00",
   "scan": {
-    "files": 6,
-    "lines": 521,
+    "files": 36,
+    "lines": 5463,
     "depth2": [
+      {
+        "path": "workers",
+        "files": 15,
+        "lines": 2858
+      },
+      {
+        "path": "tests",
+        "files": 12,
+        "lines": 1239
+      },
+      {
+        "path": "analysis",
+        "files": 8,
+        "lines": 1058
+      },
       {
         "path": "work/scripts",
         "files": 1,
         "lines": 308
-      },
-      {
-        "path": "workers",
-        "files": 3,
-        "lines": 149
-      },
-      {
-        "path": "tests",
-        "files": 2,
-        "lines": 64
       }
     ],
     "skipped_links": []
@@ -35,8 +40,9 @@
     "unknown(no recognised manifest)"
   ],
   "languages": [
-    "python(inferred: 6/6 indexed file(s))"
+    "python(inferred: 33/35 indexed file(s))",
+    "javascript(inferred: 2/35 indexed file(s))"
   ],
   "dead_code_candidates": [],
-  "gate3_required": true
+  "gate3_required": false
 }

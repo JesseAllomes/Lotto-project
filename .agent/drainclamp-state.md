@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=39 -->
+<!-- drainclamp-build: state; schema=1; generation=42 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -35,6 +35,10 @@
 - Go live? -> yes, live by default (ENTRANT_LIVE=0 for dry run); 'enter everything': comps whose terms ban automated entry are entered too at the cautious pace (4 a day), ENTER_BANNED=0 to stop; CAPTCHAs and human checks are never bypassed (source: user, 2026-10-30)
 - Skill answers, this round? -> owner approved all 25-words-style answers (2026-10-31); 8 written to data/entries/answers.json, within word limits, no invented personal facts; one entry per skill comp; future rounds still need approval (source: user)
 - Manual entries? -> a website (GitHub Pages, workers/site.py, site.yml) listing every open comp to enter by hand, tick-off saved on the owner's phone (source: user, 2026-10-31)
+- Azure migration? -> already moved by Codex to the owner's personal Azure; this work verifies it and turns it on (source: user, 2026-10-31)
+- Azure auth? -> Azure CLI device-code login by the owner, CLI config in session scratch only; no credentials, tokens or secret values in the repo, chat or logs; secret and setting names only (source: user + repo decision)
+- Cutover? -> per service: verify, dry run, owner approves, then turn the Azure schedule on and disable the matching GitHub Actions workflow in the same step so nothing runs twice (source: repo decision)
+- Auto-entry on Azure? -> first Azure run is a dry run (ENTRANT_LIVE=0); live only after the owner approves and entries.yml is off (double entry would break stated entry limits) (source: repo decision)
 <!-- /DC:DECISIONS -->
 
 <!-- DC:ROADMAP -->
@@ -49,6 +53,9 @@
 | m7 | Lotto opportunities from the draw register: sales and prize pools inferred from dividends, ticket value per draw by game and jackpot, number-popularity model (division-1 sharing) to pick less-shared numbers, randomness checks, ranked opportunities | analysis/lotto_ev.py;analysis/popularity.py;analysis/fairness.py;data/analysis/;tests/test_lotto_analysis.py | pending | m1;m2 |
 | m8 | Competition value per entry (prize value against cap and ticket price) and the plain-English REPORT.md over lotto and competitions | analysis/comps_value.py;REPORT.md | pending | m4;m6;m7 |
 | m9 | Auto-entry of free web-form competitions: candidates (free, agent_ok, not banned, within entry limit), Playwright form filler with owner details from secrets, dry run then live, entry log without personal data, manual list for the rest, skill answers approved via GitHub issues | workers/entrant.py;workers/entry_queue.py;data/entries/;.github/workflows/entries.yml;tests/test_entrant.py | pending | m5;m6 |
+| az1 | Azure inventory and verification for Lotto: every resource Codex created mapped to the workflow it replaces (draws, jackpots, comps, entries, site, reenter, probe), checked against main for code version, schedule, settings and secret names; no changes | .agent/azure-inventory.md | pending |  |
+| az2 | Azure dry runs for Lotto: each job run once on Azure without live entry; outputs and git pushes compared with the GitHub Actions run | .agent/azure-inventory.md | pending | az1 |
+| az3 | Lotto cutover: owner-approved Azure schedules on, matching GitHub Actions workflows off, first live runs checked | .github/workflows/;.agent/azure-inventory.md | pending | az2 |
 <!-- /DC:ROADMAP -->
 
 <!-- DC:VERIFY -->
@@ -70,4 +77,5 @@
 - 2026-10-30T13:57:04+00:00 9d6b30d9 Fable opportunity hunt: OPPORTUNITIES.md; top: Endeavour $200 book + one-time doubling (~170% of face after haircut, unverified offer); Superdraw RTP drifting up (watch); RSL/Mater/yourtown ruled out; proposed workers/sellthrough.py
 - 2026-10-30T16:17:34+00:00 f420b599 m9 live: first live run 9 entered / 70 unconfirmed; entrant fixes (form choice, JS buttons, overlays, confirmation, retry rules)
 - 2026-10-30T21:04:09+00:00 d6173abf site + register + answers; Fable entry routes; routing fixes (~62 comps to auto); AusComps second source
+- 2026-10-31T05:03:13+00:00 0773ad9c az: Azure migration project opened; az1-az3 added (verify, dry run, cutover)
 <!-- /DC:LOG -->

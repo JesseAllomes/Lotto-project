@@ -1,11 +1,11 @@
 <!-- drainclamp-build: audit; schema=1 -->
 # Audit
 
-Root: `/home/user/lotto-project`  
-Generated: 2026-10-30T12:00:10+00:00  
-HEAD: bb7edb2c7ed64f7602459862b57f3d3198689f2b
+Root: `/home/user/Lotto-project`  
+Generated: 2026-10-31T05:02:47+00:00  
+HEAD: 33a375cb35f6e3b82dce4382ccff771cc8e754da
 
-6 source file(s), 521 line(s). COVERAGE: partial — indexed extensions only.
+36 source file(s), 5463 line(s). COVERAGE: partial — indexed extensions only.
 
 ## Stack
 
@@ -13,15 +13,17 @@ HEAD: bb7edb2c7ed64f7602459862b57f3d3198689f2b
 
 ## Languages (inferred from extensions, not declared)
 
-- python(inferred: 6/6 indexed file(s))
+- python(inferred: 33/35 indexed file(s))
+- javascript(inferred: 2/35 indexed file(s))
 
 ## Totals (rolled up to depth 2)
 
 | path | files | lines |
 |---|---|---|
+| workers | 15 | 2858 |
+| tests | 12 | 1239 |
+| analysis | 8 | 1058 |
 | work/scripts | 1 | 308 |
-| workers | 3 | 149 |
-| tests | 2 | 64 |
 
 ## Dead-code candidates (unverified)
 
