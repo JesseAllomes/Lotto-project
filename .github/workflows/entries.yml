@@ -1,5 +1,5 @@
-# Auto-entry of free web-form competitions (m9). Every 3 hours (UTC 00:05, 03:05, ...) one job runs up to 5 rounds,
-# about 5 minutes apart: each round rebuilds today's queue (workers/entry_queue.py decides what is due: bursts of 5
+# Auto-entry of free web-form competitions (m9). Runs start at random times (25-55 minutes apart; none from 11pm to
+# 3am Melbourne) and do 1-3 rounds at random 6-18 minute gaps: each round rebuilds today's queue (workers/entry_queue.py decides what is due: bursts of 5
 # per 3-hour window for comps with no stated limit, 4 a day where the terms flag excessive entries, the stated limit
 # otherwise) and runs workers/entrant.mjs, which fills each form with the owner's details from secrets.
 # Last day (owner, 2026-10-31): while any listing is in its final 24 hours and can take more entries, the chain runs
@@ -29,7 +29,7 @@ jobs:
   enter:
     if: github.event.inputs.manual == 'yes'
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 340
     env:
       ENTRANT_FIRST_NAME: ${{ secrets.ENTRANT_FIRST_NAME }}
       ENTRANT_LAST_NAME: ${{ secrets.ENTRANT_LAST_NAME }}
@@ -52,18 +52,14 @@ jobs:
         run: |
           npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright@1.63.0 > /dev/null
           "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium > /dev/null
-      - name: Enter (up to 5 rounds, about 5 minutes apart)
+      - name: Enter (1-3 rounds at random gaps; nothing from 11pm to 3am Melbourne)
         if: env.ENTRANT_EMAIL != ''
         run: |
-          rounds=1; [ "$ENTRANT_LIVE" = "1" ] && rounds=${ENTRY_BURST:-5}
+          rounds=1; [ "$ENTRANT_LIVE" = "1" ] && rounds=$(( RANDOM % 3 + 1 ))
           for i in $(seq 1 "$rounds"); do
-            start=$(date +%s)
             python3 -m workers.entry_queue
             NODE_PATH="$RUNNER_TEMP/pw/node_modules" node workers/entrant.mjs
-            if [ "$i" -lt "$rounds" ]; then
-              wait=$(( 300 - ($(date +%s) - start) ))
-              if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
-            fi
+            if [ "$i" -lt "$rounds" ]; then sleep $(( 360 + RANDOM % 721 )); fi     # 6-18 minutes
           done
           python3 -m workers.entry_queue
       - name: Commit the queue, manual list and log
@@ -75,14 +71,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run site.yml --ref main || true
-      - name: Wait for the next window (hourly while a comp is in its last day, else 3-hourly), then start the next run
+      - name: Wait a random 25-55 minutes (or until a random time just after 3am), then start the next run
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          now=$(date -u +%s)
-          step=$(python3 -c "import json; print(json.load(open('data/entries/pace.json'))['next_run_minutes'] * 60)" 2>/dev/null || echo 10800)
-          next=$(( (now / step + 1) * step + 300 ))
-          echo "sleeping $(( next - now ))s until $(date -u -d @$next +%H:%M) UTC"
-          sleep $(( next - now ))
+          wait=$(python3 -m workers.entry_queue --next-sleep 2>/dev/null || echo 2400)
+          echo "sleeping ${wait}s"
+          sleep "$wait"
           gh workflow run entries.yml --ref main

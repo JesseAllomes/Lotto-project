@@ -7,8 +7,8 @@ A listing joins the queue when it is open, a Victorian can enter, entry is free,
 entry limit allows another entry now (log.jsonl). The limit comes from the full terms when they state one
 (comp_terms), else from the listing summary: once -> one entry ever; daily -> one per Melbourne day; weekly -> one
 a week; capped N -> N in total; unlimited, or no limit stated anywhere (owner's call: an unstated limit is no limit)
--> bursts: up to BURST entries in each BURST_HOURS window (UTC clock windows, matching the entries.yml schedule, so
-daylight saving never splits a burst), at least GAP_MINUTES apart (owner: 5 every 3 hours, 5 minutes apart); but where the terms say the promoter may act on excessive or bulk entries, at
+-> up to BURST entries in any rolling BURST_HOURS, at least GAP_MINUTES apart (owner: 5 every 3 hours, 5 minutes apart),
+spread at random through the day outside the quiet hours (11pm-3am Melbourne); but where the terms say the promoter may act on excessive or bulk entries, at
 most EXCESSIVE_PER_DAY a day, at least EXCESSIVE_GAP_HOURS apart. The queue only says whether a listing is due now;
 how often the entrant runs (entries.yml, or a machine running it every 5 minutes) sets the actual pace. Skill competitions also need an answer the
 owner has approved (data/entries/answers.json, filled from the approval issues).
@@ -20,6 +20,7 @@ import csv
 import datetime as dt
 import json
 import os
+import random
 import re
 import sys
 from pathlib import Path
@@ -52,6 +53,29 @@ ENTER_BANNED = os.environ.get("ENTER_BANNED", "1") != "0"
 # Failures logged before the entrant fixes of 30 Oct 2026 (popup forms, JS buttons, overlays, confirmation) get a
 # clean slate: they say nothing about the fixed entrant.
 RETRY_FROM = "2026-10-30T16:30:00Z"
+# Owner, 31 Oct: no automatic entries from 11pm to 3am Melbourne time; entries spread at random through the rest of
+# the day (entries.yml picks random run times and round gaps; the queue is shuffled), the per-comp limits unchanged.
+QUIET_FROM, QUIET_TO = 23, 3
+
+
+def quiet(now):
+    """True from 11pm to 3am in Melbourne: no automatic entries."""
+    h = now.astimezone(MELB).hour
+    return h >= QUIET_FROM or h < QUIET_TO
+
+
+def next_sleep(now, rng=random):
+    """Seconds until the next entries run: a random 25-55 minutes, or a random time in the first half hour after the
+    quiet hours end."""
+    gap = dt.timedelta(minutes=rng.randint(25, 55))
+    t = now + gap
+    if quiet(t):
+        local = t.astimezone(MELB)
+        wake = local.replace(hour=QUIET_TO, minute=0, second=0, microsecond=0)
+        if wake <= local:
+            wake += dt.timedelta(days=1)
+        t = wake.astimezone(dt.timezone.utc) + dt.timedelta(minutes=rng.randint(0, 30))
+    return int((t - now).total_seconds())
 # Result "unknown" (a run whose log was lost, e.g. 41135966222 on 30 Oct 2026): counted as a possible entry against
 # stated limits (once, daily, weekly, capped) so they are never exceeded, but not in the register.
 # CAPTCHA and bot-check skips logged before the narrower challenge detection (data/analysis/CAPTCHA_CHECK.md: most
@@ -175,8 +199,7 @@ def may_enter(limit, entered, now, n=None, excessive=False, final=False):
         ok = len(today) < EXCESSIVE_PER_DAY and (last is None or now - last >= dt.timedelta(hours=gap))
         return ok and (limit != "capped" or len(entered) < (n or 1))
     hours = LAST_DAY_BURST_HOURS if final else BURST_HOURS
-    slot = lambda t: (t.astimezone(dt.timezone.utc).date(), t.astimezone(dt.timezone.utc).hour // hours)
-    window = [t for t in entered if slot(t) == slot(now)]
+    window = [t for t in entered if now - t < dt.timedelta(hours=hours)]      # rolling window: no fixed clock slots
     ok = len(window) < BURST and (last is None or now - last >= dt.timedelta(minutes=GAP_MINUTES))
     return ok and (limit != "capped" or len(entered) < (n or 1))     # unlimited, unknown, capped
 
@@ -276,6 +299,13 @@ def build(store=STORE, entries=ENTRIES, now=None):
     better = lambda q: pages.get(q["id"], {}).get("better_url") if pages.get(q["id"], {}).get("kind") == "terms" else None
     ready_items = [{"id": q["id"], "entry_url": better(q) or q["entry_url"], "answer": answers.get(str(q["id"]))}
                    for q in queue if not q["needs_answer"]]
+    if quiet(now):
+        ready_items = []                       # 11pm-3am Melbourne: nothing goes in
+    first = [x for x in ready_items if x["id"] in last_day_ids]
+    rest = [x for x in ready_items if x["id"] not in last_day_ids]
+    random.shuffle(first)
+    random.shuffle(rest)
+    ready_items = first + rest                 # last-day comps first, otherwise a different order every round
     (entries / "queue.json").write_text(json.dumps(ready_items, indent=1))
     ready = len(ready_items)
     # entries.yml reads this to decide when its next run starts: hourly while any open listing is in its last day
@@ -289,6 +319,10 @@ def build(store=STORE, entries=ENTRIES, now=None):
 
 
 def main(argv=None):
+    args = sys.argv[1:] if argv is None else argv
+    if args[:1] == ["--next-sleep"]:
+        print(next_sleep(dt.datetime.now(dt.timezone.utc)))
+        return
     build()
 
 

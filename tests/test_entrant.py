@@ -35,12 +35,13 @@ class Limits(unittest.TestCase):
         self.assertFalse(may("capped", [yesterday, earlier_today], now, n=2))
         burst = now.replace(minute=30)                           # 03:30 UTC: window 03:00-05:59 UTC
         mins = lambda m: burst - dt.timedelta(minutes=m)
-        for limit in ("unlimited", "unknown"):                    # no limit: bursts of 5 per 3-hour window, 5 min apart
+        for limit in ("unlimited", "unknown"):                    # no limit: 5 in any rolling 3 hours, 5 min apart
             self.assertTrue(may(limit, [mins(5), mins(10), mins(15), mins(20)], burst))
             self.assertFalse(may(limit, [mins(5), mins(10), mins(15), mins(20), mins(25)], burst))
             self.assertFalse(may(limit, [mins(3)], burst))
             self.assertTrue(may(limit, [mins(181), mins(186), mins(191), mins(196), mins(201)], burst))
-            self.assertTrue(may(limit, [mins(31), mins(36), mins(41), mins(46), mins(51)], burst))   # last window
+            self.assertFalse(may(limit, [mins(31), mins(36), mins(41), mins(46), mins(51)], burst))  # rolling, not slots
+            self.assertTrue(may(limit, [mins(41), mins(70), mins(120), mins(150), mins(185)], burst))
         hrs = lambda h: now - dt.timedelta(hours=h)
         self.assertTrue(may("unknown", [hrs(5)], now, excessive=True))     # excessive clause: 4 a day, 5 h apart
         self.assertFalse(may("unknown", [hrs(2)], now, excessive=True))
@@ -98,6 +99,17 @@ class LastDay(unittest.TestCase):
         aest = rec(5, desc="**When?** The competition closes at 11:59 PM AEST on 31 October 2026.",
                    closes="2026-10-31T23:59:59+10:00")
         self.assertEqual(entry_queue.closes_at(aest).astimezone(entry_queue.MELB).strftime("%d %H:%M"), "31 23:59")
+
+    def test_quiet_hours_and_random_pacing(self):
+        import random as rnd
+        mel = lambda h, m=0: dt.datetime(2026, 11, 2, h, m, tzinfo=entry_queue.MELB).astimezone(dt.timezone.utc)
+        self.assertEqual([entry_queue.quiet(mel(h)) for h in (22, 23, 0, 2, 3, 12)], [False, True, True, True, False, False])
+        rng = rnd.Random(1)
+        for _ in range(50):
+            s = entry_queue.next_sleep(mel(12), rng)
+            self.assertTrue(25 * 60 <= s <= 55 * 60)
+            wake = (mel(22, 50) + dt.timedelta(seconds=entry_queue.next_sleep(mel(22, 50), rng))).astimezone(entry_queue.MELB)
+            self.assertTrue(wake.hour == 3 and wake.minute <= 30, wake)
 
     def test_last_day_pace(self):
         may = entry_queue.may_enter
