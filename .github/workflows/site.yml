@@ -1,6 +1,10 @@
-# The owner's competition page (workers/site.py), published with GitHub Pages. Rebuilt after every comps or
-# entries run, on pushes that change the data or the page, and every two hours as a fallback. Token-free.
-# One-time setup by the owner: Settings > Pages > Build and deployment > Source: GitHub Actions.
+# The owner's competition page (workers/site.py). Built once, then deployed to two hosts from the same artifact:
+#   azure : the Free-tier Azure Static Web App swa-lotto-v5ethud2i3cfq (ambitious-plant-0e97ae900.6.azurestaticapps.net).
+#           Main branch only: the federated credential matches refs/heads/main. No stored deployment token: the job
+#           logs in with OIDC (azure/login), reads the token with `az staticwebapp secrets list` and masks it.
+#   pages : GitHub Pages, kept as a backup. One-time setup: Settings > Pages > Build and deployment > Source: GitHub Actions.
+# Rebuilt after every comps or entries run (those workflows are manual-only now), on pushes that change the data or
+# the page (data pushes come from the Azure jobs), and every two hours as a fallback. Token-free.
 name: site
 on:
   workflow_run:
@@ -14,18 +18,13 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: read
-  pages: write
-  id-token: write
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,9 +35,72 @@ jobs:
         run: python3 -m workers.winners || true
       - name: Build the page
         run: python3 -m workers.site --out site
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Package for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      - name: Keep the built folder for Azure
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-folder
+          path: site
+          retention-days: 1
+          if-no-files-found: error
+
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  azure:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # No `environment:` here: it would change the OIDC subject and the federated credential would no longer match.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Fetch the built folder
+        uses: actions/download-artifact@v4
+        with:
+          name: site-folder
+          path: site
+      - name: Azure login (OIDC, no stored secret)
+        uses: azure/login@v2
+        with:
+          client-id: 7ab2c182-e73b-4027-b30b-9cb9ddc841f7
+          tenant-id: f1575bc8-e389-49bf-8ab0-31155227f4c3
+          subscription-id: 78e367c0-cd4d-4334-8c02-69fa04c8bffd
+      - name: Fetch the Static Web App deployment token at runtime
+        id: swa
+        run: |
+          set -euo pipefail
+          az config set extension.use_dynamic_install=yes_without_prompt extension.dynamic_install_allow_preview=true >/dev/null
+          token="$(az staticwebapp secrets list -n swa-lotto-v5ethud2i3cfq -g rg-personal-automation-aue --query properties.apiKey -o tsv)"
+          if [ -z "$token" ]; then echo "no deployment token returned" >&2; exit 1; fi
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+      - name: Deploy the built folder to the Static Web App
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
+          action: upload
+          app_location: site
+          skip_app_build: true
+          skip_api_build: true
