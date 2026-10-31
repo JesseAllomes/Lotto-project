@@ -433,3 +433,121 @@
 {"time_utc":"2026-10-31T03:25:48Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
 {"time_utc":"2026-10-31T03:25:48Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
 {"time_utc":"2026-10-31T03:25:50Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T04:05:42Z","id":10006222,"mode":"live","result":"failed","reason":"form said: invalid","fields":["first","last","phone","email"],"said":"Invalid phone number"}
+{"time_utc":"2026-10-31T04:05:46Z","id":10007750,"mode":"live","result":"entered","reason":"form cleared","fields":["email"]}
+{"time_utc":"2026-10-31T04:05:49Z","id":10006281,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:05:49Z","id":10007824,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:05:49Z","id":10007823,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:05:51Z","id":10007759,"mode":"live","result":"entered","reason":"","fields":["full","email","state"]}
+{"time_utc":"2026-10-31T04:05:55Z","id":10006919,"mode":"live","result":"skipped","reason":"captcha","fields":["first","last","email","phone","postcode","declined","consent"],"said":"captcha: challenge opened after submit"}
+{"time_utc":"2026-10-31T04:05:58Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:06:00Z","id":74441,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:06:03Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T04:06:04Z","id":10006911,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:06:05Z","id":73682,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:06:05Z","id":73712,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:06:12Z","id":76118,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:06:15Z","id":76179,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email"]}
+{"time_utc":"2026-10-31T04:06:16Z","id":76178,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","state"],"said":"Oops an error occurred, please try again."}
+{"time_utc":"2026-10-31T04:06:23Z","id":10007768,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:06:25Z","id":10008042,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:06:25Z","id":10008041,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:06:28Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T04:06:30Z","id":10006918,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:06:32Z","id":76114,"mode":"live","result":"skipped","reason":"captcha","fields":["first","last","email","address","suburb","state","postcode","phone"],"said":"captcha: interstitial"}
+{"time_utc":"2026-10-31T04:06:32Z","id":76134,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:06:39Z","id":76157,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:06:41Z","id":76192,"mode":"live","result":"skipped","reason":"human_check","fields":["first","last","email"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:06:41Z","id":10008046,"mode":"live","result":"skipped","reason":"unfillable","fields":["select: field198468931-muiPickersPrimary Date of birth-Day"]}
+{"time_utc":"2026-10-31T04:06:46Z","id":76154,"mode":"live","result":"skipped","reason":"login","fields":[]}
+{"time_utc":"2026-10-31T04:06:49Z","id":76183,"mode":"live","result":"skipped","reason":"human_check","fields":["first","email","phone"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:06:49Z","id":76139,"mode":"live","result":"skipped","reason":"captcha","fields":["first","last","email","postcode","phone","consent"],"said":"captcha: reCAPTCHA v2 checkbox"}
+{"time_utc":"2026-10-31T04:06:53Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T04:06:54Z","id":10007776,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:06:56Z","id":76204,"mode":"live","result":"skipped","reason":"human_check","fields":["email"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:06:59Z","id":74271,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:02Z","id":76207,"mode":"live","result":"skipped","reason":"captcha","fields":["first","email","phone"],"said":"captcha: challenge opened after submit"}
+{"time_utc":"2026-10-31T04:07:11Z","id":10007260,"mode":"live","result":"skipped","reason":"no_submit","fields":["email"]}
+{"time_utc":"2026-10-31T04:07:13Z","id":75781,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:13Z","id":76210,"mode":"live","result":"skipped","reason":"human_check","fields":["email"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:07:17Z","id":10007296,"mode":"live","result":"skipped","reason":"unfillable","fields":["required checkbox: OPT_IN OPT_IN Opt-in"]}
+{"time_utc":"2026-10-31T04:07:19Z","id":75839,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:21Z","id":75241,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:23Z","id":76208,"mode":"live","result":"failed","reason":"form said: try again","fields":["first","email","required_marketing"],"said":"Something went wrong on our end and your entry didn’t go through. Nothing has been saved — please tr"}
+{"time_utc":"2026-10-31T04:07:25Z","id":75027,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:27Z","id":76177,"mode":"live","result":"entered","reason":"","fields":["email","first","last"]}
+{"time_utc":"2026-10-31T04:07:36Z","id":76211,"mode":"live","result":"skipped","reason":"captcha","fields":["email"],"said":"captcha: interstitial"}
+{"time_utc":"2026-10-31T04:07:36Z","id":76181,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone","suburb","postcode"]}
+{"time_utc":"2026-10-31T04:07:38Z","id":75663,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:39Z","id":76167,"mode":"live","result":"skipped","reason":"human_check","fields":["email","phone"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:07:44Z","id":76008,"mode":"live","result":"skipped","reason":"human_check","fields":["first","email","phone"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:07:47Z","id":75416,"mode":"live","result":"entered","reason":"","fields":["first","last","email","suburb","postcode","consent"]}
+{"time_utc":"2026-10-31T04:07:50Z","id":76186,"mode":"live","result":"entered","reason":"form cleared","fields":["first","email"]}
+{"time_utc":"2026-10-31T04:07:51Z","id":75996,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:07:53Z","id":76189,"mode":"live","result":"skipped","reason":"human_check","fields":["first","last","email","phone"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:07:57Z","id":76188,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T04:07:59Z","id":10007211,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:08:05Z","id":76199,"mode":"live","result":"skipped","reason":"no_form","fields":[]}
+{"time_utc":"2026-10-31T04:08:05Z","id":76213,"mode":"live","result":"entered","reason":"","fields":["first","email","phone","suburb","postcode","consent"]}
+{"time_utc":"2026-10-31T04:08:07Z","id":10007944,"mode":"live","result":"skipped","reason":"captcha","fields":["first","email","phone","consent"],"said":"captcha: Turnstile awaiting interaction"}
+{"time_utc":"2026-10-31T04:08:10Z","id":76173,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode"]}
+{"time_utc":"2026-10-31T04:08:15Z","id":76191,"mode":"live","result":"entered","reason":"","fields":["first","last","email","address","state"]}
+{"time_utc":"2026-10-31T04:08:26Z","id":75920,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone","postcode","dob","required_marketing"]}
+{"time_utc":"2026-10-31T04:08:27Z","id":10008053,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:08:29Z","id":76117,"mode":"live","result":"skipped","reason":"human_check","fields":["first","email","phone"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:08:30Z","id":76201,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:08:33Z","id":75980,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:08:34Z","id":10008054,"mode":"live","result":"skipped","reason":"login","fields":[]}
+{"time_utc":"2026-10-31T04:08:34Z","id":75820,"mode":"live","result":"skipped","reason":"human_check","fields":["first","last","email","phone","consent","required_marketing"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:08:35Z","id":75780,"mode":"live","result":"skipped","reason":"unfillable","fields":["picker: Which NBL team do you support? *"]}
+{"time_utc":"2026-10-31T04:08:38Z","id":75872,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:08:45Z","id":10007408,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:08:49Z","id":75550,"mode":"live","result":"skipped","reason":"unfillable","fields":["downshift-1-input Select your country* Select your country* "]}
+{"time_utc":"2026-10-31T04:08:51Z","id":76202,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","postcode","consent"],"said":"Error:"}
+{"time_utc":"2026-10-31T04:08:51Z","id":72401,"mode":"live","result":"skipped","reason":"human_check","fields":["first","last","email"],"said":"klaviyo: An error occurred when submitting. Please try again later."}
+{"time_utc":"2026-10-31T04:08:51Z","id":69182,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","email","phone"],"said":"this is required"}
+{"time_utc":"2026-10-31T04:08:53Z","id":10006913,"mode":"live","result":"skipped","reason":"blocked","fields":[]}
+{"time_utc":"2026-10-31T04:09:01Z","id":72033,"mode":"live","result":"skipped","reason":"human_check","fields":["email"],"said":"klaviyo: © 2026, Ozganics Australia. Powered by Shopify An error occurred when submitting. Please try again l"}
+{"time_utc":"2026-10-31T04:09:05Z","id":74391,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","phone","dob","email"]}
+{"time_utc":"2026-10-31T04:10:42Z","id":74441,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:10:42Z","id":73682,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:10:42Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:10:44Z","id":10006222,"mode":"live","result":"failed","reason":"form said: invalid","fields":["first","last","phone","email"],"said":"Invalid phone number"}
+{"time_utc":"2026-10-31T04:10:47Z","id":76134,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:10:47Z","id":73712,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:10:50Z","id":76179,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["full","email"]}
+{"time_utc":"2026-10-31T04:10:53Z","id":76157,"mode":"live","result":"failed","reason":"locator.fill: Error: Cannot type text into input[type=number]","fields":[]}
+{"time_utc":"2026-10-31T04:10:54Z","id":76201,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:10:56Z","id":76178,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","state"],"said":"Oops an error occurred, please try again."}
+{"time_utc":"2026-10-31T04:11:01Z","id":76208,"mode":"live","result":"failed","reason":"form said: try again","fields":["first","email","required_marketing"],"said":"Something went wrong on our end and your entry didn’t go through. Nothing has been saved — please tr"}
+{"time_utc":"2026-10-31T04:11:06Z","id":10007260,"mode":"live","result":"skipped","reason":"no_submit","fields":["email"]}
+{"time_utc":"2026-10-31T04:11:06Z","id":69182,"mode":"live","result":"failed","reason":"form said: is required","fields":["first","last","email","phone"],"said":"this is required"}
+{"time_utc":"2026-10-31T04:11:07Z","id":76202,"mode":"live","result":"failed","reason":"form said: error","fields":["first","last","email","postcode","consent"],"said":"Error:"}
+{"time_utc":"2026-10-31T04:11:21Z","id":74391,"mode":"live","result":"failed","reason":"no confirmation seen","fields":["first","last","phone","dob","email"]}
+{"time_utc":"2026-10-31T04:15:35Z","id":76134,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:15:42Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:15:45Z","id":75676,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T04:15:46Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
+{"time_utc":"2026-10-31T04:15:48Z","id":75903,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T04:15:50Z","id":76177,"mode":"live","result":"entered","reason":"","fields":["email","first","last"]}
+{"time_utc":"2026-10-31T04:15:53Z","id":10007260,"mode":"live","result":"skipped","reason":"no_submit","fields":["email"]}
+{"time_utc":"2026-10-31T04:15:56Z","id":76181,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone","suburb","postcode"]}
+{"time_utc":"2026-10-31T04:15:59Z","id":76186,"mode":"live","result":"entered","reason":"form cleared","fields":["first","email"]}
+{"time_utc":"2026-10-31T04:16:00Z","id":76201,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:16:00Z","id":76188,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T04:16:05Z","id":76173,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode"]}
+{"time_utc":"2026-10-31T04:16:12Z","id":76191,"mode":"live","result":"entered","reason":"","fields":["first","last","email","address","state"]}
+{"time_utc":"2026-10-31T04:20:33Z","id":76134,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:20:35Z","id":76201,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:20:36Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:20:51Z","id":10007260,"mode":"live","result":"skipped","reason":"no_submit","fields":["email"]}
+{"time_utc":"2026-10-31T04:25:35Z","id":76134,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:25:39Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:25:44Z","id":76181,"mode":"live","result":"entered","reason":"","fields":["first","last","email","phone","suburb","postcode"]}
+{"time_utc":"2026-10-31T04:25:44Z","id":76186,"mode":"live","result":"entered","reason":"form cleared","fields":["first","email"]}
+{"time_utc":"2026-10-31T04:25:45Z","id":76177,"mode":"live","result":"entered","reason":"","fields":["email","first","last"]}
+{"time_utc":"2026-10-31T04:25:49Z","id":76188,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode","consent"]}
+{"time_utc":"2026-10-31T04:25:50Z","id":76201,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
+{"time_utc":"2026-10-31T04:25:52Z","id":10007260,"mode":"live","result":"skipped","reason":"no_submit","fields":["email"]}
+{"time_utc":"2026-10-31T04:25:56Z","id":76173,"mode":"live","result":"entered","reason":"","fields":["full","email","postcode"]}
+{"time_utc":"2026-10-31T04:26:01Z","id":76191,"mode":"live","result":"entered","reason":"","fields":["first","last","email","address","state"]}
