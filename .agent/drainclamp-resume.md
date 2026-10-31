@@ -1,5 +1,5 @@
 # DrainClamp resume capsule
-Done: m1, m2, m3, m5, m6, m4, az1, az2, az3
+Done: m1, m2, m3, m5, m6, m4, az1, az2, az3, az4, az5
 In progress: none
 Next: m7: Lotto opportunities from the draw register: sales and prize pools inferred from dividends, ticket value per draw by game and jackpot, number-popularity model (division-1 sharing) to pick less-shared numbers, randomness checks, ranked opportunities
-Generation: 53
+Generation: 55

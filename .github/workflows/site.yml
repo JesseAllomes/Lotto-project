@@ -9,16 +9,15 @@
 # Rebuilt after every comps or entries run (those workflows are manual-only now), on pushes that change the data or
 # the page (data pushes come from the Azure jobs), and every two hours as a fallback. Token-free.
 name: site
+# The site is built and deployed by the Azure lotto-site job (azure/jobs/lotto-site.json) from the data in
+# Azure Blob. Kept as a manual fallback only: run it by hand with manual = yes (it builds from git data, which
+# is no longer updated, so only while the Azure job is parked).
 on:
-  workflow_run:
-    workflows: [comps, entries]
-    types: [completed]
-  push:
-    branches: [main]
-    paths: ["data/entries/**", "data/comps/**", "workers/site.py", ".github/workflows/site.yml"]
-  schedule:
-    - cron: "37 */2 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      manual:
+        description: "yes = build and deploy from GitHub (only while the Azure site job is parked)"
+        default: "no"
 permissions:
   contents: read
 concurrency:
@@ -26,6 +25,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    if: github.event.inputs.manual == 'yes'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

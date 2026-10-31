@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=53 -->
+<!-- drainclamp-build: state; schema=1; generation=55 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -59,8 +59,8 @@
 | az1 | Azure inventory and verification for Lotto: every resource Codex created mapped to the workflow it replaces (draws, jackpots, comps, entries, site, reenter, probe), checked against main for code version, schedule, settings and secret names; no changes | .agent/azure-inventory.md | done |  |
 | az2 | Azure dry runs for Lotto: each job run once on Azure without live entry; outputs and git pushes compared with the GitHub Actions run | .agent/azure-inventory.md | done | az1 |
 | az3 | Lotto cutover: owner-approved Azure schedules on, matching GitHub Actions workflows off, first live runs checked | .github/workflows/;.agent/azure-inventory.md | done | az2 |
-| az4 | Data off git: registers (data/draws, jackpots, comps, entries, answers) live in Azure Blob container lotto-data (versioning on); workers read/write through one storage adapter; runner image carries the code (no clone, no push); one-time migration; git keeps code only | azure/runner.py;workers/store.py;workers/;azure/Dockerfile;azure/jobs/;tests/ | pending | az3 |
-| az5 | Site built in Azure: lotto-site Container Apps job builds from blob and deploys to the Static Web App (after entries/comps runs and every 2 h); site.yml and GitHub Pages retired | azure/jobs/lotto-site.json;azure/runner.py;workers/site.py | pending | az4 |
+| az4 | Data off git: registers (data/draws, jackpots, comps, entries, answers) live in Azure Blob container lotto-data (versioning on); workers read/write through one storage adapter; runner image carries the code (no clone, no push); one-time migration; git keeps code only | azure/runner.py;workers/store.py;workers/;azure/Dockerfile;azure/jobs/;tests/ | done | az3 |
+| az5 | Site built in Azure: lotto-site Container Apps job builds from blob and deploys to the Static Web App (after entries/comps runs and every 2 h); site.yml and GitHub Pages retired | azure/jobs/lotto-site.json;azure/runner.py;workers/site.py | done | az4 |
 | az6 | Site actions without GitHub: SWA managed API + built-in auth (owner-only invite) -> storage queue -> queue-triggered lotto-actions job applies remove/broken/reenter/answer/done; Done ticks sync; issue workflows (remove, reenter, answer) retired | workers/site.py;azure/site-api/;azure/jobs/lotto-actions.json;workers/actions.py | pending | az5 |
 | az7 | Retire GitHub data and workflows: data/ removed from main (tag last snapshot), only guard+deploy workflows remain; OneDrive monthly backup of the blob data | .github/workflows/;data/ | pending | az6 |
 <!-- /DC:ROADMAP -->
@@ -91,4 +91,5 @@
 - 2026-10-31T07:19:13+00:00 3417cebd owner: launch all, cost audit first, auto-deploy main->Azure behind cost guard. Applied: budget AUD20 alerts 25/50/100%+forecast (both emails), func 512MB x1, storage lifecycle+1d soft delete, Foundry keys off, Log Analytics 0.1GB/day on jobs env, OIDC deploy app 7ab2c182 (Contributor on RG, main only)
 - 2026-10-31T07:47:00+00:00 23b6e8c7 az2 done: guarded deploy live (OIDC), dry runs ok (draws, jackpots, entries 11 queued/dry_ok); az3 partial: draws, jackpots, entries cut over to Azure 07:45Z, GitHub twins manual-only; comps pending dry run; reenter+site stay on GitHub
 - 2026-10-31T09:37:02+00:00 676ea787 az3: first live Azure entries burst 8:05-8:26 pm Melbourne: 5 runs ok, 9 entered / 7 failed / 3 skipped, every run's log committed, site rebuilt on both hosts after each push; ~3 forms per run within the 150 s budget
+- 2026-10-31T11:33:53+00:00 2ebf58c7 az4+az5 done: 58 data files in Blob lotto-data; jobs pull/push Blob (draws verified: +2 draws, 4 files up); lotto-site job deploys SWA every 2 h; site.yml manual-only; deploy rebuild now keyed on src-<commit> image tag after a stale-image incident (jobs ran old image ~20 min, no data lost)
 <!-- /DC:LOG -->
