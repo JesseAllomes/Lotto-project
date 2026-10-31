@@ -291,11 +291,25 @@
           "workers/site.py",
           "tests/test_winners.py"
         ]
+      },
+      {
+        "done": false,
+        "done_at": null,
+        "est_min": 25,
+        "goal": "site v3: approvals/remove/doesn't-work/social/chance/price bands, link checks, data review; product-ui redesign",
+        "id": "c7",
+        "note": "",
+        "targets": [
+          "workers/site.py",
+          "workers/link_check.mjs",
+          "workers/entry_pages.py",
+          "workers/chance.py"
+        ]
       }
     ]
   },
   "errors": [],
-  "rev": 45,
+  "rev": 46,
   "schema": 1,
   "time": [
     {
