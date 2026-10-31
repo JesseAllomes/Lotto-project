@@ -68,6 +68,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76132,Win a Complete Desk Setup,Esfera Designs,600.0,2026-11-01T23:59:59+10:00,chance,entrant blocked: no_form,web,https://www.esferadesigns.com.au/pages/win-the-complete-desk-setup
 76118,Win $5K Of Travel Goodies,SnapWireless,5000.0,2026-11-01T23:59:59+10:00,chance,entrant blocked: no_form,web,https://snapwireless.com.au/pages/5k-travel-giveaway
 76112,Win a Dream Playroom,Hipkids,600.0,2026-11-01T23:59:59+10:00,chance,entrant blocked: captcha,web,https://www.hipkids.com.au/pages/win-a-playroom-competition?srsltid=AYCX9vJIu0qKNf-_oc6AIVI_JhBBHeGABGz5O6y694H5wmiTQ9UAZ2F4
+76111,Win 1 of 6 Annke Security Cameras,ANNKE,512.0,2026-11-01T23:59:59+10:00,chance,entrant blocked: failing (item watchdog: over 85s),web,https://www.annke.com/blogs/giveaways/no-tricks-just-treats-annke-halloween-giveaway
 76110,Win 1 of 5 Digital Passes to see Paw Patrol: the Dino Movie,Popcorn podcast,,2026-11-01T23:59:59+10:00,chance,entrant blocked: captcha,web,https://popcornpodcast.com/giveaways/win-paw-patrol-the-dino-movie-digital-release
 76108,Win 1 of 6 $100 Prime100 Vouchers,Prime100,600.0,2026-11-01T23:59:59+10:00,chance,entry route manual,facebook,https://www.facebook.com/Prime100PetFood/posts/pfbid0dhAUx6RurrcJhbLbGjHjLPf7y3QMP1ddiQabuS1nqYgibozzZFCkEc5sRNHPQ2NUl
 76091,Win 1 of 5 Prize Packs,Rollie Nation,4450.0,2026-11-01T23:59:59+10:00,chance,entrant blocked: failing (no confirmation seen),web,https://www.rollienation.com/pages/friends-of-mine-giveaway
@@ -120,6 +121,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76157,Win an Infasecure Pilot Convertible Car Seat,Bounty Parents,499.0,2026-11-05T23:59:59+10:00,chance,entrant blocked: failing (locator.fill: Error: Cannot type text in),web,https://www.bountyparents.com.au/for-you/win-the-infasecure-pilot-covertible-car-seat-valued-at-549/
 76142,"Win 1 of 8 Oura Ring 5 + a $1,000 Hommey Vouchers",Hommey,8000.0,2026-11-05T23:59:59+10:00,chance,entry route manual,web,https://gethommey.com.au/pages/hommey-x-oura-giveaway
 76135,Win a Takamine G11 Guitar,Groundwater Country Music Festival Gold Coast,,2026-11-05T23:59:59+10:00,unknown,entry link wrong (workers/entry_pages.py),web,https://ierpty.qualtrics.com/jfe/form/SV_cTvxFFYjj63FJY2?Source=Social
+76134,Win 1 of 3 Double Passes to Wildwood,Explosion Network,,2026-11-05T23:59:59+10:00,unknown,entrant blocked: failing (item watchdog: over 85s),web,https://explosionnetwork.com/competition-win-1-of-3-double-passes-to-wildwood/
 76094,Win a Sony Playstation 5 Pro and copy of GTA VI,I Love Ugly,1619.0,2026-11-05T23:59:59+10:00,chance,entrant blocked: failing (form said: error),web,https://www.iloveugly.com.au/pages/ps5-gta-6-giveaway
 76052,Win a Panasonic MX-Hg6401kst Hot & Cold Blender,Panasonic,329.0,2026-11-05T23:59:59+10:00,skill,entry route unknown,web,https://blogs.panasonic.com.au/consumer/oct2026kitchengiveaway/
 75918,Win a Caravan and Camping Prize Pack,muk mat,3000.0,2026-11-05T23:59:59+10:00,chance,entrant blocked: failing (form said: error),web,https://mukmat.com/pages/bfcm-giveaway
