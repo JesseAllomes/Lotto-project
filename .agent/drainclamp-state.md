@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=55 -->
+<!-- drainclamp-build: state; schema=1; generation=56 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -72,7 +72,6 @@
 <!-- /DC:VERIFY -->
 
 <!-- DC:LOG -->
-- 2026-10-30T11:46:36+00:00 cca33c7c m1 done: winning-numbers register of 10,157 Lott draws (1996/97 to now), daily token-free workflow verified on GitHub
 - 2026-10-30T12:11:01+00:00 09e79993 m2 done: Lucky Lotteries jackpot tracker; 1,311 Mega + 3,882 Super draws (jackpots from 2015), daily jackpots.yml verified on GitHub (run 41052762530)
 - 2026-10-30T12:33:21+00:00 bd84fbac m3 done: competition register, 512 open listings (485 open to Vic; 22 Facebook, 2 Instagram); daily comps.yml verified (run 41054436595)
 - 2026-10-30T13:01:35+00:00 97eaab02 m5 done: odds.csv (draw type, purchase, entry limit, bonus entries, prizes, entry types) and skill.csv (84 open skill comps for Vic); tags.jsonl; comps.yml run 41058728219 ok
@@ -92,4 +91,5 @@
 - 2026-10-31T07:47:00+00:00 23b6e8c7 az2 done: guarded deploy live (OIDC), dry runs ok (draws, jackpots, entries 11 queued/dry_ok); az3 partial: draws, jackpots, entries cut over to Azure 07:45Z, GitHub twins manual-only; comps pending dry run; reenter+site stay on GitHub
 - 2026-10-31T09:37:02+00:00 676ea787 az3: first live Azure entries burst 8:05-8:26 pm Melbourne: 5 runs ok, 9 entered / 7 failed / 3 skipped, every run's log committed, site rebuilt on both hosts after each push; ~3 forms per run within the 150 s budget
 - 2026-10-31T11:33:53+00:00 2ebf58c7 az4+az5 done: 58 data files in Blob lotto-data; jobs pull/push Blob (draws verified: +2 draws, 4 files up); lotto-site job deploys SWA every 2 h; site.yml manual-only; deploy rebuild now keyed on src-<commit> image tag after a stale-image incident (jobs ran old image ~20 min, no data lost)
+- 2026-10-31T13:43:14+00:00 10025a2a az6 done: site buttons -> open SWA API (30/10min per IP) -> queue stlottoactions/lotto-actions -> lotto-actions job (on); remove/reenter/answer workflows deleted; jobs API 2025-01-01. Next: az7 (drop data/ from git, OneDrive backup)
 <!-- /DC:LOG -->
