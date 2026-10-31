@@ -23,7 +23,8 @@ RUN apt-get update \
     && useradd --create-home --uid 10001 worker \
     && mkdir -p /app/repo/data \
     && chown -R 10001:10001 /app/repo
-COPY --chown=10001:10001 azure/runner.py azure/blobsync.py /app/
+COPY --chown=10001:10001 azure/runner.py azure/blobsync.py azure/actionqueue.py /app/
+COPY --chown=10001:10001 azure/site-api/ /app/repo/azure/site-api/
 COPY --chown=10001:10001 workers/ /app/repo/workers/
 COPY --chown=10001:10001 analysis/ /app/repo/analysis/
 ENV NODE_PATH=/opt/playwright/node_modules PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright PYTHONUNBUFFERED=1 LOTTO_REPO_ROOT=/app/repo

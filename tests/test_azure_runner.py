@@ -29,6 +29,21 @@ def ok(returncode=0):
     return subprocess.CompletedProcess([], returncode, "", "")
 
 
+def make_api(root):
+    """What the image carries for the site deploy: the managed API folder."""
+    api = Path(root) / "azure" / "site-api"
+    api.mkdir(parents=True, exist_ok=True)
+    (api / "function_app.py").write_text("# api\n")
+
+
+def write_site(cwd):
+    """What `python -m workers.site --out site` writes."""
+    out = Path(cwd) / "site"
+    out.mkdir(exist_ok=True)
+    (out / "index.html").write_text("<html></html>")
+    (out / "staticwebapp.config.json").write_text("{}")
+
+
 def run_main(argv):
     out, err = io.StringIO(), io.StringIO()
     with redirect_stdout(out), redirect_stderr(err), mock.patch.object(runner.signal, "signal"):
@@ -207,14 +222,13 @@ class Site(unittest.TestCase):
         def fake_run(args, **kw):
             calls.append((args, kw))
             if args[:2] == [runner.sys.executable, "-m"] and args[2] == "workers.site":
-                out = Path(kw["cwd"]) / "site"
-                out.mkdir(exist_ok=True)
-                (out / "index.html").write_text("<html></html>")
+                write_site(kw["cwd"])
             return ok()
 
         error = None
         with tempfile.TemporaryDirectory() as tmp, patched_env(PATH="/bin", **env), \
                 mock.patch.object(runner.subprocess, "run", side_effect=fake_run), redirect_stdout(io.StringIO()) as out:
+            make_api(tmp)
             try:
                 runner.run_site(Path(tmp))
             except Exception as exc:
@@ -240,7 +254,8 @@ class Site(unittest.TestCase):
         names = [c[0][2] if c[0][1] == "-m" else c[0][0] for c in calls]
         self.assertEqual(names, ["workers.freebies", "workers.winners", "workers.site", runner.SWA_BIN])
         self.assertEqual(calls[2][0][-2:], ["--out", "site"])
-        self.assertEqual(calls[3][0], [runner.SWA_BIN, "deploy", "site", "--env", "production"])
+        self.assertEqual(calls[3][0], [runner.SWA_BIN, "deploy", "site", "--api-location", "azure/site-api",
+                                       "--api-language", "python", "--api-version", "3.11", "--env", "production"])
         for args, kw in calls:
             self.assertIsNotNone(kw["timeout"], args)
         self.assertLess(sum(kw["timeout"] for _, kw in calls) + 60, 900)     # fits replicaTimeout 900
@@ -265,12 +280,12 @@ class Site(unittest.TestCase):
                 if args[2] == "workers.freebies":
                     raise subprocess.TimeoutExpired(args, kw["timeout"])
                 return ok(1)
-            Path(kw["cwd"], "site").mkdir(exist_ok=True)
-            Path(kw["cwd"], "site/index.html").write_text("x")
+            write_site(kw["cwd"])
             return ok()
 
         with tempfile.TemporaryDirectory() as tmp, patched_env(SWA_DEPLOY_TOKEN="t"), \
                 mock.patch.object(runner.subprocess, "run", side_effect=fake_run) as run, redirect_stdout(io.StringIO()):
+            make_api(tmp)
             runner.run_site(Path(tmp))
         self.assertEqual(run.call_count, 4)
 
@@ -294,17 +309,44 @@ class Site(unittest.TestCase):
                 runner.run_site(Path(tmp))
         self.assertFalse(any(c.args[0][0] == runner.SWA_BIN for c in run.call_args_list))
 
+    def test_missing_swa_config_stops_before_deploy(self):
+        def fake_run(args, **kw):
+            if args[2:3] == ["workers.site"]:
+                Path(kw["cwd"], "site").mkdir(exist_ok=True)
+                Path(kw["cwd"], "site/index.html").write_text("x")
+            return ok()
+
+        with tempfile.TemporaryDirectory() as tmp, patched_env(SWA_DEPLOY_TOKEN="t"), \
+                mock.patch.object(runner.subprocess, "run", side_effect=fake_run) as run, redirect_stdout(io.StringIO()):
+            make_api(tmp)
+            with self.assertRaisesRegex(RuntimeError, "staticwebapp.config.json"):
+                runner.run_site(Path(tmp))
+        self.assertFalse(any(c.args[0][0] == runner.SWA_BIN for c in run.call_args_list))
+
     def test_deploy_needs_the_token_and_the_message_does_not_leak(self):
-        with patched_env(), mock.patch.object(runner.subprocess, "run") as run:
+        with tempfile.TemporaryDirectory() as tmp, patched_env(), mock.patch.object(runner.subprocess, "run") as run:
+            make_api(tmp)
             with self.assertRaisesRegex(RuntimeError, "SWA_DEPLOY_TOKEN is required"):
-                runner.deploy_site(Path("."))
+                runner.deploy_site(Path(tmp))
         run.assert_not_called()
+
+    def test_deploy_ships_the_api_and_refuses_to_deploy_without_it(self):
+        with tempfile.TemporaryDirectory() as tmp, patched_env(SWA_DEPLOY_TOKEN="t"), mock.patch.object(runner.subprocess, "run") as run:
+            with self.assertRaisesRegex(RuntimeError, "site-api/function_app.py is missing"):
+                runner.deploy_site(Path(tmp))
+        run.assert_not_called()
+        self.assertTrue((Path(runner.__file__).parent / "site-api" / "function_app.py").is_file())
+
+    def test_api_language_matches_the_runtime_in_the_swa_config(self):
+        from workers import site
+        self.assertEqual(site.SWA_CONFIG["platform"]["apiRuntime"], f"python:{runner.SITE_API_PYTHON}")
+        self.assertEqual(runner.SITE_API_DIR, "azure/site-api")
 
     def test_dry_run_builds_but_does_not_deploy(self):
         calls, error, out = self.run_site(DRY_RUN="1", SWA_DEPLOY_TOKEN="swa-tok")
         self.assertIsNone(error)
         self.assertFalse(any(args[0] == runner.SWA_BIN for args, _ in calls))
-        self.assertIn("DRY_RUN: would deploy", out)
+        self.assertIn("DRY_RUN: would deploy site/ and the API", out)
 
     def test_kill_switch_stops_the_site_job_before_any_pull(self):
         with patched_env(AZURE_JOBS_DISABLED="1"), mock.patch.object(runner, "prepare") as prepare:
@@ -590,8 +632,7 @@ class CostBounds(unittest.TestCase):
         def fake_run(args, **kw):
             calls.append((args, kw))
             if args[2:3] == ["workers.site"]:
-                Path(kw["cwd"], "site").mkdir(exist_ok=True)
-                Path(kw["cwd"], "site/index.html").write_text("x")
+                write_site(kw["cwd"])
             return subprocess.CompletedProcess(args, 0, "[{}]", "")
 
         with tempfile.TemporaryDirectory() as tmp, \
@@ -601,6 +642,7 @@ class CostBounds(unittest.TestCase):
                 mock.patch.object(runner, "push"), \
                 mock.patch.object(runner, "github_request", return_value=[]), redirect_stdout(io.StringIO()):
             root = Path(tmp)
+            make_api(root)
             runner.run_draws(root)
             runner.run_entries(root)
             runner.run_reenter(root)

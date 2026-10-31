@@ -1,10 +1,10 @@
 """Competitions the owner removed, and the pattern of what they keep and what they remove.
 
-    python3 -m workers.removals "remove: 75870 76058"   # record removals (used by .github/workflows/remove.yml)
+    python3 -m workers.removals "remove: 75870 76058"   # record removals (workers/actions.py does this for the site)
     python3 -m workers.removals "broken: 75870"         # the site's Doesn't work button: removed, not a dislike
     python3 -m workers.removals                         # rebuild data/entries/PREFERENCES.md only
 
-The site's Remove button opens a pre-filled issue "remove: <ids>"; when the repository owner submits it, remove.yml
+The site's Remove button sends {"kind": "remove", "ids": [...]} to the site API; the actions job (workers/actions.py)
 records each id in data/entries/log_removed.jsonl with what the listing was (category, brand, prize, entry route,
 draw type, source), so the queue never enters it again and both lists drop it. PREFERENCES.md compares removed
 competitions with the ones still listed: removal rate by category, entry route, prize band, source and brand, and

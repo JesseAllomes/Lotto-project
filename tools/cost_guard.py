@@ -17,6 +17,9 @@ to this repository, which has no function app):
        module caps, secrets in source
   C8   workflows: timeouts, concurrency, self-dispatch, workflow_run, push loops, issue guards, cron volume
   C10  limits ratchet: azure/limits.json may not loosen against the base ref unless LIMITS_APPROVED=1
+  C12  site actions: the Static Web App API (azure/site-api) has only the declared routes, needs the owner role at the
+       edge (SWA_CONFIG in workers/site.py), caps body size, ids, answer length and kinds, and the retired
+       issue-triggered workflows are gone; the Event job (lotto-actions) is bounded in C2 (executions, polling, queue)
   DRIFT  with --live DIR: exports of the live jobs are checked with C1-C3 and must equal azure/jobs/*.json
 """
 from __future__ import annotations
@@ -146,7 +149,7 @@ def job_view(doc: dict) -> dict:
     props = doc.get("properties", {})
     conf = props.get("configuration", {})
     trigger = conf.get("triggerType")
-    tc = conf.get("scheduleTriggerConfig") or conf.get("manualTriggerConfig") or {}
+    tc = conf.get("scheduleTriggerConfig") or conf.get("manualTriggerConfig") or conf.get("eventTriggerConfig") or {}
     containers = props.get("template", {}).get("containers") or []
     if len(containers) != 1:
         raise ConfigError(f"{doc.get('name')}: expected exactly one container, found {len(containers)}")
@@ -172,7 +175,23 @@ def job_view(doc: dict) -> dict:
         "registries": sorted((r.get("server"), r.get("username"), r.get("passwordSecretRef"))
                              for r in conf.get("registries") or []),
         "identities": sorted(k.lower() for k in (doc.get("identity", {}).get("userAssignedIdentities") or {})),
+        "event": event_view(conf.get("eventTriggerConfig")),
     }
+
+
+def event_view(cfg: dict | None) -> dict | None:
+    """The scale settings of an Event job, reduced to what the limits and the drift check compare."""
+    if cfg is None:
+        return None
+    scale = cfg.get("scale") or {}
+    rules = []
+    for r in scale.get("rules") or []:
+        meta = r.get("metadata") or {}
+        rules.append({"name": r.get("name"), "type": r.get("type"), "queue": meta.get("queueName"),
+                      "account": meta.get("accountName"), "queue_length": str(meta.get("queueLength")),
+                      "identity": (r.get("identity") or "").lower(), "has_auth": bool(r.get("auth"))})
+    return {"max_executions": scale.get("maxExecutions"), "polling_s": scale.get("pollingInterval"),
+            "min_executions": scale.get("minExecutions"), "rules": sorted(rules, key=lambda r: str(r["name"]))}
 
 
 def _num(value: object) -> float | None:
@@ -206,6 +225,7 @@ def check_job(rep: Report, rel: str, name: str, view: dict, limits: dict, live: 
                 if stats["min_gap_min"] < jl["min_interval_min"]:
                     rep.fail("C1", rel, 1, f"cron {view['cron']!r} runs {stats['min_gap_min']} minutes apart, "
                                            f"limit {jl['min_interval_min']}")
+    check_event(rep, rel, view, jl)
     timeout = view["timeout"]
     if not isinstance(timeout, int) or timeout <= 0:
         rep.fail("C2", rel, 1, f"replicaTimeout {timeout!r} must be a positive number of seconds")
@@ -255,6 +275,38 @@ def check_job(rep: Report, rel: str, name: str, view: dict, limits: dict, live: 
     if "entrant-profile" in view["secrets"] and "ENTRANT_PROFILE_JSON" not in allowed:
         rep.fail("C2", rel, 1, "secret entrant-profile is defined on a job that may not hold the profile")
     return stats
+
+
+def check_event(rep: Report, rel: str, view: dict, jl: dict) -> None:
+    """C2 for an Event job: one execution at a time, polled no faster than the limit, scaled only by the declared queue
+    through the job's managed identity (no connection string or key in an `auth` block)."""
+    ev, lim = view["event"], jl.get("event")
+    if view["trigger"] != "Event":
+        if ev is not None:
+            rep.fail("C2", rel, 1, "eventTriggerConfig on a job that is not an Event job")
+        return
+    if ev is None or lim is None:
+        rep.fail("C2", rel, 1, "an Event job needs eventTriggerConfig and an `event` block in its limits")
+        return
+    if not isinstance(ev["max_executions"], int) or not 1 <= ev["max_executions"] <= lim["max_executions"]:
+        rep.fail("C2", rel, 1, f"maxExecutions {ev['max_executions']!r} must be 1 to {lim['max_executions']}")
+    if ev["min_executions"] not in (None, 0):
+        rep.fail("C2", rel, 1, f"minExecutions {ev['min_executions']!r} must be 0: nothing may run while the queue is empty")
+    if not isinstance(ev["polling_s"], int) or ev["polling_s"] < lim["min_polling_interval_s"]:
+        rep.fail("C2", rel, 1, f"pollingInterval {ev['polling_s']!r} is below {lim['min_polling_interval_s']} s")
+    if not ev["rules"]:
+        rep.fail("C2", rel, 1, "an Event job needs a scale rule")
+    for r in ev["rules"]:
+        if r["type"] not in lim["rule_types"]:
+            rep.fail("C2", rel, 1, f"scale rule {r['name']!r} type {r['type']!r} is not one of {lim['rule_types']}")
+        if r["queue"] not in lim["queues"]:
+            rep.fail("C2", rel, 1, f"scale rule {r['name']!r} watches queue {r['queue']!r}, allowed {lim['queues']}")
+        if r["account"] not in lim["accounts"]:
+            rep.fail("C2", rel, 1, f"scale rule {r['name']!r} watches storage account {r['account']!r}, allowed {lim['accounts']}")
+        if not r["identity"] or r["identity"] not in view["identities"]:
+            rep.fail("C2", rel, 1, f"scale rule {r['name']!r} must authenticate with the job's managed identity")
+        if r["has_auth"]:
+            rep.fail("C2", rel, 1, f"scale rule {r['name']!r} has an auth block: use the managed identity, not a secret")
 
 
 def job_cost(view: dict, stats: dict | None, jl: dict, prices: dict) -> dict:
@@ -317,7 +369,7 @@ def check_drift(rep: Report, desired: dict[str, dict], live: dict[str, dict], ex
         if got is None:
             continue
         for key in ("trigger", "cron", "timeout", "retry", "parallelism", "completion", "cpu", "memory_gi",
-                    "args", "env", "secret_urls", "registries", "identities"):
+                    "args", "env", "secret_urls", "registries", "identities", "event"):
             if want[key] != got[key]:
                 rep.fail("DRIFT", f"live/{name}.json", 1, f"{key} differs from azure/jobs/{name}.json: "
                                                          f"live {got[key]!r}, desired {want[key]!r}")
@@ -465,7 +517,9 @@ def scan_python(rep: Report, root: Path, limits: dict) -> int:
                         cap = {"MAX_ISSUE_PAGES": code.get("max_issue_pages"),
                                "ENTRANT_DEFAULT_CONCURRENCY": code.get("runner_entrant_concurrency"),
                                "ENTRANT_DEFAULT_TIMEOUT_S": code.get("runner_entrant_timeout_s"),
-                               "COMPS_MAX_NEW": code.get("comps_max_new")}.get(target.id)
+                               "COMPS_MAX_NEW": code.get("comps_max_new"),
+                               "MAX_ACTIONS_PER_RUN": code.get("max_actions_per_run"),
+                               "ACTIONS_MAX_DEQUEUE": code.get("actions_max_dequeue")}.get(target.id)
                         if cap is not None and node.value.value > cap:
                             rep.fail("C7", rel, node.lineno, f"{target.id} = {node.value.value} exceeds {cap}")
         for line, title in _title_literals(tree):
@@ -607,6 +661,101 @@ def check_workflows(rep: Report, root: Path, limits: dict) -> None:
         rep.fail("C8", ".github/workflows", 1, f"workflow crons fire {total_fires} times a day, limit {wl.get('max_cron_fires_per_day', 300)}")
 
 
+# ------------------------------------------------------------------------------------------------------ C12
+SITE_API_DIR = "azure/site-api"
+API_PREFIX = "/api/"
+
+
+def _module_literals(path: Path) -> dict[str, object]:
+    """Module-level NAME = <literal> assignments, read without importing (so no module code runs)."""
+    out: dict[str, object] = {}
+    for node in ast.parse(path.read_text(), filename=str(path)).body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            try:
+                out[node.targets[0].id] = ast.literal_eval(node.value)
+            except (ValueError, SyntaxError):
+                pass
+    return out
+
+
+def _route_decorators(tree: ast.AST) -> list[tuple[int, str, list[str]]]:
+    """(line, route, methods) of every `@<app>.route(route=..., methods=[...])`."""
+    found = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for dec in node.decorator_list:
+                if isinstance(dec, ast.Call) and isinstance(dec.func, ast.Attribute) and dec.func.attr == "route":
+                    kw = {k.arg: k.value for k in dec.keywords}
+                    route = ast.literal_eval(kw["route"]) if "route" in kw else ""
+                    methods = ast.literal_eval(kw["methods"]) if "methods" in kw else []
+                    found.append((dec.lineno, str(route), [str(m).upper() for m in methods]))
+    return found
+
+
+def check_site_api(rep: Report, root: Path, limits: dict) -> None:
+    sl = limits.get("site_api")
+    api = root / SITE_API_DIR
+    if sl is None:
+        if api.is_dir():
+            rep.fail("C12", SITE_API_DIR, 1, "the API exists but limits.json has no `site_api` block")
+        return
+    for name in sl.get("retired_workflows", []):
+        if (root / ".github" / "workflows" / name).exists():
+            rep.fail("C12", f".github/workflows/{name}", 1, "retired: the site buttons use the API, not GitHub issues")
+    # the Static Web App configuration the site build writes (workers/site.py SWA_CONFIG)
+    site_py = root / "workers" / "site.py"
+    config = _module_literals(site_py).get("SWA_CONFIG") if site_py.exists() else None
+    if not isinstance(config, dict):
+        rep.fail("C12", "workers/site.py", 1, "SWA_CONFIG (the staticwebapp.config.json the build writes) is missing")
+        config = {}
+    role = sl["required_role"]
+    api_routes = [r for r in config.get("routes", []) if str(r.get("route", "")).startswith(API_PREFIX)]
+    for r in api_routes:
+        if r.get("allowedRoles") != [role]:
+            rep.fail("C12", "workers/site.py", 1, f"route {r.get('route')} allowedRoles must be exactly {[role]}, "
+                                                  f"got {r.get('allowedRoles')!r}")
+    if not any(r.get("route") == API_PREFIX + "*" for r in api_routes):
+        rep.fail("C12", "workers/site.py", 1, f"SWA_CONFIG has no {API_PREFIX}* route requiring the {role} role")
+    if (config.get("platform") or {}).get("apiRuntime") != sl["api_runtime"]:
+        rep.fail("C12", "workers/site.py", 1, f"platform.apiRuntime must be {sl['api_runtime']!r}")
+    if not api.is_dir():
+        rep.fail("C12", SITE_API_DIR, 1, "the API folder is missing")
+        return
+    # routes and methods the function app declares
+    app_py = api / "function_app.py"
+    if app_py.exists():
+        for line, route, methods in _route_decorators(ast.parse(app_py.read_text(), filename=str(app_py))):
+            if API_PREFIX + route not in sl["allowed_routes"]:
+                rep.fail("C12", f"{SITE_API_DIR}/function_app.py", line, f"route {API_PREFIX + route} is not in allowed_routes "
+                                                                         f"{sl['allowed_routes']}")
+            if not methods or not set(methods) <= set(sl["allowed_methods"]):
+                rep.fail("C12", f"{SITE_API_DIR}/function_app.py", line, f"methods {methods} must be within {sl['allowed_methods']}")
+    else:
+        rep.fail("C12", SITE_API_DIR, 1, "function_app.py is missing")
+    # caps in the handler and in the worker that re-validates the message
+    for rel in (f"{SITE_API_DIR}/lotto_actions.py", "workers/actions.py"):
+        path = root / rel
+        if not path.exists():
+            rep.fail("C12", rel, 1, "file is missing")
+            continue
+        lit = _module_literals(path)
+        for const, key in (("MAX_IDS", "max_ids"), ("MAX_ANSWER_CHARS", "max_answer_chars")):
+            if not isinstance(lit.get(const), int) or not 0 < lit[const] <= sl[key]:
+                rep.fail("C12", rel, 1, f"{const} must be a number from 1 to {sl[key]}, got {lit.get(const)!r}")
+        if not isinstance(lit.get("KINDS"), tuple) or not set(lit["KINDS"]) <= set(sl["allowed_kinds"]):
+            rep.fail("C12", rel, 1, f"KINDS must be within {sl['allowed_kinds']}")
+        if rel.endswith("lotto_actions.py"):
+            size = lit.get("MAX_BODY_BYTES")
+            if not isinstance(size, int) or not 0 < size <= sl["max_body_bytes"]:
+                rep.fail("C12", rel, 1, f"MAX_BODY_BYTES must be a number from 1 to {sl['max_body_bytes']}, got {size!r}")
+            handler = next((n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == "handle"), None)
+            compared = handler is not None and any(
+                isinstance(c, ast.Compare) and any(isinstance(n, ast.Name) and n.id == "MAX_BODY_BYTES" for n in ast.walk(c))
+                for c in ast.walk(handler))
+            if not compared:
+                rep.fail("C12", rel, 1, "handle() does not enforce MAX_BODY_BYTES (no comparison against it)")
+
+
 # ------------------------------------------------------------------------------------------------------ C10
 LOOSER_WHEN_SMALLER = ("min_",)
 
@@ -686,6 +835,7 @@ def run_checks(limits_path: Path, root: Path, live_dir: Path | None = None, base
     elif unbounded < cap:
         rep.note(f"ratchet can be lowered: unbounded_subprocess {cap} -> {unbounded}")
     check_workflows(rep, root, limits)
+    check_site_api(rep, root, limits)
     check_ratchet(rep, limits, base)
     return rep
 

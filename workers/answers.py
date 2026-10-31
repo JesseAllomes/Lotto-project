@@ -3,11 +3,10 @@
     python3 -m workers.answers "answer: 76111" < issue_body.txt     # save the answer written in an issue body
     python3 -m workers.answers --question 76111                     # print the question for a listing
 
-The site's Write answer / Edit button opens a pre-filled issue "answer: <id>" whose body holds the question and a line
-"---"; the owner writes the answer below that line and submits. .github/workflows/answer.yml (owner's issues only)
-saves it here when it fits the word limit the question states ("25 words or less"; 25 when none is stated) and is
-not empty; the auto-entrant uses it on its next run, or at once through Submit all approved. Writing the answer in
-the issue is the approval: nothing else is invented on the owner's behalf.
+The site's Write answer / Edit answer button sends the answer to the site API; the actions job (workers/actions.py)
+calls save() with a "---" line and then the answer, when it fits the word limit the question states ("25 words or less"; 25
+when none is stated) and is not empty; the auto-entrant uses it on its next run, or at once through Submit all
+approved. Sending the answer is the approval: nothing else is invented on the owner's behalf.
 """
 import json
 import re

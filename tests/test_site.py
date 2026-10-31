@@ -6,6 +6,7 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from workers import reenter, site
 
@@ -62,6 +63,88 @@ class Page(unittest.TestCase):
         self.assertEqual(site.category("Trade to Win a Porsche 911 GTS"), "Cars & vehicles")
         self.assertEqual(site.category("Win $3K for your Summer Fund Every Week"), "Cash & vouchers")
         self.assertEqual(site.category("Win a $20,000 Cruise Voucher"), "Travel")
+
+
+def build_page():
+    with tempfile.TemporaryDirectory() as d:
+        return site.page(Path(d), dt.date(2026, 10, 31), built="t")
+
+
+class Buttons(unittest.TestCase):
+    """Every button posts to the site API; nothing opens a GitHub issue."""
+
+    def test_no_github_issue_links_remain(self):
+        html = build_page()
+        for text in ("issues/new", "github.com", "rmIssue", "brokenIssue", "answerIssue", "D.repo"):
+            self.assertNotIn(text, html, text)
+        self.assertNotIn("repo", json.loads(re.search(r"const D = (\{.*?\});\n", html).group(1)))
+        self.assertNotIn("JesseAllomes", html)
+
+    def test_actions_go_through_the_api_with_the_login_redirect(self):
+        html = build_page()
+        self.assertIn('fetch("/api/action", { method: "POST"', html)
+        self.assertIn('redirect: "manual"', html)                                       # the edge's 302 login redirect is detected, not followed
+        self.assertIn("/.auth/login/github?post_login_redirect_uri=", html)
+        self.assertIn("r.status === 401 || r.status === 403", html)
+        self.assertIn("/.auth/me", html)                                                # read-only page when not signed in
+        for kind in ("remove", "broken", "reenter", "answer", "done", "undone"):
+            self.assertIn(f'"{kind}"', html, kind)
+
+    def test_buttons_are_buttons_with_data_actions(self):
+        html = build_page()
+        for act in ('data-act="remove"', 'data-act="broken"', 'data-act="reenter"', 'data-act="rmsel"', 'data-act="resel"',
+                    'data-act="edit-answer"', 'data-act="save-answer"'):
+            self.assertIn(act, html, act)
+        self.assertIn('id="toast"', html)
+        self.assertIn("Sign in", html)
+
+    def test_done_ticks_are_kept_locally_and_synced(self):
+        html = build_page()
+        self.assertIn('store.set("comps-done", d)', html)                               # localStorage stays
+        self.assertIn('syncDone(on ? "done" : "undone", id)', html)                     # and the tick is posted
+        with tempfile.TemporaryDirectory() as d:
+            e = Path(d)
+            (e / "done.json").write_text(json.dumps({"75870": 1760000000000, "bad": "x"}))
+            data = json.loads(re.search(r"const D = (\{.*?\});\n", site.page(e, dt.date(2026, 10, 31), built="t")).group(1))
+        self.assertEqual(data["done"], {"75870": 1760000000000})
+        self.assertEqual(site.load_done(Path("/nonexistent")), {})
+
+    def test_the_page_script_is_valid_javascript(self):
+        import shutil
+        import subprocess
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is not installed")
+        script = re.search(r"<script>(.*)</script>", build_page(), re.S).group(1)
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "page.js"
+            path.write_text(script)
+            done = subprocess.run([node, "--check", str(path)], capture_output=True, text=True, timeout=60)
+        self.assertEqual(done.returncode, 0, done.stderr)
+
+
+class StaticWebAppConfig(unittest.TestCase):
+    def test_api_needs_the_owner_role_and_pages_stay_public(self):
+        cfg = site.SWA_CONFIG
+        routes = {r["route"]: r for r in cfg["routes"]}
+        self.assertEqual(routes["/api/*"]["allowedRoles"], ["owner"])
+        self.assertNotIn("methods", routes["/api/*"])                                   # every method, not just POST
+        for route in routes:
+            if route != "/api/*" and not route.startswith("/.auth/"):
+                self.fail(f"unexpected route {route}")                                  # no page route restricts the public site
+        for provider in ("aad", "google", "twitter", "facebook", "apple"):
+            self.assertEqual(routes[f"/.auth/login/{provider}"]["statusCode"], 404)
+        self.assertNotIn("/.auth/login/github", routes)
+        self.assertEqual(cfg["responseOverrides"]["401"]["redirect"], "/.auth/login/github?post_login_redirect_uri=.referrer")
+        self.assertEqual(cfg["responseOverrides"]["401"]["statusCode"], 302)
+        self.assertEqual(cfg["platform"]["apiRuntime"], "python:3.11")
+        self.assertNotIn("anonymous", json.dumps(cfg["routes"]))
+
+    def test_main_writes_the_config_next_to_the_page(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(site, "page", return_value="<html></html>"):
+            site.main(["--out", d])
+            self.assertEqual(json.loads((Path(d) / "staticwebapp.config.json").read_text()), site.SWA_CONFIG)
+            self.assertTrue((Path(d) / "index.html").is_file())
 
 
 class Freebies(unittest.TestCase):

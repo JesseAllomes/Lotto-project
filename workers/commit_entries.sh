@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Commit the entrant's new log lines without losing them to a concurrent push (used by entries.yml and reenter.yml).
+# Commit the entrant's new log lines without losing them to a concurrent push (used by entries.yml).
 #   bash workers/commit_entries.sh "entries: 2026-10-31 09:05"
 # A plain `git pull --rebase` conflicted whenever anything else changed the regenerated files in data/entries during
 # a run, and the run's log was lost. Instead: keep only the lines this run appended to data/entries/log*.jsonl, move

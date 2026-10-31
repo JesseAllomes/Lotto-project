@@ -6,19 +6,21 @@
 One static page built from the registers after each run. All the data is embedded as JSON and the phone does the
 searching, filtering and sorting (gamer-chic theme: purple fuzz, neon orange, paint splatter). Tabs:
   Social       the To enter list's Facebook / Instagram / TikTok competitions, on their own tab.
-  Remove       (and Doesn't work: "broken: <ids>", not counted as a dislike)
-               on To enter and Auto-entered: opens a pre-filled issue "remove: <ids>" (.github/workflows/remove.yml,
-               owner only) that stops entries, drops the comp from both lists and records it for the owner's pattern
-               of likes and dislikes (workers/removals.py -> data/entries/PREFERENCES.md); hidden on the phone at once.
+  Remove       (and Doesn't work, not counted as a dislike) on To enter and Auto-entered: stops entries, drops the comp
+               from both lists and records it for the owner's pattern of likes and dislikes (workers/removals.py ->
+               data/entries/PREFERENCES.md); hidden on the phone at once.
   To enter     open competitions a Victorian can enter that the auto-entrant cannot (bot-checked web forms,
                social media, everything else), each with its prize category, Open button, approved answer with a
-               Copy button, and a Done tick kept in the phone's browser storage.
+               Copy button, and a Done tick kept in the phone's browser storage and synced (data/entries/done.json).
   Auto-entered the auto-entry register: every competition entered automatically, how many times, when last, with a
-               Re-enter button (opens a pre-filled GitHub issue; .github/workflows/reenter.yml acts on the owner's
-               issues only) and multi-select to re-enter several at once.
-  Approvals    skill competitions: approved answers not entered yet (Submit now, or Submit all approved: a
-               "reenter: <ids>" issue) and those waiting for the owner's answer (Write answer: an "answer: <id>"
-               issue, .github/workflows/answer.yml, saved by workers/answers.py within the word limit).
+               Re-enter button and multi-select to re-enter several at once.
+  Approvals    skill competitions: approved answers not entered yet (Submit now, or Submit all approved) and those
+               waiting for the owner's answer (Write answer / Edit answer: an in-page editor, saved by
+               workers/answers.py within the word limit).
+Every button sends POST /api/action (azure/site-api, a Static Web Apps managed API) when the owner is signed in with
+GitHub; the API queues it and the Container Apps job lotto-actions applies it (workers/actions.py).  A visitor who is
+not signed in sees the page read-only, and a button tap sends them to the GitHub login.  main() also writes
+staticwebapp.config.json (SWA_CONFIG): /api/* needs the role owner, and the role is given by an SWA invitation.
   Winners      draw date, how winners are told, claim deadline and winners page for every auto-entered comp and every
                comp ticked Done (data/entries/winners.csv from workers/winners.py), with a flag when the owner's
                surname was seen on a published winners page.
@@ -41,7 +43,24 @@ ROOT = comps.ROOT
 ENTRIES = ROOT / "data" / "entries"
 FREEBIES = ROOT / "data" / "freebies" / "freebies.csv"
 OUT = ROOT / "site"
-REPO = "JesseAllomes/Lotto-project"
+DONE = "done.json"
+# Written next to index.html as staticwebapp.config.json.  tools/cost_guard.py (C12) reads this literal: /api/* must
+# keep allowedRoles ["owner"], and the runtime must match limits.json.  Pages stay public (read-only).
+SWA_CONFIG = {
+    "routes": [
+        {"route": "/api/*", "allowedRoles": ["owner"]},
+        {"route": "/.auth/login/aad", "statusCode": 404},
+        {"route": "/.auth/login/google", "statusCode": 404},
+        {"route": "/.auth/login/twitter", "statusCode": 404},
+        {"route": "/.auth/login/facebook", "statusCode": 404},
+        {"route": "/.auth/login/apple", "statusCode": 404},
+    ],
+    "responseOverrides": {
+        "401": {"redirect": "/.auth/login/github?post_login_redirect_uri=.referrer", "statusCode": 302},
+    },
+    "platform": {"apiRuntime": "python:3.11"},
+    "globalHeaders": {"X-Content-Type-Options": "nosniff"},
+}
 MELB = ZoneInfo("Australia/Melbourne")
 CATEGORIES = [   # first match wins, on the title (AusComps notes stripped); then the aggregator's own category
     ("Prize homes & lotteries", r"prize home|\bhouse\b|apartment|penthouse|lottery|art union|raffle|dream home|"
@@ -156,6 +175,16 @@ def removed(entries=ENTRIES):
 def load_answers(entries=ENTRIES):
     path = entries / "answers.json"
     return json.loads(path.read_text()) if path.exists() else {}
+
+
+def load_done(entries=ENTRIES):
+    """The synced Done ticks {id: epoch ms} (data/entries/done.json, written by workers/actions.py)."""
+    path = entries / DONE
+    try:
+        doc = json.loads(path.read_text()) if path.exists() else {}
+    except ValueError:
+        return {}
+    return {str(k): int(v) for k, v in doc.items() if isinstance(v, (int, float))} if isinstance(doc, dict) else {}
 
 
 def _num(x):
@@ -301,8 +330,9 @@ def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
             "auto": [x for x in autos(entries, today, recs) if x["id"] not in gone], "free": freebies(freebie_path),
             "appr": [x for x in approvals(entries, today, recs) if x["id"] not in gone],
             "win": [x for x in winners(entries, recs) if x["id"] not in gone], "removed": len(gone),
+            "done": load_done(entries),
             "stats": stats(entries), "groups": GROUP_NAMES, "categories": list(dict.fromkeys(c for c, _ in CATEGORIES)) + ["Other"],
-            "repo": REPO, "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
+            "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
     add_chance(data, recs)
     blob = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     return TEMPLATE.replace("__DATA__", blob)
@@ -395,6 +425,13 @@ a{color:var(--orange2)}
 .ic:hover,.ic:focus-visible{border-color:var(--orange)}.ic input{position:absolute;opacity:0;pointer-events:none}
 .ic:has(input:checked){background:var(--lime);color:#1a0b2e}
 .t .acts .sel{margin-left:auto}
+button.ic{background:transparent;font-family:inherit;padding:0}
+button[disabled]{opacity:.5;cursor:default}
+.editor{margin:10px 0}.editor textarea{width:100%;min-height:96px;font:inherit;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);color:var(--ink)}
+.editor textarea:focus{outline:none;border-color:var(--orange)}.editor .over{color:var(--pink);font-weight:700}
+#toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);max-width:92vw;background:var(--bg2);color:var(--ink);border:2px solid var(--orange);
+  border-radius:12px;padding:10px 14px;z-index:5;box-shadow:4px 4px 0 var(--purple);display:none;font-size:.92rem}
+#toast.show{display:block}
 /* best shot today: the top pick as a paint splat */
 .hero{margin:18px 0 8px;position:relative;padding:24px 20px 20px;color:#1a0b2e;isolation:isolate}
 .hero::before{content:"";position:absolute;inset:-12px -6px;z-index:-1;background:var(--orange);
@@ -404,7 +441,7 @@ a{color:var(--orange2)}
 .hero .bt{display:inline-block;background:#1a0b2e;color:var(--orange);font:400 14px Bungee;padding:9px 14px;border-radius:999px;margin-top:10px;text-decoration:none}
 </style></head><body>
 <header><div class="wrap">
-<h1>Comp Quest</h1><div class="sub" id="summary"></div>
+<h1>Comp Quest</h1><div class="sub" id="summary"></div><div class="sub" id="who"></div>
 <div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="social">Social</button><button class="tab" data-tab="auto">Entered</button><button class="tab" data-tab="appr">Approvals</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
 <input type="search" id="q" placeholder="Search prize, brand or title">
 <div class="chips" id="cats"></div>
@@ -417,7 +454,8 @@ a{color:var(--orange2)}
 <label class="done hint" style="margin-top:8px"><input type="checkbox" id="hide"> Hide done</label>
 </div></header>
 <main class="wrap"><div class="sub" id="count"></div><ul id="list"></ul></main>
-<div class="bar" id="bar"><span id="selcount"></span><a class="ghost rmsel" id="rmselect" target="_blank" rel="noopener">Remove selected</a><a class="go" id="reselect" target="_blank" rel="noopener">Re-enter selected</a></div>
+<div class="bar" id="bar"><span id="selcount"></span><button type="button" class="ghost" id="rmselect" data-act="rmsel">Remove selected</button><button type="button" class="go" id="reselect" data-act="resel">Re-enter selected</button></div>
+<div id="toast" role="status" aria-live="polite"></div>
 <script>
 const D = __DATA__;
 const $ = (s) => document.querySelector(s);
@@ -426,30 +464,34 @@ const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? 
                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 let S = Object.assign({ tab: "todo", q: "", cats: [], grp: "", close: "", min: "0", sort: "chance", hide: false }, store.get("comps-ui", {}));
 if (!/^(0|[\d.e]+-[\d.e]+)$/.test(S.min)) S.min = "0";   // the old "500+"-style choices are gone
-const done = () => store.get("comps-done", {});
+// Done ticks: this phone's (comps-done, comps-undone = unticked at that time) merged with the synced ones (D.done); the latest wins.
+const done = () => { const s = D.done || {}, l = store.get("comps-done", {}), u = store.get("comps-undone", {}), out = {};
+  for (const id of new Set([...Object.keys(s), ...Object.keys(l)])) { const t = Math.max(s[id] || 0, l[id] || 0); if (t > (u[id] || 0)) out[id] = t; }
+  return out; };
 const sel = new Set();
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const days = (c) => c ? Math.round((new Date(c.slice(0, 10) + "T00:00:00") - today) / 864e5) : 9999;
 const chanceTag = (x) => x.cb ? `<span class="tag ch-${x.cb}" title="Estimated from the number of prizes, the prize size, how much effort entering takes and how long it runs. A ranking, not real odds.">${x.cb} chance${x.cw > 1 ? ` · ${x.cw} prizes` : ""}</span>` : "";
 const nice = (c) => { const t = new Date(c.slice(0, 10) + "T00:00:00"); return isNaN(t) ? esc(c) : t.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) + (t.getFullYear() !== new Date().getFullYear() ? " " + t.getFullYear() : ""); };
 const money = (p, est) => p ? (est ? "~$" : "$") + Math.round(p).toLocaleString("en-AU") : "prize n/a";   // ~ = estimated from the title
-const rmIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("remove: " + ids.join(" "))}&body=${encodeURIComponent("Remove these competitions: no more entries, off both lists, and add them to the pattern of what I don't like. Submit this issue; the remove workflow does the rest.")}`;
 const gone = () => store.get("comps-removed", {});
-const brokenIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("broken: " + ids.join(" "))}&body=${encodeURIComponent("This competition doesn't work (entry page broken, closed early or not as listed). Stop entering it and take it off the lists; not a dislike. Submit this issue; the remove workflow does the rest.")}`;
+const pending = () => store.get("comps-pending", {});    // re-entries sent from this phone: id -> time
+const isPending = (id) => Date.now() - (pending()[id] || 0) < 15 * 60 * 1000;
 const BLOCKS = { high: 5, medium: 3, low: 1 };
 const meter = (x) => { const k = BLOCKS[x.cb] || 0; return `<span class="mt" aria-label="${esc(x.cb || "unknown")} chance">${"▮".repeat(k)}<em>${"▯".repeat(5 - k)}</em></span>`; };
 const stub = (x) => `<div class="stub"><div><div class="no">No. ${esc(String(x.id).slice(-5))}</div><div class="p">${money(x.p, x.pe)}</div></div>
   <div title="Estimated from the number of prizes, the prize size, how much effort entering takes and how long it runs. A ranking, not real odds.">${meter(x)}<div class="l">${esc(x.cb || "unrated")} chance<span class="why">${esc(x.why || "")}</span></div></div></div>`;
-const icons = (x) => `<a class="ic rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}" title="Remove: not for me" aria-label="Remove">✕</a>` +
-  `<a class="ic rm" href="${brokenIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}" title="Doesn't work" aria-label="Doesn't work">⚠</a>`;
+const icons = (x) => `<button type="button" class="ic rm" data-act="remove" data-ids="${esc(x.id)}" title="Remove: not for me" aria-label="Remove">✕</button>` +
+  `<button type="button" class="ic rm" data-act="broken" data-ids="${esc(x.id)}" title="Doesn't work" aria-label="Doesn't work">⚠</button>`;
+const enterBtn = (ids, label, cls = "go") => ids.every(isPending) ? `<span class="meta">Queued</span>` : `<button type="button" class="${cls}" data-act="reenter" data-ids="${esc(ids.join(" "))}">${label}</button>`;
+const words = (t) => (String(t).match(/[\w'’-]+/g) || []).length;
+const drafts = {}, editing = new Set();                  // answer text not sent yet, and the open editors
+const editor = (x) => `<div class="editor"><textarea data-draft="${esc(x.id)}" maxlength="2000" aria-label="Your answer">${esc(drafts[x.id] ?? x.a ?? "")}</textarea>
+  <div class="meta" data-count="${esc(x.id)}">${words(drafts[x.id] ?? x.a ?? "")} of ${x.lim} words</div>
+  <div class="acts"><button type="button" class="go" data-act="save-answer" data-id="${esc(x.id)}">Save answer</button><button type="button" class="ghost" data-act="cancel-answer" data-id="${esc(x.id)}">Cancel</button></div></div>`;
 const doneBox = (id, on) => `<label class="ic" title="Done" aria-label="Done"><input type="checkbox" class="tick" data-id="${esc(id)}" ${on ? "checked" : ""}>✓</label>`;
 const hero = (x) => `<section class="hero"><div class="kick">Best shot today</div><h2><a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a></h2>
   <div class="info">${money(x.p, x.pe)} · ${meter(x)} ${esc(x.cb || "")} chance${x.why ? " · " + esc(x.why) : ""}</div><a class="bt" href="${esc(x.u)}" target="_blank" rel="noopener">Enter now →</a></section>`;
-const rmBtn = (x) => `<a class="ghost rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Remove</a>` +
-  `<a class="ghost rm" href="${brokenIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Doesn't work</a>`;
-const answerIssue = (x) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("answer: " + x.id)}&body=${encodeURIComponent(
-  `${x.t}\nQuestion: ${x.q || "(see the entry page)"}\nUp to ${x.lim} words. Writing the answer here approves it; it is entered on the next run.\nWrite your answer below this line.\n---\n${x.a || ""}`)}`;
-const issue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("reenter: " + ids.join(" "))}&body=${encodeURIComponent("Re-enter these competitions now. Submit this issue; the reenter workflow does the rest and closes it.")}`;
 $("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps` + (D.removed ? ` · ${D.removed} removed` : "") + ` · updated ${D.built}`;
 for (const [k, v] of Object.entries(D.groups)) $("#grp").insertAdjacentHTML("beforeend", `<option value="${k}">${esc(v)}</option>`);
 const pool = () => S.tab === "todo" ? D.todo.filter((x) => x.g !== "social") : S.tab === "social" ? D.todo.filter((x) => x.g === "social") : S.tab === "auto" ? D.auto : S.tab === "appr" ? D.appr : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
@@ -480,13 +522,13 @@ function card(x) {
     return `<li class="t">${stub(x)}<div class="body"><div class="when">${when}</div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${x.st === "ok" ? (x.hand ? "approved: enter by hand" : "approved, waiting to go in") : "needs your answer"}</span>${esc(x.b)} · up to ${x.lim} words</div>${body}
-    <div class="acts"><a class="ghost" href="${answerIssue(x)}" target="_blank" rel="noopener">${x.a ? "Edit answer" : "Write answer"}</a>
-    ${x.a && !x.hand ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Submit now</a>` : `<a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>`}${icons(x)}</div></div></li>`;
+    ${editing.has(x.id) ? editor(x) : ""}<div class="acts"><button type="button" class="ghost" data-act="edit-answer" data-id="${esc(x.id)}">${x.a ? "Edit answer" : "Write answer"}</button>
+    ${x.a && !x.hand ? enterBtn([x.id], "Submit now") : `<a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>`}${icons(x)}</div></div></li>`;
   }
   if (S.tab === "auto") return `<li class="t">${stub(x)}<div class="body"><div class="when">${when}</div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span>${x.n ? `<b>${x.n}</b> ${x.n === 1 ? "entry" : "entries"} · last ${esc(x.l)}` : "waiting for the next burst"}</div>${ans}
-    <div class="acts">${x.open ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Re-enter</a>` : `<span class="meta">closed</span>`}${icons(x)}
+    <div class="acts">${x.open ? enterBtn([x.id], "Re-enter") : `<span class="meta">closed</span>`}${icons(x)}
     ${x.open ? `<label class="ic sel" title="Select for Re-enter selected"><input type="checkbox" class="pick" data-id="${esc(x.id)}" ${sel.has(x.id) ? "checked" : ""}>☐</label>` : ""}</div></div></li>`;
   if (S.tab === "free") { const dn = !!done()["f:" + x.u];
     return `<li class="card ${dn ? "is-done" : ""}"><div class="top"><span class="tag">${esc(x.k)}</span><span class="meta">${esc(x.c)}</span></div>
@@ -519,33 +561,123 @@ function render() {
   $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" || S.tab === "social" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
   const ok = S.tab === "appr" ? list.filter((x) => x.st === "ok" && !x.hand) : [];
   $("#count").innerHTML = esc($("#count").textContent) + (S.tab === "appr"
-    ? ` · ${list.filter((x) => x.st === "ok").length} approved, ${list.filter((x) => x.st !== "ok").length} need an answer` + (ok.length ? ` <a class="go" href="${issue(ok.map((x) => x.id))}" target="_blank" rel="noopener">Submit all approved (${ok.length})</a>` : "")
+    ? ` · ${list.filter((x) => x.st === "ok").length} approved, ${list.filter((x) => x.st !== "ok").length} need an answer` + (ok.length ? " " + enterBtn(ok.map((x) => x.id), `Submit all approved (${ok.length})`) : "")
     : "");
   const top = ["todo", "social", "appr"].includes(S.tab) && S.sort === "chance" && list.length > 1 && !(dn[list[0].id]) ? list[0] : null;
   $("#list").innerHTML = (top ? `<li>${hero(top)}</li>` : "") + (top ? list.slice(1) : list).map(card).join("") || `<li class="empty">${S.tab === "win" ? "Nothing entered yet. Tick Done on the To enter tab to track a comp here." : "Nothing matches. Clear a filter."}</li>`;
   $("#bar").classList.toggle("show", S.tab === "auto" && sel.size > 0);
-  $("#selcount").textContent = `${sel.size} selected`; $("#reselect").href = issue([...sel]); $("#rmselect").href = rmIssue([...sel]);
+  $("#selcount").textContent = `${sel.size} selected`;
   store.set("comps-ui", S);
+}
+// Actions: POST /api/action (the Static Web App API; the owner role is checked at the edge). The page updates at once and a
+// failed send is undone with a message. Not signed in: the page is read-only and a button sends you to the GitHub login.
+const api = { auth: null, readonly: false };   // auth: true = signed in as owner, false = not, null = not known yet
+const goLogin = () => { location.href = "/.auth/login/github?post_login_redirect_uri=" + encodeURIComponent(location.pathname + location.search); };
+let toastTimer;
+function toast(msg, link) {
+  const t = $("#toast"); t.textContent = msg;
+  if (link) { const a = document.createElement("a"); a.href = link.href; a.textContent = " " + link.text; t.append(a); }
+  t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 4500);
+}
+async function post(body) {   // "ok" | "auth" | "fail" | "net"
+  try {
+    const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+                                           redirect: "manual", body: JSON.stringify(body) });
+    if (r.type === "opaqueredirect" || r.status === 401 || r.status === 403) return "auth";   // the edge redirects to the login
+    return r.status === 202 ? "ok" : "fail";
+  } catch { return "net"; }
+}
+async function send(kind, ids, extra = {}) {   // up to 50 ids a request
+  for (let i = 0; i < ids.length; i += 50) { const r = await post({ kind, ids: ids.slice(i, i + 50), ...extra }); if (r !== "ok") return r; }
+  return "ok";
+}
+const SAID = { remove: "Removed. It leaves the lists within a couple of minutes.", broken: "Marked as not working and removed.",
+               reenter: "Re-entry queued. It runs within a few minutes.", answer: "Answer saved. It goes in on the next entry run." };
+const forEntries = (id, fn) => { for (const k of ["todo", "auto", "appr"]) for (const x of D[k]) if (String(x.id) === id) fn(x); };
+async function act(kind, ids, extra) {
+  ids = [...new Set(ids.map(String))]; if (!ids.length) return;
+  if (api.readonly) { toast("This copy of the page is read-only."); return; }
+  if (api.auth === false) { toast("Sign in with GitHub first"); setTimeout(goLogin, 700); return; }
+  const before = {}, now = Date.now();
+  if (kind === "remove" || kind === "broken") { const g = gone(); for (const id of ids) g[id] = now; store.set("comps-removed", g); }
+  if (kind === "reenter") { const p = pending(); for (const id of ids) p[id] = now; store.set("comps-pending", p); }
+  if (kind === "answer") forEntries(ids[0], (x) => { before[x.id] = [x.a, x.st]; x.a = extra.answer; if (x.st) x.st = "ok"; });
+  if (kind === "answer") { const m = store.get("comps-answers", {}); m[ids[0]] = { a: extra.answer, t: now }; store.set("comps-answers", m); editing.delete(ids[0]); delete drafts[ids[0]]; }
+  sel.clear(); render(); toast("Sending…");
+  const r = await send(kind, ids, extra);
+  if (r === "ok") { toast(SAID[kind]); return; }
+  if (kind === "remove" || kind === "broken") { const g = gone(); for (const id of ids) delete g[id]; store.set("comps-removed", g); }
+  if (kind === "reenter") { const p = pending(); for (const id of ids) delete p[id]; store.set("comps-pending", p); }
+  if (kind === "answer") { forEntries(ids[0], (x) => { [x.a, x.st] = before[x.id] || [x.a, x.st]; }); const m = store.get("comps-answers", {}); delete m[ids[0]]; store.set("comps-answers", m);
+    editing.add(ids[0]); drafts[ids[0]] = extra.answer; }
+  render();
+  if (r === "auth") { toast("Signing you in…"); setTimeout(goLogin, 700); }
+  else toast(r === "net" ? "No connection: nothing was sent." : "The server did not accept it: nothing was sent.");
+}
+let syncToasted = false;
+async function syncDone(kind, id) {   // best effort: the tick is already saved on this phone
+  const say = (m) => { if (!syncToasted) { syncToasted = true; toast(m, api.auth === false ? { href: "/.auth/login/github?post_login_redirect_uri=" + encodeURIComponent(location.pathname + location.search), text: "Sign in" } : null); } };
+  if (api.readonly || api.auth === false) return say("Ticks are saved on this phone only.");
+  const r = await send(kind, [id]);
+  if (r === "auth") say("Ticks are saved on this phone only. Sign in to sync them."); else if (r !== "ok") say("Could not sync the tick; it is saved on this phone.");
 }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest(".tab"); if (t) { S.tab = t.dataset.tab; S.cats = []; render(); return; }
   const c = e.target.closest(".chip"); if (c) { const k = c.dataset.cat; S.cats = S.cats.includes(k) ? S.cats.filter((x) => x !== k) : [...S.cats, k]; render(); return; }
-  const r = e.target.closest("a.rm, a.rmsel");
-  if (r) {   // hide at once on this phone; the submitted issue makes it permanent and records it for the pattern
-    const g = gone(); for (const id of (r.classList.contains("rmsel") ? [...sel] : [r.dataset.id])) g[id] = Date.now();
-    store.set("comps-removed", g); if (r.classList.contains("rmsel")) sel.clear(); setTimeout(render, 50); return;
+  const a = e.target.closest("[data-act]");
+  if (a) {
+    const kind = a.dataset.act, ids = (a.dataset.ids || "").split(" ").filter(Boolean);
+    if (kind === "remove" || kind === "broken") { act(kind, ids); return; }
+    if (kind === "reenter") { act(kind, ids.filter((id) => !isPending(id))); return; }
+    if (kind === "rmsel") { act("remove", [...sel]); return; }
+    if (kind === "resel") { act("reenter", [...sel].filter((id) => !isPending(id))); return; }
+    if (kind === "edit-answer") { editing.add(a.dataset.id); render(); const box = document.querySelector(`textarea[data-draft="${a.dataset.id}"]`); if (box) box.focus(); return; }
+    if (kind === "cancel-answer") { editing.delete(a.dataset.id); delete drafts[a.dataset.id]; render(); return; }
+    if (kind === "save-answer") {
+      const x = D.appr.find((y) => String(y.id) === a.dataset.id), text = (drafts[a.dataset.id] ?? "").trim();
+      if (!x || !text) { toast("Write the answer first."); return; }
+      if (words(text) > x.lim) { toast(`That is ${words(text)} words; the limit is ${x.lim}.`); return; }
+      act("answer", [a.dataset.id], { answer: text }); return;
+    }
   }
   const b = e.target.closest("button.copy"); if (b) { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied"; } catch { b.textContent = "Select and copy the text"; } setTimeout(() => (b.textContent = "Copy answer"), 2000); }
 });
+document.addEventListener("input", (e) => {
+  const id = e.target.dataset && e.target.dataset.draft; if (!id) return;
+  drafts[id] = e.target.value;
+  const x = D.appr.find((y) => String(y.id) === id), n = words(e.target.value), out = document.querySelector(`[data-count="${id}"]`);
+  if (x && out) { out.textContent = `${n} of ${x.lim} words`; out.classList.toggle("over", n > x.lim); }
+});
 document.addEventListener("change", (e) => {
-  if (e.target.classList.contains("tick")) { const d = done(); if (e.target.checked) d[e.target.dataset.id] = Date.now(); else delete d[e.target.dataset.id]; store.set("comps-done", d); render(); return; }
+  if (e.target.dataset.draft) return;   // a re-render here would swap the Save button out from under the tap
+  if (e.target.classList.contains("tick")) {
+    const id = e.target.dataset.id, on = e.target.checked, d = store.get("comps-done", {}), u = store.get("comps-undone", {}), now = Date.now();
+    if (on) d[id] = now; else { delete d[id]; u[id] = now; }
+    for (const k of Object.keys(u)) if (now - u[k] > 30 * 864e5) delete u[k];
+    store.set("comps-done", d); store.set("comps-undone", u); render();
+    if (/^\d{5,9}$/.test(id)) syncDone(on ? "done" : "undone", id);   // Freebies ticks (f:<url>) stay on this phone
+    return;
+  }
   if (e.target.classList.contains("pick")) { e.target.checked ? sel.add(e.target.dataset.id) : sel.delete(e.target.dataset.id); render(); return; }
   if (e.target.id === "hide") S.hide = e.target.checked; if (e.target.id === "grp") S.grp = e.target.value;
   if (e.target.id === "close") S.close = e.target.value; if (e.target.id === "min") S.min = e.target.value; if (e.target.id === "sort") S.sort = e.target.value;
   render();
 });
 $("#q").addEventListener("input", (e) => { S.q = e.target.value; render(); });
+(function () {   // answers saved from this phone show until a build carries them (then they are dropped), for 3 days at most
+  const mine = store.get("comps-answers", {}); let dirty = false;
+  for (const id of Object.keys(mine)) {
+    let same = false; forEntries(id, (x) => { if (x.a === mine[id].a) same = true; });
+    if (same || Date.now() - mine[id].t > 3 * 864e5) { delete mine[id]; dirty = true; } else forEntries(id, (x) => { x.a = mine[id].a; if (x.st) x.st = "ok"; });
+  }
+  if (dirty) store.set("comps-answers", mine);
+})();
 render();
+fetch("/.auth/me", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : Promise.reject())).then((j) => {
+  const p = j && j.clientPrincipal; api.auth = !!(p && (p.userRoles || []).includes("owner"));
+  $("#who").innerHTML = api.auth ? "Signed in: buttons are live" : p ? "Signed in without the owner role: read-only" :
+    `Read-only. <a href="/.auth/login/github?post_login_redirect_uri=${encodeURIComponent(location.pathname + location.search)}">Sign in</a> to use the buttons`;
+}).catch(() => { api.readonly = location.protocol === "file:" || !/\.(azurestaticapps\.net|asynym\.dev)$/.test(location.hostname); });
 </script></body></html>
 """
 
@@ -557,7 +689,8 @@ def main(argv=None):
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(page())
-    print(f"site: wrote {out / 'index.html'}")
+    (out / "staticwebapp.config.json").write_text(json.dumps(SWA_CONFIG, indent=2) + "\n")
+    print(f"site: wrote {out / 'index.html'} and {out / 'staticwebapp.config.json'}")
 
 
 if __name__ == "__main__":

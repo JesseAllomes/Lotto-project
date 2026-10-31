@@ -2,7 +2,7 @@
 
     python3 -m workers.reenter "reenter: 75870 76058" > queue.json
 
-Used by .github/workflows/reenter.yml when the owner submits the pre-filled issue from the site's Re-enter button.
+Used by workers/actions.py (the actions job) for the site's Re-enter and Submit now buttons.
 Only listings in the register that are still open are queued; approved skill answers go with them. The entrant
 still skips CAPTCHAs, logins and bot checks, and the results go to data/entries/log_reenter.jsonl.
 """

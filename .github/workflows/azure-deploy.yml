@@ -53,7 +53,7 @@ jobs:
       - name: Runner and guard tests
         env:
           LIMITS_APPROVED: ""   # the approval is for this deploy's limits, not for the guard's own tests
-        run: python3 -B -m unittest tests.test_azure_runner tests.test_blobsync tests.test_cost_guard
+        run: python3 -B -m unittest tests.test_site_api tests.test_actions tests.test_azure_runner tests.test_blobsync tests.test_cost_guard
 
   build:
     needs: guard

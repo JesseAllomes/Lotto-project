@@ -20,11 +20,14 @@ import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import actionqueue  # noqa: E402
 import blobsync  # noqa: E402  (next to this file, in the image and in the repository)
 
 REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "JesseAllomes/Lotto-project")
 REPO_ROOT = Path(os.environ.get("LOTTO_REPO_ROOT", "/app/repo"))
 SWA_BIN = "/opt/playwright/node_modules/.bin/swa"
+SITE_API_DIR = "azure/site-api"
+SITE_API_PYTHON = "3.11"         # also set as platform.apiRuntime python:3.11 in staticwebapp.config.json (workers/site.py)
 BURST_MINUTES = frozenset({5, 10, 15, 20, 25})
 MAX_ISSUE_PAGES = 10
 # Every external step is bounded (seconds), well inside the job's replicaTimeout (azure/jobs/*.json), so a hung
@@ -35,6 +38,10 @@ COMPS_TIMEOUT_S = 900            # workers.comps (capped by COMPS_MAX_NEW; progr
 COMPS_MAX_NEW = 300
 COMPS_STEP_TIMEOUT_S = 240       # comp_odds, skill_rank, winners
 REENTER_BUILD_TIMEOUT_S = 120
+# The actions job (azure/jobs/lotto-actions.json, replicaTimeout 600): pull, up to 20 queue messages, entrant, upload.
+MAX_ACTIONS_PER_RUN = 20
+ACTIONS_MAX_DEQUEUE = 3          # a message read more than this many times goes to the poison queue
+ACTIONS_VISIBILITY_S = 900       # longer than replicaTimeout, so a second execution never sees a running one's messages
 # The site job (replicaTimeout 900 in azure/jobs/lotto-site.json): pull, freebies, winners, build, deploy.
 SITE_FREEBIES_TIMEOUT_S = 90
 SITE_WINNERS_TIMEOUT_S = 60
@@ -61,6 +68,7 @@ DATA_PREFIXES = {
     "jackpots": ("data/jackpots/",),
     "entries": ("data/comps/", "data/entries/"),
     "reenter": ("data/comps/", "data/entries/"),
+    "actions": ("data/comps/", "data/entries/"),
     "site": ("data/comps/", "data/entries/"),
 }
 # What each job may upload (the site job uploads nothing).
@@ -70,6 +78,7 @@ PUSH_PATHS = {
     "jackpots": ("data/jackpots",),
     "entries": ("data/entries",),
     "reenter": ("data/entries",),
+    "actions": ("data/entries",),
 }
 PACE_BLOB = "data/entries/pace.json"
 
@@ -498,6 +507,114 @@ def run_reenter(root: Path) -> None:
                 raise
 
 
+def worker_actions():
+    """workers.actions, imported here because the image keeps the workers under REPO_ROOT, not next to this file."""
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.append(str(REPO_ROOT))
+    from workers import actions
+
+    return actions
+
+
+def run_actions(profile_ok: bool = True, queue: actionqueue.ActionQueue | None = None) -> None:
+    """Drain the lotto-actions queue (the site's buttons, azure/site-api): at most MAX_ACTIONS_PER_RUN messages.
+
+    Each message is applied with the existing workers (workers/actions.py), the changed data is uploaded, and only then
+    is each applied message deleted, so a failure anywhere leaves it on the queue to be read again (it becomes
+    invisible for ACTIONS_VISIBILITY_S).  A message read more than ACTIONS_MAX_DEQUEUE times, or one that can never
+    be applied (malformed), is moved to the poison queue.  Re-entries run once for the whole batch with the same
+    entrant limits as the reenter job.  A DRY_RUN changes and deletes nothing in Azure."""
+    queue = queue or actionqueue.ActionQueue()
+    if not queue.has_messages():           # a peek: no data is pulled for an execution that finds nothing to do
+        print("No actions waiting", flush=True)
+        return
+    root = prepare("actions")
+    actions = worker_actions()
+    store, entries = root / "data" / "comps", root / "data" / "entries"
+    received = queue.receive(MAX_ACTIONS_PER_RUN, ACTIONS_VISIBILITY_S)
+    if not received:                       # another execution took them first
+        print("No actions waiting", flush=True)
+        return
+    poison, plan = [], []
+    for message in received:
+        if message.dequeue_count > ACTIONS_MAX_DEQUEUE:
+            poison.append(message)
+            continue
+        try:
+            plan.append((message, actions.parse(message.text)))
+        except actions.Rejected as exc:
+            print(f"Message {message.id[:8]} can never be applied ({exc}); to the poison queue", flush=True)
+            poison.append(message)
+    seen = actions.applied_ids(entries)
+    deletable, failed, results, reenter_for = [], [], [], {}
+    for message, action in plan:
+        if action["id"] in seen:           # applied and uploaded before, but the delete did not happen
+            deletable.append(message)
+            continue
+        try:
+            outcome, detail = actions.apply_one(action, store, entries)
+        except Exception as exc:           # one bad message must not stop the others
+            print(f"Action {action['id'][:8]} ({action['kind']}) failed: {type(exc).__name__}; left on the queue", flush=True)
+            failed.append(message)
+            continue
+        if outcome == "pending":
+            reenter_for[action["id"]] = (message, action)
+        else:
+            results.append((message, action, outcome, detail))
+    if reenter_for:
+        entered, detail = enter_actions(root, [i for _, a in reenter_for.values() for i in a["ids"]], profile_ok)
+        for message, action in reenter_for.values():
+            if entered:
+                results.append((message, action, "applied", detail))
+            else:
+                print(f"Re-entry {action['id'][:8]} not done ({detail}); left on the queue", flush=True)
+                failed.append(message)
+    for message, action, outcome, detail in results:
+        actions.record_result(entries, action, outcome, detail)
+        deletable.append(message)
+    print(f"Actions: {len(results)} handled, {len(failed)} to retry, {len(poison)} for the poison queue", flush=True)
+    finish_entries(root, f"actions: {len(results)} from the site")      # raises when the upload fails: nothing is deleted
+    if dry_run():
+        print("DRY_RUN: no message moved or deleted", flush=True)
+        return
+    for message in poison:
+        try:
+            queue.move_to_poison(message)
+        except blobsync.BlobError as exc:
+            print(f"Could not move {message.id[:8]} to the poison queue: {exc}", flush=True)
+    for message in deletable:
+        try:
+            queue.delete(message)
+        except blobsync.BlobError as exc:      # the audit rows make the redelivered message a no-op
+            print(f"Could not delete {message.id[:8]}: {exc}", flush=True)
+    if failed:
+        raise RuntimeError(f"{len(failed)} action(s) left on the queue to be tried again")
+
+
+def enter_actions(root: Path, ids: list[str], profile_ok: bool) -> tuple[bool, str]:
+    """Re-enter these ids now: (done, detail).  The same bounds as the reenter job: the entrant's ENTRANT_MAX, timeout
+    and concurrency; closed or unknown listings are skipped; the log goes to data/entries/log_reenter.jsonl."""
+    actions = worker_actions()
+    run_env = entrant_environment(root, root / ".azure-actions-reenter.json", reenter=True)
+    if not profile_ok or not run_env.get("ENTRANT_EMAIL"):
+        return False, "the entrant profile is not set"
+    try:
+        limit = int(run_env["ENTRANT_MAX"])
+    except ValueError:
+        limit = ENTRANT_DEFAULT_MAX
+    items = actions.plan_reenter(ids, root / "data" / "comps", root / "data" / "entries", limit)
+    if not items:
+        print("Nothing to re-enter; browser not started", flush=True)
+        return True, "nothing to re-enter (closed, removed or not in the register)"
+    queue_file = root / ".azure-actions-reenter.json"
+    queue_file.write_text(json.dumps(items))
+    try:
+        command(["node", "workers/entrant.mjs"], root, env=run_env, timeout=entrant_timeout())
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+        return False, f"the entrant failed: {type(exc).__name__}"
+    return True, f"re-entered {len(items)} of {len(set(ids))} (the log has the results)"
+
+
 def run_site(root: Path) -> None:
     """The same steps as the build job of site.yml, then deploy the folder to the Static Web App."""
     scrape = child_environment()
@@ -509,23 +626,28 @@ def run_site(root: Path) -> None:
         env=scrape,
         timeout=SITE_BUILD_TIMEOUT_S,
     )
-    if not (root / "site" / "index.html").is_file():
-        raise RuntimeError("the site build wrote no site/index.html; nothing to deploy")
+    for name in ("index.html", "staticwebapp.config.json"):
+        if not (root / "site" / name).is_file():
+            raise RuntimeError(f"the site build wrote no site/{name}; nothing to deploy")
     deploy_site(root)
 
 
 def deploy_site(root: Path) -> None:
-    """Deploy ./site with the SWA CLI.  The token reaches the CLI only through its environment, never argv or logs."""
+    """Deploy ./site and the managed API (azure/site-api) with the SWA CLI.  The token reaches the CLI only through its
+    environment, never argv or logs."""
     if dry_run():
-        print("DRY_RUN: would deploy site/ to the Static Web App", flush=True)
+        print("DRY_RUN: would deploy site/ and the API azure/site-api to the Static Web App", flush=True)
         return
+    if not (root / SITE_API_DIR / "function_app.py").is_file():
+        raise RuntimeError(f"{SITE_API_DIR}/function_app.py is missing; the site buttons would have no API")
     token = os.environ.get("SWA_DEPLOY_TOKEN", "")
     if not token:
         raise RuntimeError("SWA_DEPLOY_TOKEN is required to deploy the site")
     env = child_environment()
     env["SWA_CLI_DEPLOYMENT_TOKEN"] = token
     command(
-        [SWA_BIN, "deploy", "site", "--env", "production"],
+        [SWA_BIN, "deploy", "site", "--api-location", SITE_API_DIR, "--api-language", "python",
+         "--api-version", SITE_API_PYTHON, "--env", "production"],
         root,
         env=env,
         timeout=SITE_DEPLOY_TIMEOUT_S,
@@ -545,7 +667,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Azure jobs are disabled by the cost kill switch")
         return 0
     profile_error = ""
-    if job in ("entries", "reenter", "comps"):
+    if job in ("entries", "reenter", "comps", "actions"):
         try:
             load_profile()
         except ProfileError as exc:
@@ -559,6 +681,9 @@ def main(argv: list[str] | None = None) -> int:
     if profile_error and job in ("entries", "reenter"):
         print(f"{job}: {profile_error}; fix the profile secret", file=sys.stderr)
         return 1
+    if job == "actions":                 # peeks at the queue first and pulls the data only when something waits
+        run_actions(profile_ok=not profile_error)
+        return 0
     root = prepare(job)
     if job == "comps":
         run_comps(root, profile_ok=not profile_error)

@@ -114,7 +114,7 @@ class AsDelivered(Fixture):
         for path in (REPO / "azure" / "jobs").glob("*.json"):
             view = guard.job_view(json.loads(path.read_text()))
             holds = "ENTRANT_PROFILE_JSON" in view["env"]
-            self.assertEqual(holds, path.stem in ("lotto-entries", "lotto-reenter", "lotto-comps"), path.name)
+            self.assertEqual(holds, path.stem in ("lotto-entries", "lotto-reenter", "lotto-comps", "lotto-actions"), path.name)
 
     def test_github_token_only_where_issues_are_still_made(self):
         for path in (REPO / "azure" / "jobs").glob("*.json"):
@@ -603,6 +603,214 @@ class Drift(Fixture):
                                "--live", str(live), "--image", DIGEST])
         self.assertEqual(code, 0, out.getvalue())
         self.assertIn("cost[live]", out.getvalue())
+
+
+class EventJob(Fixture):
+    """lotto-actions, the only Event job: bounded executions, polling and queue; the identity, not a secret, reads the queue."""
+
+    @staticmethod
+    def event(doc):
+        return doc["properties"]["configuration"]["eventTriggerConfig"]
+
+    def rule(self, doc):
+        return self.event(doc)["scale"]["rules"][0]
+
+    def fails(self, fn, text):
+        self.edit_job("lotto-actions", fn)
+        self.assertIn("C2", self.rules())
+        self.assertTrue(any(text in m for m in self.messages()), self.messages())
+
+    def test_the_actions_job_as_delivered(self):
+        view = guard.job_view(json.loads((REPO / "azure" / "jobs" / "lotto-actions.json").read_text()))
+        self.assertEqual((view["trigger"], view["timeout"], view["retry"], view["parallelism"], view["completion"]),
+                         ("Event", 600, 0, 1, 1))
+        self.assertEqual(view["args"], ["actions"])
+        self.assertEqual(view["env"]["AZURE_JOBS_DISABLED"], {"value": "1"})          # off until the owner flips it
+        self.assertEqual(view["env"]["ENTRANT_PROFILE_JSON"], {"secretRef": "entrant-profile"})
+        self.assertNotIn("GITHUB_TOKEN", view["env"])
+        ev = view["event"]
+        self.assertEqual((ev["max_executions"], ev["polling_s"], ev["min_executions"]), (1, 60, 0))
+        (rule,) = ev["rules"]
+        self.assertEqual((rule["type"], rule["queue"], rule["account"], rule["queue_length"]),
+                         ("azure-queue", "lotto-actions", "stlottoactions", "1"))
+        self.assertEqual([rule["identity"]], view["identities"])
+        self.assertFalse(rule["has_auth"])
+
+    def test_only_the_actions_job_may_be_an_event_job(self):
+        for name in ("lotto-draws", "lotto-site"):
+            self.edit_job(name, lambda d: self.conf(d).update(triggerType="Event"))
+            self.assertTrue(any("triggerType" in m for m in self.messages()), name)
+        for name in ("lotto-reenter", "lotto-draws"):                                  # and no event config on the others
+            self.edit_job(name, lambda d: self.conf(d).update(triggerType=self.conf(d)["triggerType"],
+                                                              eventTriggerConfig=self.event(json.loads(
+                                                                  (REPO / "azure/jobs/lotto-actions.json").read_text()))))
+            self.assertTrue(any("not an Event job" in m for m in self.messages()), name)
+
+    def test_the_actions_job_must_stay_an_event_job(self):
+        self.fails(lambda d: self.conf(d).update(triggerType="Manual"), "triggerType")
+
+    def test_one_execution_at_a_time(self):
+        self.fails(lambda d: self.event(d)["scale"].update(maxExecutions=2), "maxExecutions")
+        self.fails(lambda d: self.event(d)["scale"].pop("maxExecutions"), "maxExecutions")
+        self.fails(lambda d: self.event(d).update(parallelism=2), "parallelism")
+
+    def test_nothing_runs_while_the_queue_is_empty(self):
+        self.fails(lambda d: self.event(d)["scale"].update(minExecutions=1), "minExecutions")
+
+    def test_polling_no_faster_than_the_limit(self):
+        self.fails(lambda d: self.event(d)["scale"].update(pollingInterval=5), "pollingInterval")
+
+    def test_only_the_declared_queue_and_account_and_rule_type(self):
+        self.fails(lambda d: self.rule(d)["metadata"].update(queueName="other"), "watches queue")
+        self.fails(lambda d: self.rule(d)["metadata"].update(accountName="someoneelse"), "storage account")
+        self.fails(lambda d: self.rule(d).update(type="azure-servicebus"), "type")
+        self.fails(lambda d: self.event(d)["scale"].update(rules=[]), "needs a scale rule")
+
+    def test_the_rule_authenticates_with_the_managed_identity_not_a_secret(self):
+        self.fails(lambda d: self.rule(d).pop("identity"), "managed identity")
+        self.fails(lambda d: self.rule(d).update(identity="/subscriptions/x/other"), "managed identity")
+        self.fails(lambda d: self.rule(d).update(auth=[{"secretRef": "conn", "triggerParameter": "connection"}]), "auth block")
+
+    def test_timeout_and_secrets_follow_the_normal_rules(self):
+        self.fails(lambda d: self.conf(d).update(replicaTimeout=1800), "exceeds 600")
+        self.fails(lambda d: self.set_env(d, "GITHUB_TOKEN", secret="github-token"), "undefined secret")
+        self.edit_job("lotto-actions", lambda d: self.conf(d)["secrets"].append({"name": "github-token", "keyVaultUrl": "u", "identity": "i"}))
+        self.edit_job("lotto-actions", lambda d: self.set_env(d, "GITHUB_TOKEN", secret="github-token"))
+        self.assertTrue(any("may not hold" in m for m in self.messages()))
+
+    def test_an_event_job_is_charged_for_its_run_cap(self):
+        rep = self.check()
+        self.assertEqual(rep.costs["azure/jobs"]["jobs"]["lotto-actions"]["runs_per_30d"], 240)
+        self.assertLess(rep.costs["azure/jobs"]["total_usd"], 15)
+        self.assertLessEqual(rep.costs["azure/jobs"]["ceiling_usd"], 27)
+        self.edit_limits(lambda d: d["jobs"]["lotto-actions"].update(max_runs_per_day=500))
+        self.assertIn("C3", self.rules())
+
+    def test_an_event_job_needs_its_event_limits(self):
+        self.edit_limits(lambda d: d["jobs"]["lotto-actions"].pop("event"))
+        self.assertTrue(any("`event` block" in m for m in self.messages()))
+
+    def test_live_scale_settings_are_compared(self):
+        def edit(name, doc):
+            if name == "lotto-actions":
+                self.event(doc)["scale"]["maxExecutions"] = 5
+                self.event(doc)["scale"]["pollingInterval"] = 10
+        rep = self.check(live_dir=self.make_live(edit))
+        self.assertTrue(any(v[0] == "DRIFT" and "event differs" in v[3] for v in rep.violations))
+        self.assertIn("C2", {v[0] for v in rep.violations})
+        self.assertEqual(self.check(live_dir=self.make_live(), expected_image=DIGEST).violations, [])
+
+    def test_loosening_the_event_limits_needs_approval(self):
+        base = json.loads(self.limits.read_text())
+        self.edit_limits(lambda d: d["jobs"]["lotto-actions"]["event"].update(max_executions=3, min_polling_interval_s=5))
+        rep = self.check(base=base)
+        text = " ".join(v[3] for v in rep.violations)
+        self.assertIn("max_executions", text)
+        self.assertIn("min_polling_interval_s", text)
+
+    def test_the_new_job_is_a_loosening_against_a_base_without_it(self):
+        base = json.loads(self.limits.read_text())
+        del base["jobs"]["lotto-actions"], base["site_api"]
+        rep = self.check(base=base)
+        self.assertTrue(any("lotto-actions: new entry" in v[3] for v in rep.violations))
+        with mock.patch.dict(os.environ, {"LIMITS_APPROVED": "1"}):
+            self.assertEqual(self.check(base=base).violations, [])
+
+
+class C12(Fixture):
+    """The site API: declared routes only, the owner role at the edge, caps in code, retired issue workflows gone."""
+
+    API = "azure/site-api/lotto_actions.py"
+
+    def fails(self, text):
+        self.assertIn("C12", self.rules())
+        self.assertTrue(any(text in m for m in self.messages()), self.messages())
+
+    def test_delivered_repository_passes_c12(self):
+        self.assertNotIn("C12", self.rules())
+
+    def test_api_route_must_keep_exactly_the_owner_role(self):
+        for roles in ('["authenticated"]', '["anonymous"]', '["owner", "authenticated"]', "[]"):
+            self.edit_file("workers/site.py", lambda t: t.replace('{"route": "/api/*", "allowedRoles": ["owner"]}',
+                                                                  '{"route": "/api/*", "allowedRoles": %s}' % roles))
+            self.fails("allowedRoles must be exactly")
+            self.setUp()
+        self.edit_file("workers/site.py", lambda t: t.replace('{"route": "/api/*", "allowedRoles": ["owner"]},\n', ""))
+        self.fails("no /api/* route")
+
+    def test_no_other_api_route_may_be_open(self):
+        self.edit_file("workers/site.py", lambda t: t.replace('"routes": [', '"routes": [\n        {"route": "/api/state", "allowedRoles": ["anonymous"]},'))
+        self.fails("/api/state allowedRoles")
+
+    def test_runtime_and_config_must_exist(self):
+        self.edit_file("workers/site.py", lambda t: t.replace('"python:3.11"', '"node:18"'))
+        self.fails("apiRuntime")
+        self.edit_file("workers/site.py", lambda t: t.replace("SWA_CONFIG = {", "OTHER = {"))
+        self.fails("SWA_CONFIG")
+
+    def test_only_the_declared_route_and_method(self):
+        self.edit_file("azure/site-api/function_app.py", lambda t: t + '\n\n@app.route(route="state", methods=["GET"])\ndef state(req):\n    return None\n')
+        self.fails("/api/state is not in allowed_routes")
+        self.assertTrue(any("methods ['GET']" in m for m in self.messages()))
+        self.setUp()
+        self.edit_file("azure/site-api/function_app.py", lambda t: t.replace('methods=["POST"]', 'methods=["POST", "GET"]'))
+        self.fails("methods")
+        self.setUp()
+        self.edit_file("azure/site-api/function_app.py", lambda t: t.replace('route="action", methods=["POST"]', 'route="action"'))
+        self.fails("methods")
+
+    def test_body_size_limit_must_exist_be_small_and_be_enforced(self):
+        self.edit_file(self.API, lambda t: t.replace("MAX_BODY_BYTES = 16384", "MAX_BODY_BYTES = 1048576"))
+        self.fails("MAX_BODY_BYTES must be")
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace("MAX_BODY_BYTES = 16384", "MAX_BODY_BYTES = 16 * 1024"))
+        self.fails("MAX_BODY_BYTES must be")                      # not a literal the guard can read: refuse rather than guess
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace("if declared > MAX_BODY_BYTES or len(body) > MAX_BODY_BYTES:", "if False:"))
+        self.fails("does not enforce MAX_BODY_BYTES")
+
+    def test_id_answer_and_kind_caps(self):
+        self.edit_file(self.API, lambda t: t.replace("MAX_IDS = 50", "MAX_IDS = 500"))
+        self.fails("MAX_IDS")
+        self.setUp()
+        self.edit_file("workers/actions.py", lambda t: t.replace("MAX_ANSWER_CHARS = 2000", "MAX_ANSWER_CHARS = 20000"))
+        self.fails("MAX_ANSWER_CHARS")
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace('KINDS = ("remove",', 'KINDS = ("wipe", "remove",'))
+        self.fails("KINDS")
+
+    def test_retired_workflows_cannot_come_back(self):
+        for name in ("reenter.yml", "remove.yml", "answer.yml"):
+            self.assertFalse((REPO / ".github" / "workflows" / name).exists(), name)
+            self.write(f".github/workflows/{name}", "name: x\non:\n  workflow_dispatch: {}\njobs: {}\n")
+            self.assertIn((f".github/workflows/{name}", "C12"), {(v[1], v[0]) for v in self.check().violations})
+            (self.root / ".github" / "workflows" / name).unlink()
+
+    def test_api_without_limits_is_refused(self):
+        self.edit_limits(lambda d: d.pop("site_api"))
+        self.fails("no `site_api` block")
+
+    def test_api_network_calls_need_a_timeout_and_no_sas_in_source(self):
+        self.edit_file(self.API, lambda t: t.replace("urllib.request.urlopen(request, timeout=timeout)", "urllib.request.urlopen(request)"))
+        self.assertTrue(any("unbounded" in n for n in self.check().notes) or "C7" in self.rules())
+        self.assertIn("C7", self.rules())
+        self.setUp()
+        self.write("azure/site-api/leak.py", "u = 'https://x.queue.core.windows.net/q?sig=" + "Ab1" * 10 + "'\n")
+        self.assertTrue(any("keep secrets out" in m for m in self.messages()))
+
+    def test_runner_caps_for_the_actions_job(self):
+        self.edit_file("azure/runner.py", lambda t: t.replace("MAX_ACTIONS_PER_RUN = 20", "MAX_ACTIONS_PER_RUN = 200"))
+        self.assertTrue(any("MAX_ACTIONS_PER_RUN" in m for m in self.messages()))
+        self.setUp()
+        self.edit_file("azure/runner.py", lambda t: t.replace("ACTIONS_MAX_DEQUEUE = 3", "ACTIONS_MAX_DEQUEUE = 30"))
+        self.assertTrue(any("ACTIONS_MAX_DEQUEUE" in m for m in self.messages()))
+
+    def test_limits_for_the_api_cannot_be_loosened_without_approval(self):
+        base = json.loads(self.limits.read_text())
+        self.edit_limits(lambda d: d["site_api"].update(max_body_bytes=1048576))
+        self.assertTrue(any("max_body_bytes" in v[3] for v in self.check(base=base).violations))
+        self.edit_limits(lambda d: d["site_api"]["allowed_routes"].append("/api/state"))
+        self.assertTrue(any("/api/state" in v[3] for v in self.check(base=base).violations))
 
 
 class Cli(Fixture):

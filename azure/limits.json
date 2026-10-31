@@ -1,8 +1,8 @@
 {
-  "_note": "Owner-approved limits read by tools/cost_guard.py. Raising any number or adding to any list is a loosening: the guard fails it (check C10) unless LIMITS_APPROVED=1. Costs: budget_s_per_run is the average billed seconds of a run (default: the full replicaTimeout); budget_usd_month.total is checked against it, hard_ceiling_all_timeouts against every run using its whole timeout. Prices are USD list prices, without the free monthly grant.",
+  "_note": "Owner-approved limits read by tools/cost_guard.py. Raising any number or adding to any list is a loosening: the guard fails it (check C10) unless LIMITS_APPROVED=1. Costs: budget_s_per_run is the average billed seconds of a run (default: the full replicaTimeout); budget_usd_month.total is checked against it, hard_ceiling_all_timeouts against every run using its whole timeout. Prices are USD list prices, without the free monthly grant. lotto-actions is the only Event job: max_runs_per_day is the cost model's assumption (KEDA starts at most `event.max_executions` per polling interval and each run drains up to code.max_actions_per_run messages).",
   "prices": {
-    "aca_vcpu_s": 0.000024,
-    "aca_gib_s": 0.000003
+    "aca_vcpu_s": 2.4e-05,
+    "aca_gib_s": 3e-06
   },
   "budget_usd_month": {
     "total": 15,
@@ -32,7 +32,9 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["GITHUB_TOKEN"]
+      "may_hold_secrets": [
+        "GITHUB_TOKEN"
+      ]
     },
     "lotto-comps": {
       "trigger": "Schedule",
@@ -44,7 +46,9 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["ENTRANT_PROFILE_JSON"]
+      "may_hold_secrets": [
+        "ENTRANT_PROFILE_JSON"
+      ]
     },
     "lotto-entries": {
       "trigger": "Schedule",
@@ -57,7 +61,9 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["ENTRANT_PROFILE_JSON"],
+      "may_hold_secrets": [
+        "ENTRANT_PROFILE_JSON"
+      ],
       "max_env": {
         "ENTRANT_CONCURRENCY": 3,
         "ENTRANT_TIMEOUT_S": 150
@@ -74,11 +80,13 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["SWA_DEPLOY_TOKEN"]
+      "may_hold_secrets": [
+        "SWA_DEPLOY_TOKEN"
+      ]
     },
     "lotto-reenter": {
       "trigger": "Manual",
-      "max_runs_per_day": 10,
+      "max_runs_per_day": 2,
       "min_interval_min": 1,
       "max_replica_timeout_s": 600,
       "max_cpu": 0.5,
@@ -86,10 +94,45 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["GITHUB_TOKEN", "ENTRANT_PROFILE_JSON"],
+      "may_hold_secrets": [
+        "GITHUB_TOKEN",
+        "ENTRANT_PROFILE_JSON"
+      ],
       "max_env": {
         "ENTRANT_CONCURRENCY": 3,
         "ENTRANT_TIMEOUT_S": 150
+      }
+    },
+    "lotto-actions": {
+      "trigger": "Event",
+      "max_runs_per_day": 8,
+      "min_interval_min": 1,
+      "max_replica_timeout_s": 600,
+      "budget_s_per_run": 180,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": [
+        "ENTRANT_PROFILE_JSON"
+      ],
+      "max_env": {
+        "ENTRANT_CONCURRENCY": 3,
+        "ENTRANT_TIMEOUT_S": 150
+      },
+      "event": {
+        "max_executions": 1,
+        "min_polling_interval_s": 60,
+        "rule_types": [
+          "azure-queue"
+        ],
+        "queues": [
+          "lotto-actions"
+        ],
+        "accounts": [
+          "stlottoactions"
+        ]
       }
     }
   },
@@ -108,7 +151,9 @@
   "workflows": {
     "max_timeout_minutes": 300,
     "max_cron_fires_per_day": 300,
-    "concurrency_exempt": ["probe.yml"]
+    "concurrency_exempt": [
+      "probe.yml"
+    ]
   },
   "code": {
     "max_issue_pages": 10,
@@ -117,14 +162,47 @@
     "runner_entrant_concurrency": 3,
     "runner_entrant_timeout_s": 150,
     "entrant_default_max": 200,
-    "entrant_default_concurrency": 6
+    "entrant_default_concurrency": 6,
+    "max_actions_per_run": 20,
+    "actions_max_dequeue": 3
   },
   "ratchet": {
     "unbounded_subprocess": 0,
     "unbounded_while": 0,
-    "self_dispatch_workflows": ["entries.yml"],
+    "self_dispatch_workflows": [
+      "entries.yml"
+    ],
     "workflow_run_allowed": {
-      "site.yml": ["comps", "entries"]
+      "site.yml": [
+        "comps",
+        "entries"
+      ]
     }
+  },
+  "site_api": {
+    "allowed_routes": [
+      "/api/action"
+    ],
+    "allowed_methods": [
+      "POST"
+    ],
+    "required_role": "owner",
+    "api_runtime": "python:3.11",
+    "max_body_bytes": 16384,
+    "max_ids": 50,
+    "max_answer_chars": 2000,
+    "allowed_kinds": [
+      "remove",
+      "broken",
+      "reenter",
+      "answer",
+      "done",
+      "undone"
+    ],
+    "retired_workflows": [
+      "reenter.yml",
+      "remove.yml",
+      "answer.yml"
+    ]
   }
 }

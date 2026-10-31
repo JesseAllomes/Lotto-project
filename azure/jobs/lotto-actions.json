@@ -1,0 +1,112 @@
+{
+  "name": "lotto-actions",
+  "location": "Australia East",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourcegroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq": {}
+    }
+  },
+  "properties": {
+    "configuration": {
+      "triggerType": "Event",
+      "replicaTimeout": 600,
+      "replicaRetryLimit": 0,
+      "eventTriggerConfig": {
+        "parallelism": 1,
+        "replicaCompletionCount": 1,
+        "scale": {
+          "minExecutions": 0,
+          "maxExecutions": 1,
+          "pollingInterval": 60,
+          "rules": [
+            {
+              "name": "actions-queue",
+              "type": "azure-queue",
+              "metadata": {
+                "accountName": "stlottoactions",
+                "queueName": "lotto-actions",
+                "queueLength": "1",
+                "cloud": "AzurePublicCloud"
+              },
+              "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq"
+            }
+          ]
+        }
+      },
+      "registries": [
+        {
+          "identity": "",
+          "passwordSecretRef": "ghcr-token",
+          "server": "ghcr.io",
+          "username": "JesseAllomes"
+        }
+      ],
+      "secrets": [
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/ghcr-publish-token",
+          "name": "ghcr-token"
+        },
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/entrant-profile-json",
+          "name": "entrant-profile"
+        }
+      ]
+    },
+    "template": {
+      "containers": [
+        {
+          "name": "worker",
+          "image": "IMAGE",
+          "args": [
+            "actions"
+          ],
+          "env": [
+            {
+              "name": "AZURE_CLIENT_ID",
+              "value": "519729c8-1505-4e6b-b7cc-85c29cfc38d5"
+            },
+            {
+              "name": "LOTTO_DATA_ACCOUNT",
+              "value": "stpersonalv5ethud2i3cfq"
+            },
+            {
+              "name": "ENTRANT_PROFILE_JSON",
+              "secretRef": "entrant-profile"
+            },
+            {
+              "name": "ENTRANT_LIVE",
+              "value": "1"
+            },
+            {
+              "name": "AZURE_JOBS_DISABLED",
+              "value": "1"
+            },
+            {
+              "name": "ENTRANT_CONCURRENCY",
+              "value": "3"
+            },
+            {
+              "name": "ENTRANT_TIMEOUT_S",
+              "value": "150"
+            },
+            {
+              "name": "ACTIONS_QUEUE",
+              "value": "lotto-actions"
+            },
+            {
+              "name": "ACTIONS_QUEUE_ACCOUNT",
+              "value": "stlottoactions"
+            }
+          ],
+          "resources": {
+            "cpu": 0.5,
+            "memory": "1Gi"
+          }
+        }
+      ]
+    }
+  }
+}
