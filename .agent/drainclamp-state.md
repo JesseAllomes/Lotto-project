@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=44 -->
+<!-- drainclamp-build: state; schema=1; generation=45 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -79,4 +79,5 @@
 - 2026-10-30T21:04:09+00:00 d6173abf site + register + answers; Fable entry routes; routing fixes (~62 comps to auto); AusComps second source
 - 2026-10-31T05:03:13+00:00 0773ad9c az: Azure migration project opened; az1-az3 added (verify, dry run, cutover)
 - 2026-10-31T05:07:28+00:00 696bef2a az1: inventory in .agent/azure-inventory.md; source not in any repo, sites empty, no job logs; blocked on owner (source access)
+- 2026-10-31T05:23:13+00:00 2c1fc71b owner: source likely only in Codex cloud; grant any permissions needed; owner away (nap) - proceed autonomously within decisions
 <!-- /DC:LOG -->
