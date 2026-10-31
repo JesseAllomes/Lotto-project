@@ -100,6 +100,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76080,Win a Revive Sauna + a Years Supply of Elyte,ELYTE Hydration Powder,5000.0,2026-11-02T23:59:59+10:00,unknown,entry route manual,web,https://elytehydration.com/pages/revive-sauna-giveaway
 76020,Win a Year's Worth of Ceremonial Grade Matcha & Oat Milk,Omura Matcha,1120.0,2026-11-02T23:59:59+10:00,chance,entry route manual,web,https://omuramatcha.com/pages/launch-giveaway
 75942,Win an Ultimate Spring BBQ SET-up,Alpha Box & Dice,1235.0,2026-11-02T23:59:59+10:00,chance,entry route manual,web,https://www.alphaboxdice.com/pages/weber-x-alpha-box-dice-giveaway
+75676,Win 1 of 2 Double Passes to Wild Horses Festival,Beat Magazine,,2026-11-02T23:59:59+10:00,unknown,entrant blocked: failing (item watchdog: over 85s),web,https://beat.com.au/win-were-giving-away-two-double-passes-to-wild-horses-festival/
 75521,Win an Andy Irons Replica Board + $1K Billabong Voucher,Billabong,2200.0,2026-11-02T23:59:59+10:00,chance,entry route manual,web,https://www.billabong.com.au/pages/mens-contest-1
 76192,Win a Gozney ARC XL & $600 MR Simple Voucher,Mr Simple,2099.0,2026-11-02T23:59:59+10:00,chance,entrant blocked: human_check,web,https://mrsimple.com.au/pages/vip-early-access-signup
 10007457,"Win a $10,000 RACQ Travel Voucher from RACQ [Membership Required]",,10000.0,2026-11-02T23:59:59+11:00,unknown,entry route unknown,web,https://www.racq.com.au/membership/competitions/2026/queensland-country-competition

@@ -634,3 +634,6 @@
 {"time_utc":"2026-10-31T09:06:42Z","id":75967,"mode":"live","result":"entered","reason":"","fields":["full","email"]}
 {"time_utc":"2026-10-31T09:06:56Z","id":76111,"mode":"live","result":"skipped","reason":"needs_answer","fields":[]}
 {"time_utc":"2026-10-31T09:07:08Z","id":75676,"mode":"live","result":"failed","reason":"item watchdog: over 85s","fields":[]}
+{"time_utc":"2026-10-31T09:12:30Z","id":76111,"mode":"live","result":"failed","reason":"item watchdog: over 85s","fields":[]}
+{"time_utc":"2026-10-31T09:12:30Z","id":75676,"mode":"live","result":"failed","reason":"item watchdog: over 85s","fields":[]}
+{"time_utc":"2026-10-31T09:12:30Z","id":76134,"mode":"live","result":"failed","reason":"item watchdog: over 85s","fields":[]}
