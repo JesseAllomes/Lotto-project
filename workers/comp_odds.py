@@ -171,9 +171,14 @@ MANUAL = (r"(?i)in[- ]store|stores?'s?\b|outlet|venue|retailer|receipt|scan|barc
           r"mail (?:in|your)|post (?:your|the) entry|download the "
           r"app|via the app|\bapp\b|upload|comment|\blike\b|follow(?:ing)? (?:us|@|on |our |the (?:brand|page|account))|\btag\b|share (?:the|this) post|direct message|"
           r"\bDM\b|container|refund point|click the button in the email|loyalty card|swipe|membership card")
-BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|third[- ]party|agent)[^.]{0,80}(?:invalid|void|not (?:be )?"
-          r"(?:accepted|permitted|valid)|prohibit|disqualif|ineligible|rejected)|(?:entries|entry) (?:made|submitted|"
-          r"generated|lodged) (?:by|using|through|via) (?:any )?(?:automat|script|macro|bots?|bulk|third[- ]party)")
+# "Third party" and "agent" count only when they are about entries ("third-party entry services", "entries lodged by
+# agents"); "employees of the Promoter and its agencies/agents are ineligible" is about who may enter, not how.
+BANNED = (r"(?i)(?:automat|script|macro|\bbots?\b|bulk|(?:third[- ]party|agents?)(?: entry| entries| entrant| sites?|"
+          r" services?| software)?\s(?=[^.]{0,40}entr))[^.]{0,80}(?:invalid|void|not (?:be )?"
+          r"(?:accepted|permitted|valid)|prohibit|disqualif|rejected|ineligible(?! to enter))|(?:entries|entry) (?:made|"
+          r"submitted|generated|lodged) (?:by|using|through|via) (?:any )?(?:automat|script|macro|bots?|bulk|third[- ]party|"
+          r"agents?)")
+BAN_RULES = 2          # terms records read under older, broader ban wording are re-read
 
 
 def entry_route(sec, desc, platform, buy):

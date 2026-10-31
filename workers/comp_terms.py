@@ -125,7 +125,7 @@ def look_up(entry_url, fetch=fetch_bytes, delay=comps.DELAY_S):
     """Fetch the draw page, then up to MAX_TERMS_PAGES terms pages, until a cap is found."""
     rec = {"cap": None, "cap_paid": None, "cap_text": None, "source": None, "per_ticket": [], "prices": [],
            "permit_vic": None, "automation_banned": False, "terms_read": False, "entry_limit_terms": None,
-           "entry_limit_terms_n": None, "excessive_clause": False, "tried": []}
+           "entry_limit_terms_n": None, "excessive_clause": False, "ban_rules": comp_odds.BAN_RULES, "tried": []}
     queue, seen = [entry_url], set()
     while queue and len(rec["tried"]) < 1 + MAX_TERMS_PAGES:
         url = queue.pop(0)
@@ -198,11 +198,14 @@ def targets(store, today):
 
 def done(r, hist):
     """Paid listings are retried until a cap is found (MAX_TRIES); a free listing is done once its terms have been
-    read (or after MAX_TRIES attempts that found no terms link)."""
+    read (or after MAX_TRIES attempts that found no terms link), and read again once if an older, broader ban rule
+    flagged it (comp_odds.BAN_RULES)."""
     h = hist.get(r["id"], [])
     if any(x.get("cap") for x in h) or len(h) >= MAX_TRIES:
         return True
-    return bool(r.get("_free")) and any(x.get("terms_read") and "excessive_clause" in x for x in h)
+    return bool(r.get("_free")) and any(x.get("terms_read") and "excessive_clause" in x and
+                                        (not x.get("automation_banned") or x.get("ban_rules", 1) >= comp_odds.BAN_RULES)
+                                        for x in h)
 
 
 def run(store=STORE, max_new=None, fetch=fetch_bytes, delay=comps.DELAY_S, today=None):

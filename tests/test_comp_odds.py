@@ -114,3 +114,15 @@ class Files(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BanWording(unittest.TestCase):
+    def test_who_may_enter_is_not_an_automation_ban(self):
+        import re
+        from workers import comp_odds as c
+        ban = lambda t: bool(re.search(c.BANNED, t))
+        self.assertFalse(ban("Employees of the Promoter and its related bodies, agencies and agents are ineligible to enter."))
+        self.assertTrue(ban("Entries made using automated entry software are invalid."))
+        self.assertTrue(ban("Entries made by third party entry services will be deemed invalid."))
+        self.assertTrue(ban("Entries lodged by agents are not accepted."))
+
