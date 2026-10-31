@@ -22,7 +22,9 @@ jobs:
       - name: Fetch new listings
         run: python3 -m workers.comps
       - name: Fetch new listings from AusComps (second source)
-        run: python3 -m workers.source_auscomps
+        timeout-minutes: 25
+        continue-on-error: true          # a slow second source must not hold up the rest (pages save every 50)
+        run: python3 -m workers.source_auscomps --max 600
       - name: Ticket and entry caps from promoters' pages and terms
         run: |
           sudo apt-get install -y -qq poppler-utils > /dev/null || true

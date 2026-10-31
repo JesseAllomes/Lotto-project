@@ -100,3 +100,17 @@ class AusComps(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class AusCompsSitemap(unittest.TestCase):
+    def test_only_recent_pages_newest_first(self):
+        import datetime as dt
+        from workers import source_auscomps as sa
+        idx = "<loc>https://auscomps.au/competition-sitemap1.xml</loc>"
+        sm = ("<url><loc>https://auscomps.au/competition/old/</loc><lastmod>2026-05-01T00:00:00+00:00</lastmod></url>"
+              "<url><loc>https://auscomps.au/competition/new/</loc><lastmod>2026-10-30T00:00:00+00:00</lastmod></url>"
+              "<url><loc>https://auscomps.au/competition/mid/</loc><lastmod>2026-10-01T00:00:00+00:00</lastmod></url>")
+        since = dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc)
+        self.assertEqual(sa.sitemap_urls(idx, lambda u: sm, since),
+                         ["https://auscomps.au/competition/new/", "https://auscomps.au/competition/mid/"])
+        self.assertEqual(len(sa.sitemap_urls(idx, lambda u: sm)), 3)
+

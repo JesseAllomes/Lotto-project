@@ -30,11 +30,22 @@ FREQUENCY = {"once": "Only one entry per person.", "daily": "You may enter once 
 STOP = {"win", "a", "an", "the", "of", "to", "from", "and", "for", "with", "worth", "valued", "at", "1", "in", "your"}
 
 
-def sitemap_urls(index_xml, fetch):
+def sitemap_urls(index_xml, fetch, since=None):
+    """Competition page URLs from the sitemaps, newest first; with since (a UTC datetime), only pages modified since
+    then. The sitemaps hold every competition AusComps ever listed (6,500 on 31 Oct 2026, most long closed)."""
     out = []
     for sm in re.findall(r"<loc>\s*(https://auscomps\.au/competition-sitemap\d*\.xml)\s*</loc>", index_xml):
-        out += [u for u in re.findall(r"<loc>\s*(https://auscomps\.au/competition/[^<\s]+/)\s*</loc>", fetch(sm))]
-    return list(dict.fromkeys(out))
+        for u, lastmod in re.findall(r"<loc>\s*(https://auscomps\.au/competition/[^<\s]+/)\s*</loc>"
+                                     r"(?:\s*<lastmod>\s*([^<\s]+)\s*</lastmod>)?", fetch(sm)):
+            when = None
+            try:
+                when = dt.datetime.fromisoformat(lastmod.replace("Z", "+00:00")) if lastmod else None
+            except ValueError:
+                pass
+            if since is None or when is None or when >= since:
+                out.append((when or dt.datetime.max.replace(tzinfo=dt.timezone.utc), u))
+    out.sort(reverse=True)
+    return list(dict.fromkeys(u for _, u in out))
 
 
 def _detail(page, label):
@@ -108,18 +119,32 @@ def duplicate(rec, existing):
     return False
 
 
-def run(store=STORE, max_new=None, fetch=comps.get, delay=comps.DELAY_S):
+RECENT_DAYS = 60       # pages not modified for this long are closed competitions
+BATCH = 50             # listings are saved every BATCH pages, so a timed-out run keeps its work
+
+
+def run(store=STORE, max_new=None, fetch=comps.get, delay=comps.DELAY_S, now=None):
     fetched = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     stored = {json.loads(l)["comp"]["id"]: json.loads(l) for l in comps.stored(store).values()}
     skip_path = store / "auscomps_skipped.txt"
     seen_urls = {r["source"] for r in stored.values()} | (
         set(skip_path.read_text().split()) if skip_path.exists() else set())
     existing = [r["comp"] for r in stored.values() if r["comp"].get("source_site") != "auscomps.au"]
-    todo = [u for u in sitemap_urls(fetch(INDEX), fetch) if u not in seen_urls]
+    since = (now or dt.datetime.now(dt.timezone.utc)) - dt.timedelta(days=RECENT_DAYS)
+    todo = [u for u in sitemap_urls(fetch(INDEX), fetch, since) if u not in seen_urls]
     if max_new is not None:
         todo = todo[:max_new]
-    recs, failed, dupes, skipped = [], 0, 0, []
-    for u in todo:
+    recs, failed, dupes, skipped, n = [], 0, 0, [], 0
+
+    def save():
+        nonlocal recs, skipped, n
+        n += comps.append(store, recs, fetched)
+        if skipped:
+            with open(skip_path, "a") as fh:
+                fh.write("".join(u + "\n" for u in skipped))
+        recs, skipped = [], []
+
+    for k, u in enumerate(todo, 1):
         try:
             r = parse(fetch(u), u)
             if duplicate(r, existing):
@@ -131,13 +156,11 @@ def run(store=STORE, max_new=None, fetch=comps.get, delay=comps.DELAY_S):
             failed += 1
             print(f"skip {u}: {exc}", flush=True)
         time.sleep(delay)
-    n = comps.append(store, recs, fetched)
-    if skipped:
-        with open(skip_path, "a") as fh:
-            fh.write("".join(u + "\n" for u in skipped))
+        if k % BATCH == 0:
+            save()
+    save()
     total = comps.write_csv(store)
-    vic = sum(1 for r in recs if r["open_to_vic"])
-    print(f"auscomps: {n} new listings ({vic} open to Victoria), {dupes} already listed, {failed} failed; "
+    print(f"auscomps: {len(todo)} pages read, {n} new listings, {dupes} already listed, {failed} failed; "
           f"{total} in register", flush=True)
     return n
 
