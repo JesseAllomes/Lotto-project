@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from workers import answers, comps, entry_pages, entry_queue
+from workers import answers, chance, comp_odds, comps, entry_pages, entry_queue
 
 ROOT = comps.ROOT
 ENTRIES = ROOT / "data" / "entries"
@@ -262,6 +262,23 @@ def stats(entries=ENTRIES):
     return {"entries": n, "comps": len(ids)}
 
 
+def add_chance(data, recs, today=None):
+    """Chance-of-winning estimate on every competition card (workers/chance.py): "ch" the estimate, "cb" its band
+    among the competitions on the page, "cw" the number of prizes."""
+    scores, extra = {}, {}
+    for key in ("todo", "auto", "appr"):
+        for x in data[key]:
+            rec = recs.get(str(x["id"]))
+            if rec and x["id"] not in scores:
+                s, kind, n = chance.estimate(rec, comp_odds.assess(rec), today)
+                scores[x["id"]], extra[x["id"]] = s, n
+    band = chance.bands(scores)
+    for key in ("todo", "auto", "appr"):
+        for x in data[key]:
+            if x["id"] in scores:
+                x.update(ch=scores[x["id"]], cb=band[x["id"]], cw=extra[x["id"]])
+
+
 def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
     recs = records()
     gone = removed(entries)
@@ -271,6 +288,7 @@ def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
             "win": [x for x in winners(entries, recs) if x["id"] not in gone], "removed": len(gone),
             "stats": stats(entries), "groups": GROUP_NAMES, "categories": list(dict.fromkeys(c for c, _ in CATEGORIES)) + ["Other"],
             "repo": REPO, "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
+    add_chance(data, recs)
     blob = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     return TEMPLATE.replace("__DATA__", blob)
 
@@ -295,6 +313,7 @@ ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px so
 .top{display:flex;justify-content:space-between;gap:8px}.prize{font-weight:700;color:var(--accent)}.soon{color:var(--warn);font-weight:600}
 .title{display:block;font-weight:600;color:var(--ink);text-decoration:none;margin:4px 0}
 .tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted);margin-right:4px}
+.tag.ch-high{background:var(--accent);color:#fff}.tag.ch-medium{background:var(--chip);color:var(--ink)}.tag.ch-low{background:transparent;border:1px solid var(--line)}
 .acts{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
 .go{background:var(--accent);color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:600;border:0;font:inherit}
 .ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:7px 11px;border-radius:8px;font:inherit;font-weight:600;text-decoration:none}
@@ -312,8 +331,8 @@ ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px so
 <div class="row" style="margin-top:6px">
 <select id="grp"><option value="">All entry types</option></select>
 <select id="close"><option value="">Any close date</option><option value="0">Closes today</option><option value="7">This week</option><option value="30">This month</option></select>
-<select id="min"><option value="0">Any prize</option><option value="500">$500+</option><option value="2000">$2,000+</option><option value="10000">$10,000+</option></select>
-<select id="sort"><option value="close">Closing soonest</option><option value="prize">Biggest prize</option><option value="az">A to Z</option></select>
+<select id="min"><option value="0">Any prize</option><option value="0-500">Under $500</option><option value="500-2000">$500 to $2K</option><option value="2000-10000">$2K to $10K</option><option value="10000-50000">$10K to $50K</option><option value="50000-1e12">$50K and up</option></select>
+<select id="sort"><option value="chance">Best chance</option><option value="close">Closing soonest</option><option value="prize">Biggest prize</option><option value="az">A to Z</option></select>
 </div>
 <label class="done hint" style="margin-top:8px"><input type="checkbox" id="hide"> Hide done</label>
 </div></header>
@@ -325,11 +344,13 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-let S = Object.assign({ tab: "todo", q: "", cats: [], grp: "", close: "", min: "0", sort: "close", hide: false }, store.get("comps-ui", {}));
+let S = Object.assign({ tab: "todo", q: "", cats: [], grp: "", close: "", min: "0", sort: "chance", hide: false }, store.get("comps-ui", {}));
+if (!/^(0|[\d.e]+-[\d.e]+)$/.test(S.min)) S.min = "0";   // the old "500+"-style choices are gone
 const done = () => store.get("comps-done", {});
 const sel = new Set();
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const days = (c) => c ? Math.round((new Date(c.slice(0, 10) + "T00:00:00") - today) / 864e5) : 9999;
+const chanceTag = (x) => x.cb ? `<span class="tag ch-${x.cb}" title="Estimated from the number of prizes, the prize size, how much effort entering takes and how long it runs. A ranking, not real odds.">${x.cb} chance${x.cw > 1 ? ` · ${x.cw} prizes` : ""}</span>` : "";
 const money = (p, est) => p ? (est ? "~$" : "$") + Math.round(p).toLocaleString("en-AU") : "prize n/a";   // ~ = estimated from the title
 const rmIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("remove: " + ids.join(" "))}&body=${encodeURIComponent("Remove these competitions: no more entries, off both lists, and add them to the pattern of what I don't like. Submit this issue; the remove workflow does the rest.")}`;
 const gone = () => store.get("comps-removed", {});
@@ -368,14 +389,14 @@ function card(x) {
                      : `<div class="meta">${x.q ? "Question: " + esc(x.q) : "Open the entry page to see the question."}</div>`;
     return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta"><span class="tag">${x.st === "ok" ? (x.hand ? "approved: enter by hand" : "approved, waiting to go in") : "needs your answer"}</span>${esc(x.b)} · up to ${x.lim} words</div>${body}
+    <div class="meta">${chanceTag(x)}<span class="tag">${x.st === "ok" ? (x.hand ? "approved: enter by hand" : "approved, waiting to go in") : "needs your answer"}</span>${esc(x.b)} · up to ${x.lim} words</div>${body}
     <div class="acts"><a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>
     <a class="ghost" href="${answerIssue(x)}" target="_blank" rel="noopener">${x.a ? "Edit answer" : "Write answer"}</a>
     ${x.a && !x.hand ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Submit now</a>` : ""}${rmBtn(x)}</div></li>`;
   }
   if (S.tab === "auto") return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
+    <div class="meta">${chanceTag(x)}<span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
     <div class="meta">${x.n ? `<b>${x.n}</b> ${x.n === 1 ? "entry" : "entries"} · last ${esc(x.l)}` : "waiting for the next burst"}</div>${ans}
     <div class="acts"><a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>
     ${rmBtn(x)}${x.open ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Re-enter</a><label class="done"><input type="checkbox" class="pick" data-id="${esc(x.id)}" ${sel.has(x.id) ? "checked" : ""}> Select</label>` : `<span class="meta">closed</span>`}</div></li>`;
@@ -386,9 +407,12 @@ function card(x) {
   const isDone = !!done()[x.id];
   return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta"><span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>
+    <div class="meta">${chanceTag(x)}<span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>
     ${x.tu ? `<div class="meta">The listing links the terms${x.u !== x.tu ? "; the button opens the entry page they name" : ""}.${x.how ? " " + esc(x.how) : ""} <a href="${esc(x.tu)}" target="_blank" rel="noopener">Terms</a></div>` : ""}${ans}
     <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open entry page</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
+}
+function inBand(p) {   // prize range "lo-hi"; old saved "500" style values mean any
+  const m = /^([\d.e]+)-([\d.e]+)$/.exec(S.min || ""); return !m || (p >= +m[1] && p < +m[2]);
 }
 function render() {
   document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === S.tab));
@@ -398,9 +422,9 @@ function render() {
   const q = S.q.trim().toLowerCase(), dn = done(), rm = gone(), P = pool().filter((x) => !rm[x.id]);
   const list = P.filter((x) => (!q || (x.t + " " + (x.b || "") + " " + (x.d || "") + " " + x.k).toLowerCase().includes(q))
     && (!S.cats.length || S.cats.includes(x.k)) && (S.tab !== "todo" || !S.grp || x.g === S.grp)
-    && (S.close === "" || days(x.c) <= +S.close) && (S.tab === "free" || (x.p || 0) >= +S.min)
+    && (S.close === "" || days(x.c) <= +S.close) && (S.tab === "free" || inBand(x.p || 0))
     && !(S.hide && S.tab === "todo" && dn[x.id]) && !(S.hide && S.tab === "free" && dn["f:" + x.u]));
-  const by = { close: (a, b) => days(a.c) - days(b.c) || (b.p || 0) - (a.p || 0), prize: (a, b) => (b.p || 0) - (a.p || 0), az: (a, b) => a.t.localeCompare(b.t) };
+  const by = { chance: (a, b) => (b.ch || 0) - (a.ch || 0) || days(a.c) - days(b.c), close: (a, b) => days(a.c) - days(b.c) || (b.p || 0) - (a.p || 0), prize: (a, b) => (b.p || 0) - (a.p || 0), az: (a, b) => a.t.localeCompare(b.t) };
   list.sort(by[S.sort]);
   const total = list.reduce((s, x) => s + (x.p || 0), 0);
   $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
