@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=47 -->
+<!-- drainclamp-build: state; schema=1; generation=48 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -81,4 +81,5 @@
 - 2026-10-31T05:07:28+00:00 696bef2a az1: inventory in .agent/azure-inventory.md; source not in any repo, sites empty, no job logs; blocked on owner (source access)
 - 2026-10-31T05:23:13+00:00 2c1fc71b owner: source likely only in Codex cloud; grant any permissions needed; owner away (nap) - proceed autonomously within decisions
 - 2026-10-31T05:36:57+00:00 ce8cd398 az1 done: runner review + fixes in azure/ (30 tests), image build workflow; az2 blocked on Azure write approval
+- 2026-10-31T07:19:13+00:00 3417cebd owner: launch all, cost audit first, auto-deploy main->Azure behind cost guard. Applied: budget AUD20 alerts 25/50/100%+forecast (both emails), func 512MB x1, storage lifecycle+1d soft delete, Foundry keys off, Log Analytics 0.1GB/day on jobs env, OIDC deploy app 7ab2c182 (Contributor on RG, main only)
 <!-- /DC:LOG -->
