@@ -1,4 +1,4 @@
-<!-- drainclamp-build: state; schema=1; generation=45 -->
+<!-- drainclamp-build: state; schema=1; generation=47 -->
 # DrainClamp state
 
 <!-- DC:ARCH -->
@@ -53,7 +53,7 @@
 | m7 | Lotto opportunities from the draw register: sales and prize pools inferred from dividends, ticket value per draw by game and jackpot, number-popularity model (division-1 sharing) to pick less-shared numbers, randomness checks, ranked opportunities | analysis/lotto_ev.py;analysis/popularity.py;analysis/fairness.py;data/analysis/;tests/test_lotto_analysis.py | pending | m1;m2 |
 | m8 | Competition value per entry (prize value against cap and ticket price) and the plain-English REPORT.md over lotto and competitions | analysis/comps_value.py;REPORT.md | pending | m4;m6;m7 |
 | m9 | Auto-entry of free web-form competitions: candidates (free, agent_ok, not banned, within entry limit), Playwright form filler with owner details from secrets, dry run then live, entry log without personal data, manual list for the rest, skill answers approved via GitHub issues | workers/entrant.py;workers/entry_queue.py;data/entries/;.github/workflows/entries.yml;tests/test_entrant.py | pending | m5;m6 |
-| az1 | Azure inventory and verification for Lotto: every resource Codex created mapped to the workflow it replaces (draws, jackpots, comps, entries, site, reenter, probe), checked against main for code version, schedule, settings and secret names; no changes | .agent/azure-inventory.md | active |  |
+| az1 | Azure inventory and verification for Lotto: every resource Codex created mapped to the workflow it replaces (draws, jackpots, comps, entries, site, reenter, probe), checked against main for code version, schedule, settings and secret names; no changes | .agent/azure-inventory.md | done |  |
 | az2 | Azure dry runs for Lotto: each job run once on Azure without live entry; outputs and git pushes compared with the GitHub Actions run | .agent/azure-inventory.md | pending | az1 |
 | az3 | Lotto cutover: owner-approved Azure schedules on, matching GitHub Actions workflows off, first live runs checked | .github/workflows/;.agent/azure-inventory.md | pending | az2 |
 <!-- /DC:ROADMAP -->
@@ -80,4 +80,5 @@
 - 2026-10-31T05:03:13+00:00 0773ad9c az: Azure migration project opened; az1-az3 added (verify, dry run, cutover)
 - 2026-10-31T05:07:28+00:00 696bef2a az1: inventory in .agent/azure-inventory.md; source not in any repo, sites empty, no job logs; blocked on owner (source access)
 - 2026-10-31T05:23:13+00:00 2c1fc71b owner: source likely only in Codex cloud; grant any permissions needed; owner away (nap) - proceed autonomously within decisions
+- 2026-10-31T05:36:57+00:00 ce8cd398 az1 done: runner review + fixes in azure/ (30 tests), image build workflow; az2 blocked on Azure write approval
 <!-- /DC:LOG -->

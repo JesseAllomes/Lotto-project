@@ -1,0 +1,48 @@
+# Builds the Azure Container Apps Jobs worker image (azure/Dockerfile) and pushes it to GitHub Container Registry.
+# Runs when anything under azure/ changes on main. Tags: sha-<full commit sha> (pin this one in the jobs) and latest.
+name: azure-image
+on:
+  push:
+    branches: [main]
+    paths:
+      - "azure/**"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  packages: write
+concurrency:
+  group: azure-image
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: azure/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/jesseallomes/lotto-azure-runner:sha-${{ github.sha }}
+            ghcr.io/jesseallomes/lotto-azure-runner:latest
+      - name: Report the pushed digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          {
+            echo "Pushed ghcr.io/jesseallomes/lotto-azure-runner"
+            echo ""
+            echo "- digest: \`$DIGEST\`"
+            echo "- pin: \`ghcr.io/jesseallomes/lotto-azure-runner@$DIGEST\`"
+            echo "- tags: \`sha-${GITHUB_SHA}\`, \`latest\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -26,3 +26,11 @@ Findings
 6. Kill switches: AZURE_JOBS_DISABLED=1 on all jobs; ENTRANT_LIVE=1 (first Azure entry run must be 0 per decision).
 7. Owner's own account lacks Storage Blob Data roles on stpersonalv5ethud2i3cfq (subscription Owner, so can self-grant).
 8. Unrelated: rg-jesseallomes-9487 holds an AI Services (Foundry) account; not part of this migration.
+
+## Review and fixes (2026-10-31)
+Review: .agent/reviews/azure-runner-review.md (D1-D14). Codex's launcher is now in git as azure/runner.py with fixes for
+D1 (entrant timeout + SIGTERM so the log commit runs), D3 (comps soft steps, push in finally), D4b, D5 (DRY_RUN=1 blocks
+every GitHub write and forces ENTRANT_LIVE=0; FORCE=1 skips the burst gate), D7, D11, D12 (scrubbed child env), D13.
+azure/Dockerfile rebuilt from image history (poppler-utils and playwright@1.63.0 confirmed in Codex's image).
+.github/workflows/azure-image.yml builds ghcr.io/jesseallomes/lotto-azure-runner (sha-<sha>, latest) on GitHub Actions.
+Open: commit_entries.sh still sees git's auth header (script change); site and reenter stay on GitHub.
