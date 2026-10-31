@@ -53,6 +53,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 75542,Win Weekly Prize Packs,Australian Made,,2026-10-31T23:59:59+10:00,unknown,entry route unknown,web,https://australianmade.com.au/competitions/2610-40-years-giveaway/
 75364,Win a Morro & Co Luxury Home Fragrance Collection,Get It Magazine,242.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: failing (form said: please fill),web,https://getit-magazine.com.au/win/
 75328,Win a $500 Calexico Voucher,Calexico Australia,500.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: failing (form said: error),web,https://www.calexico.com.au/pages/win-a-wardrobe-competition
+75327,Win a PS5 Disk Edition,Dr. Moose,999.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: human_check,web,https://drmoose.com.au/pages/sign-up
 75274,Win a$500 Bunnings Voucher,Neighbourhood Watch Australasia,500.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: failing (no confirmation seen),web,https://secureyourhomeday.com.au/activitiesandevents/
 10007823,Sanitarium – win 5 x $100 gift vouchers (? Close date),,6000.0,2026-10-31T23:59:59+11:00,unknown,entrant blocked: no_form,web,https://www.sanitarium.com/au/health-nutrition/good-food-lounge
 10007824,Sanitarium – win 5 x $100 gift vouchers (? Close date),,6000.0,2026-10-31T23:59:59+11:00,unknown,entrant blocked: no_form,web,https://www.sanitarium.com/au/health-nutrition/good-food-lounge
@@ -128,6 +129,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 75687,Win an Unforgettable Walking Adventure,Intrepid Travel,5500.0,2026-11-06T23:59:59+10:00,chance,entrant blocked: unfillable,web,https://impact.intrepidtravel.com/c/1401256/3751827/47461?u=https%3A%2F%2Fwww.intrepidtravel.com%2Fau%2Famble-giveaway
 10008046,"Intrepid Travel Win a Spot on an Intrepid Walking Trip in Australia, Flights from Capital City and $1,000 of Amble Products",,,2026-11-06T23:59:59+11:00,unknown,entrant blocked: unfillable,web,https://www.intrepidtravel.com/au/amble-giveaway
 10007776,Gold – Win a trip Get Stranded in Bali with Jimmy Barnes,,30000.0,2026-11-06T23:59:59+11:00,unknown,entrant blocked: no_form,web,https://www.gold1043.com.au/competition/golds-get-stranded-in-bali-with-jimmy-barnes/
+76218,Win a $2.1k UPPAbaby Vista V3 Pram & Bassinet,Nodiee,2100.0,2026-11-07T23:59:59+10:00,chance,entrant blocked: no_form,web,https://nodiee.com/pages/pram-giveaway
 76138,Win 1 of 5 Double Passes to I LOVE Boosters,Weekend Notes,,2026-11-08T23:59:59+10:00,chance,entrant blocked: no_form,web,https://www.weekendnotes.com/win-1-of-5-double-passes-to-i-love-boosters-in-cinemas-november-12/?sid=230724
 76137,Win the Full Silkyglow Ritual,Aussie Haven,139.0,2026-11-08T23:59:59+10:00,chance,entrant blocked: failing (form said: error),web,https://www.theaussiehaven.com/pages/win
 76121,"Win $10,000 for your Wishlist",Fenton & Fenton,10000.0,2026-11-08T23:59:59+10:00,chance,entry route unknown,web,https://www.fentonandfenton.com.au/pages/wishlist-competition
@@ -190,6 +192,7 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76172,Win 1 of 3 Bodico Power Flow Compression Boots,JB Hi-Fi,897.0,2026-11-23T23:59:59+10:00,skill,entry route manual,facebook,https://www.facebook.com/JBHiFi/posts/pfbid02HEpBWXV5PUTh9vSNLLtqGiunm6LQnHy3FEVK99pKDBuWzPeNzh1PwWc57b1uPJegl
 10007944,Sunday – Win Free Holiday to Bali or Byron Bay,Sunday,3000.0,2026-11-23T23:59:59+11:00,unknown,entrant blocked: captcha,web,https://giveaway.sundayaus.com/r/4G6HGE
 75025,Win 1 of 2 Survival Large Gen8 First Aid Kits,Mouths of Mums,274.0,2026-11-24T23:59:59+10:00,skill,entry route manual,web,https://mouthsofmums.com.au/competition/win-1-of-2-survival-large-gen-8-first-aid-kits-worth-274-95-each/
+76191,Win 1 of 2 Yoto Mini Prize Packs,Out & About with Kids,747.0,2026-11-25T23:59:59+10:00,chance,entrant blocked: no_form,web,https://outandaboutwithkids.com.au/win-yoto-mini-the-ultimate-travel-companion/
 75007,Win a Share of $45K Travel-Related Prizes,Visa,45047.0,2026-11-27T23:59:59+10:00,chance,entrant blocked: no_form,web,https://destinations.visa.com/login/destinations/dreamtripgiveawayau/
 75699,Win a JPM Kawasaki Kx250 Race Team Replica Bike,MXstore,35419.0,2026-11-29T23:59:59+10:00,chance,entrant blocked: unfillable,web,https://www.mxstore.com.au/blog/win-jpm-replica-kawasaki-kx250/
 75484,Win $5K Cash or 1 of 108 $250 Spotlight Vouchers Instantly,Seven Network,32000.0,2026-11-29T23:59:59+10:00,instant,entrant blocked: no_form,web,https://competition.7plus.com.au/ratetheplate
