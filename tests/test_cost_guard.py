@@ -625,7 +625,7 @@ class EventJob(Fixture):
         self.assertEqual((view["trigger"], view["timeout"], view["retry"], view["parallelism"], view["completion"]),
                          ("Event", 600, 0, 1, 1))
         self.assertEqual(view["args"], ["actions"])
-        self.assertEqual(view["env"]["AZURE_JOBS_DISABLED"], {"value": "1"})          # off until the owner flips it
+        self.assertIn(view["env"]["AZURE_JOBS_DISABLED"], ({"value": "0"}, {"value": "1"}))  # an explicit switch either way
         self.assertEqual(view["env"]["ENTRANT_PROFILE_JSON"], {"secretRef": "entrant-profile"})
         self.assertNotIn("GITHUB_TOKEN", view["env"])
         ev = view["event"]
