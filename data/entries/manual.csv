@@ -11,7 +11,6 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 76042,Win Award Winning Whisky + Tee or 1 of 5 Morris Trio Packs,Morris of Rutherglen,337.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: failing (form said: error),web,https://www.morrisofrutherglen.com/pages/whisky-lover-oct-to-nov-2026
 75978,"Win 1 of 2 $1,000 Van Heusen Online Vouchers",SEN 1116,2000.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: no_form,web,https://winwithsen.au1.komo.site/card/01a15127-1fbb-758b-8786-d4fa1c9cfdaa?card=01a15127-1fbb-758b-8786-d4fa1c9cfdaa&state=Form
 75966,Win 1 of 2 LAMS Bundles,Peter Stevens Motorcycles,998.0,2026-10-31T23:59:59+10:00,chance,entrant blocked: no_form,web,https://www.peterstevens.com.au/win-1-of-2-lams-bundles
-75959,Win an Ultimate Wellness Prize,Tennis Australia,17830.0,2026-10-31T23:59:59+10:00,chance,entry route manual,web,https://assets-oce.mkt.dynamics.com/c5b227c4-d39e-47b2-bdaa-765ef3d0eed1/digitalassets/standaloneforms/c38138e1-31a8-f111-b8de-6045bdc3f55c
 75951,"Win a Share of $1,000 Harbour Town Gift Card",Dreamworld,1000.0,2026-10-31T23:59:59+10:00,skill,entry route manual,web,https://www.dreamworld.com.au/events/happy-halloween/
 75926,Win a St John Pocket AED,St John Ambulance,1995.0,2026-10-31T23:59:59+10:00,skill,entrant blocked: no_form,web,https://www.stjohnvic.com.au/shocktober-1/
 75925,Win 1 of 3 $600 Northland Gift Cards,Northland Shopping Centre,1800.0,2026-10-31T23:59:59+10:00,chance,entry route manual,web,https://www.northlandsc.com.au/competitions/60-year-anniversary
@@ -271,4 +270,3 @@ id,title,brand,prize_pool,closes,draw_type,reason,entry_platform,entry_url
 72033,Win a Pantry Refill of Ozganics Favourites,Ozganics,,2027-03-30T23:59:59+10:00,unknown,entrant blocked: human_check,web,https://www.ozganics.com.au/blogs/news/monthly-draw-win-with-ozganics
 74235,Win 1 of 10 $250 Vouchers,Wisdom Activities,2500.0,2027-03-31T23:59:59+10:00,skill,entry route manual,web,https://wisdomactivities.com.au/pages/catalogue-comp
 74853,Win 1 of 2 X $1K Discovery Holiday Parks Vouchers,Discovery Parks,2000.0,2027-06-30T23:59:59+10:00,chance,entrant blocked: no_form,web,https://www.discoveryholidayparks.com.au/subscribe
-59358,Win a Box of 100% Raw Pet Treats,Freeze Dry Australia,350.0,2204-08-20T23:59:59+10:00,chance,entry route manual,web,https://www.freezedryaustralia.com/treat-box-giveaway/
