@@ -16,7 +16,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v4
       - name: Fetch new listings
@@ -26,6 +26,8 @@ jobs:
         continue-on-error: true          # a slow second source must not hold up the rest (pages save every 50)
         run: python3 -m workers.source_auscomps --max 600
       - name: Ticket and entry caps from promoters' pages and terms
+        timeout-minutes: 30
+        continue-on-error: true          # each listing is saved as it is read; the rest are read on the next run
         run: |
           sudo apt-get install -y -qq poppler-utils > /dev/null || true
           python3 -m workers.comp_terms

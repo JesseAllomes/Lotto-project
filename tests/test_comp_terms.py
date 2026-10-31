@@ -89,7 +89,7 @@ class Run(unittest.TestCase):
             self.assertEqual(comp_terms.run(store, fetch=fetch, delay=0, today=today), 0)
             lines = [json.loads(l) for l in (store / "terms.jsonl").read_text().splitlines()]
             self.assertEqual([(l["id"], l["cap"], l["automation_banned"], l["terms_read"]) for l in lines],
-                             [(9, 500_000, False, False), (10, None, True, True)])
+                             [(10, None, True, True), (9, 500_000, False, False)])    # free (auto-entry) listings first
 
 
 if __name__ == "__main__":

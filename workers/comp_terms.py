@@ -180,8 +180,8 @@ def history(store):
 
 
 def targets(store, today):
-    """Open listings a Victorian can enter: paid ones (for caps; raffles and lotteries first), then free web-form
-    ones (auto-entry candidates, read for an automation ban)."""
+    """Open listings a Victorian can enter: free web-form ones first (auto-entry candidates, read for entry limits and
+    an automation ban; soonest-closing first), then paid ones (for caps; raffles and lotteries first)."""
     paid, free = [], []
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
         if not (r.get("open_to_vic") and r.get("entry_url") and (r.get("closes") or "9")[:10] >= today):
@@ -192,7 +192,8 @@ def targets(store, today):
         elif a["purchase"] == "no" and a["entry_route"] == "agent_ok":
             free.append(dict(r, _free=True))
     paid.sort(key=lambda r: (not comp_odds.RAFFLE_BRAND.search(r.get("brand") or ""), -(r.get("prize_pool") or 0)))
-    return paid + free
+    free.sort(key=lambda r: r.get("closes") or "9")          # soonest-closing first: they gate the auto-entrant
+    return free + paid
 
 
 def done(r, hist):
