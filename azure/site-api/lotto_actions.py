@@ -2,6 +2,9 @@
 
     {"kind": "remove|broken|reenter|answer|done|undone", "ids": ["75870"], "answer": "text (answer only)"}
 
+The API is public (no login anywhere on the site), so it protects itself: strict validation, size limits and a per-client-IP
+rate cap (RATE_LIMIT_MAX_ACTIONS requests per RATE_WINDOW_S, kept in the function instance's memory; HTTP 429 beyond it).
+
 Nothing is applied here.  The Container Apps job lotto-actions (azure/runner.py mode `actions`) drains the queue, applies
 each action with the existing workers and deletes the message once the data is saved.  Standard library only.
 
@@ -15,6 +18,7 @@ import base64
 import json
 import logging
 import re
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -30,7 +34,9 @@ MAX_IDS = 50
 MAX_ANSWER_CHARS = 2000
 ID_RE = re.compile(r"[0-9]{5,9}")             # the listing ids in the registers (workers use the same pattern)
 FIELDS = frozenset({"kind", "ids", "answer"})
-REQUIRED_ROLE = "owner"
+RATE_LIMIT_MAX_ACTIONS = 30                   # per client IP ...
+RATE_WINDOW_S = 600                           # ... per 10 minutes (tools/cost_guard.py C12 checks both against limits.json)
+MAX_TRACKED_CLIENTS = 5000                    # bounds the in-memory table; when full of live clients, new ones get 429
 QUEUE_NAME = "lotto-actions"
 QUEUE_HOST_SUFFIX = ".queue.core.windows.net"
 QUEUE_API_VERSION = "2021-08-06"
@@ -79,16 +85,50 @@ def validate(doc: object) -> dict:
     return out
 
 
-def principal(headers: dict) -> dict | None:
-    """The Static Web Apps client principal (x-ms-client-principal, base64 JSON), None when absent or unreadable."""
-    raw = headers.get("x-ms-client-principal")
+def client_ip(headers: dict) -> str:
+    """The caller's IP for the rate cap (header names lower-case).  Prefers x-azure-clientip; otherwise the LAST
+    x-forwarded-for entry, which the nearest proxy appended (the earlier ones can be forged by the caller).  An unreadable
+    or missing address shares the one bucket "unknown", so it can never escape the cap."""
+    raw = str(headers.get("x-azure-clientip") or "").strip()
     if not raw:
-        return None
-    try:
-        doc = json.loads(base64.b64decode(raw, validate=True))
-    except (ValueError, TypeError):
-        return None
-    return doc if isinstance(doc, dict) else None
+        parts = [p.strip() for p in str(headers.get("x-forwarded-for") or "").split(",") if p.strip()]
+        raw = parts[-1] if parts else ""
+    if raw.startswith("["):                                   # [v6]:port
+        raw = raw[1:].split("]", 1)[0]
+    elif raw.count(":") == 1:                                 # v4:port
+        raw = raw.split(":", 1)[0]
+    return raw[:64] or "unknown"
+
+
+class RateLimiter:
+    """Sliding-window count per key, in memory (one function instance; a restart or a second instance resets it, which
+    is acceptable for an abuse cap)."""
+
+    def __init__(self, limit: int = RATE_LIMIT_MAX_ACTIONS, window_s: int = RATE_WINDOW_S, max_keys: int = MAX_TRACKED_CLIENTS):
+        self.limit, self.window_s, self.max_keys = limit, window_s, max_keys
+        self.hits: dict[str, list[float]] = {}
+        self.lock = threading.Lock()
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        """Record one action for key and say whether it is within the cap (a refused one is not recorded)."""
+        now = time.time() if now is None else now
+        cutoff = now - self.window_s
+        with self.lock:
+            if len(self.hits) >= self.max_keys and key not in self.hits:
+                for k in [k for k, v in self.hits.items() if not v or v[-1] <= cutoff]:
+                    del self.hits[k]
+                if len(self.hits) >= self.max_keys:
+                    return False
+            recent = [t for t in self.hits.get(key, ()) if t > cutoff]
+            if len(recent) >= self.limit:
+                self.hits[key] = recent
+                return False
+            recent.append(now)
+            self.hits[key] = recent
+            return True
+
+
+LIMITER = RateLimiter()
 
 
 def queue_endpoint(sas_url: str | None) -> tuple[str, str]:
@@ -128,19 +168,14 @@ def enqueue(sas_url: str | None, text: str, timeout: int = QUEUE_TIMEOUT_S) -> N
         raise RuntimeError(f"HTTP {status}")
 
 
-def handle(method: str, headers: dict, body: bytes, env: dict, send=enqueue) -> tuple[int, dict]:
-    """(HTTP status, JSON payload).  send(sas_url, text) is the queue call (replaced in tests)."""
+def handle(method: str, headers: dict, body: bytes, env: dict, send=enqueue, limiter: RateLimiter | None = None) -> tuple[int, dict]:
+    """(HTTP status, JSON payload).  send(sas_url, text) is the queue call and limiter the per-IP cap (both replaced in
+    tests).  Every POST counts against the caller's cap, valid or not, so a flood of bad requests is stopped too."""
     h = {str(k).lower(): v for k, v in (headers or {}).items()}
     if method.upper() != "POST":
         return 405, {"error": "POST only"}
-    who = principal(h)
-    if who is None:
-        return 401, {"error": "sign in"}
-    if REQUIRED_ROLE not in (who.get("userRoles") or []):
-        return 403, {"error": "not allowed"}
-    owner = (env.get("OWNER_LOGIN") or "").strip().lower()
-    if owner and str(who.get("userDetails") or "").lower() != owner:
-        return 403, {"error": "not allowed"}
+    if not (limiter or LIMITER).allow(client_ip(h)):
+        return 429, {"error": f"too many actions: at most {RATE_LIMIT_MAX_ACTIONS} per {RATE_WINDOW_S // 60} minutes"}
     if not str(h.get("content-type", "")).lower().startswith("application/json"):
         return 415, {"error": "send application/json"}
     try:

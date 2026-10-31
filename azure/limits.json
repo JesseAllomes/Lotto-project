@@ -186,7 +186,8 @@
     "allowed_methods": [
       "POST"
     ],
-    "required_role": "owner",
+    "rate_limit_max_actions": 30,
+    "min_rate_window_s": 600,
     "api_runtime": "python:3.11",
     "max_body_bytes": 16384,
     "max_ids": 50,

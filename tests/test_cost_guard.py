@@ -718,7 +718,7 @@ class EventJob(Fixture):
 
 
 class C12(Fixture):
-    """The site API: declared routes only, the owner role at the edge, caps in code, retired issue workflows gone."""
+    """The site API: declared routes only, no login offered, caps and the per-IP rate cap in code, retired issue workflows gone."""
 
     API = "azure/site-api/lotto_actions.py"
 
@@ -729,18 +729,28 @@ class C12(Fixture):
     def test_delivered_repository_passes_c12(self):
         self.assertNotIn("C12", self.rules())
 
-    def test_api_route_must_keep_exactly_the_owner_role(self):
-        for roles in ('["authenticated"]', '["anonymous"]', '["owner", "authenticated"]', "[]"):
-            self.edit_file("workers/site.py", lambda t: t.replace('{"route": "/api/*", "allowedRoles": ["owner"]}',
-                                                                  '{"route": "/api/*", "allowedRoles": %s}' % roles))
-            self.fails("allowedRoles must be exactly")
-            self.setUp()
-        self.edit_file("workers/site.py", lambda t: t.replace('{"route": "/api/*", "allowedRoles": ["owner"]},\n', ""))
-        self.fails("no /api/* route")
+    def test_no_login_is_offered(self):
+        self.edit_file("workers/site.py", lambda t: t.replace('        {"route": "/.auth/login/github", "statusCode": 404},\n', ""))
+        self.fails("must 404 /.auth/login/github")
+        self.setUp()
+        self.edit_file("workers/site.py", lambda t: t.replace('"platform":', '"responseOverrides": {"401": {"redirect": "/.auth/login/github", "statusCode": 302}},\n    "platform":'))
+        self.fails("must not redirect 401")
 
-    def test_no_other_api_route_may_be_open(self):
-        self.edit_file("workers/site.py", lambda t: t.replace('"routes": [', '"routes": [\n        {"route": "/api/state", "allowedRoles": ["anonymous"]},'))
-        self.fails("/api/state allowedRoles")
+    def test_rate_cap_constants_must_exist_and_stay_within_limits(self):
+        self.edit_file(self.API, lambda t: t.replace("RATE_LIMIT_MAX_ACTIONS = 30", "RATE_LIMIT_MAX_ACTIONS = 31"))
+        self.fails("RATE_LIMIT_MAX_ACTIONS must be")
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace("RATE_LIMIT_MAX_ACTIONS = 30", "RATE_LIMIT_MAX_ACTIONS = 10 * 3"))
+        self.fails("RATE_LIMIT_MAX_ACTIONS must be")              # not a literal the guard can read: refuse rather than guess
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace("RATE_WINDOW_S = 600", "RATE_WINDOW_S = 60"))
+        self.fails("RATE_WINDOW_S must be")
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace("RATE_WINDOW_S = 600", "RATE_WINDOW_S_X = 600"))
+        self.fails("RATE_WINDOW_S must be")
+        self.setUp()
+        self.edit_file(self.API, lambda t: t.replace("return 429,", "return 400,"))
+        self.fails("does not return 429")
 
     def test_runtime_and_config_must_exist(self):
         self.edit_file("workers/site.py", lambda t: t.replace('"python:3.11"', '"node:18"'))

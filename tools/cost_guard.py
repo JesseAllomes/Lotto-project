@@ -17,8 +17,9 @@ to this repository, which has no function app):
        module caps, secrets in source
   C8   workflows: timeouts, concurrency, self-dispatch, workflow_run, push loops, issue guards, cron volume
   C10  limits ratchet: azure/limits.json may not loosen against the base ref unless LIMITS_APPROVED=1
-  C12  site actions: the Static Web App API (azure/site-api) has only the declared routes, needs the owner role at the
-       edge (SWA_CONFIG in workers/site.py), caps body size, ids, answer length and kinds, and the retired
+  C12  site actions: the Static Web App API (azure/site-api) has only the declared routes, offers no login (SWA_CONFIG in
+       workers/site.py 404s every provider, GitHub included), caps body size, ids, answer length and kinds, keeps its
+       per-client-IP rate cap (RATE_LIMIT_MAX_ACTIONS <= and RATE_WINDOW_S >= the limits.json values, 429), and the retired
        issue-triggered workflows are gone; the Event job (lotto-actions) is bounded in C2 (executions, polling, queue)
   DRIFT  with --live DIR: exports of the live jobs are checked with C1-C3 and must equal azure/jobs/*.json
 """
@@ -708,14 +709,12 @@ def check_site_api(rep: Report, root: Path, limits: dict) -> None:
     if not isinstance(config, dict):
         rep.fail("C12", "workers/site.py", 1, "SWA_CONFIG (the staticwebapp.config.json the build writes) is missing")
         config = {}
-    role = sl["required_role"]
-    api_routes = [r for r in config.get("routes", []) if str(r.get("route", "")).startswith(API_PREFIX)]
-    for r in api_routes:
-        if r.get("allowedRoles") != [role]:
-            rep.fail("C12", "workers/site.py", 1, f"route {r.get('route')} allowedRoles must be exactly {[role]}, "
-                                                  f"got {r.get('allowedRoles')!r}")
-    if not any(r.get("route") == API_PREFIX + "*" for r in api_routes):
-        rep.fail("C12", "workers/site.py", 1, f"SWA_CONFIG has no {API_PREFIX}* route requiring the {role} role")
+    # no login anywhere: every provider's login route (GitHub included) answers 404, and nothing redirects to one
+    blocked = {r.get("route") for r in config.get("routes", []) if r.get("statusCode") == 404}
+    if "/.auth/login/github" not in blocked:
+        rep.fail("C12", "workers/site.py", 1, "SWA_CONFIG must 404 /.auth/login/github (no login is offered)")
+    if "401" in (config.get("responseOverrides") or {}):
+        rep.fail("C12", "workers/site.py", 1, "SWA_CONFIG must not redirect 401 to a login (no login is offered)")
     if (config.get("platform") or {}).get("apiRuntime") != sl["api_runtime"]:
         rep.fail("C12", "workers/site.py", 1, f"platform.apiRuntime must be {sl['api_runtime']!r}")
     if not api.is_dir():
@@ -748,7 +747,14 @@ def check_site_api(rep: Report, root: Path, limits: dict) -> None:
             size = lit.get("MAX_BODY_BYTES")
             if not isinstance(size, int) or not 0 < size <= sl["max_body_bytes"]:
                 rep.fail("C12", rel, 1, f"MAX_BODY_BYTES must be a number from 1 to {sl['max_body_bytes']}, got {size!r}")
+            rate, window = lit.get("RATE_LIMIT_MAX_ACTIONS"), lit.get("RATE_WINDOW_S")
+            if not isinstance(rate, int) or isinstance(rate, bool) or not 0 < rate <= sl["rate_limit_max_actions"]:
+                rep.fail("C12", rel, 1, f"RATE_LIMIT_MAX_ACTIONS must be a number from 1 to {sl['rate_limit_max_actions']}, got {rate!r}")
+            if not isinstance(window, int) or isinstance(window, bool) or window < sl["min_rate_window_s"]:
+                rep.fail("C12", rel, 1, f"RATE_WINDOW_S must be a number of at least {sl['min_rate_window_s']}, got {window!r}")
             handler = next((n for n in ast.parse(path.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == "handle"), None)
+            if handler is None or not any(isinstance(n, ast.Constant) and n.value == 429 for n in ast.walk(handler)):
+                rep.fail("C12", rel, 1, "handle() does not return 429 when the per-IP rate cap is exceeded")
             compared = handler is not None and any(
                 isinstance(c, ast.Compare) and any(isinstance(n, ast.Name) and n.id == "MAX_BODY_BYTES" for n in ast.walk(c))
                 for c in ast.walk(handler))

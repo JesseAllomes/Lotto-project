@@ -1,4 +1,4 @@
-"""Offline tests for the Static Web App API (azure/site-api): validation, the owner role, the queue SAS, 202."""
+"""Offline tests for the Static Web App API (azure/site-api): validation, the per-IP rate cap, the queue SAS, 202."""
 import base64
 import importlib.util
 import io
@@ -20,22 +20,18 @@ SAS = f"https://stpersonalv5ethud2i3cfq.queue.core.windows.net/lotto-actions?sv=
 ENV = {"ACTIONS_QUEUE_SAS": SAS}
 
 
-def principal(roles=("anonymous", "authenticated", "owner"), user="owner-login"):
-    doc = {"identityProvider": "github", "userId": "1", "userDetails": user, "userRoles": list(roles)}
-    return base64.b64encode(json.dumps(doc).encode()).decode()
-
-
 def headers(**kw):
-    h = {"x-ms-client-principal": principal(), "content-type": "application/json"}
+    h = {"content-type": "application/json", "x-forwarded-for": "203.0.113.7"}
     h.update({k.replace("_", "-"): v for k, v in kw.items()})
     return h
 
 
-def call(doc, hdrs=None, env=ENV, send=None, method="POST", raw=None):
+def call(doc, hdrs=None, env=ENV, send=None, method="POST", raw=None, limiter=None):
     body = raw if raw is not None else json.dumps(doc).encode()
     sent = []
     send = send or (lambda sas, text: sent.append((sas, text)))
-    status, payload = api.handle(method, hdrs if hdrs is not None else headers(), body, env, send)
+    status, payload = api.handle(method, hdrs if hdrs is not None else headers(), body, env, send,
+                                 limiter if limiter is not None else api.RateLimiter())
     return status, payload, sent
 
 
@@ -120,26 +116,65 @@ class Validation(unittest.TestCase):
 
 
 class Access(unittest.TestCase):
+    """No login: every caller is anonymous, so there is no principal, role or OWNER_LOGIN check; the abuse cap replaces it."""
     DOC = {"kind": "remove", "ids": ["75870"]}
 
-    def test_no_principal_is_401_and_wrong_role_is_403(self):
-        h = headers()
-        del h["x-ms-client-principal"]
-        self.assertEqual(call(self.DOC, h)[0:3:2], (401, []))
-        self.assertEqual(call(self.DOC, headers(x_ms_client_principal="not base64 json!"))[0], 401)
-        self.assertEqual(call(self.DOC, headers(x_ms_client_principal=base64.b64encode(b"[1]").decode()))[0], 401)
-        for roles in (("anonymous",), ("anonymous", "authenticated"), ("Owner",), ()):
-            status, _, sent = call(self.DOC, headers(x_ms_client_principal=principal(roles)))
-            self.assertEqual((status, sent), (403, []), roles)
+    def test_no_identity_is_needed_or_looked_at(self):
+        self.assertEqual(call(self.DOC)[0], 202)
+        self.assertEqual(call(self.DOC, headers(x_ms_client_principal="not base64 json!"))[0], 202)
+        self.assertEqual(call(self.DOC, {"content-type": "application/json"})[0], 202)         # not even an IP
+        self.assertEqual(call(self.DOC, env={**ENV, "OWNER_LOGIN": "someone"})[0], 202)
+        source = (API / "lotto_actions.py").read_text()
+        for text in ("OWNER_LOGIN", "clientPrincipal", "x-ms-client-principal", "userRoles", "REQUIRED_ROLE", "def principal"):
+            self.assertNotIn(text, source, text)
+
+    def test_the_rate_cap_constants(self):
+        self.assertEqual((api.RATE_LIMIT_MAX_ACTIONS, api.RATE_WINDOW_S), (30, 600))
+        limits = json.loads((API.parent / "limits.json").read_text())["site_api"]
+        self.assertLessEqual(api.RATE_LIMIT_MAX_ACTIONS, limits["rate_limit_max_actions"])
+        self.assertGreaterEqual(api.RATE_WINDOW_S, limits["min_rate_window_s"])
+        self.assertNotIn("required_role", limits)
+
+    def test_the_31st_action_in_ten_minutes_is_429_and_nothing_is_queued(self):
+        limiter = api.RateLimiter()
+        for _ in range(api.RATE_LIMIT_MAX_ACTIONS):
+            self.assertEqual(call(self.DOC, limiter=limiter)[0], 202)
+        status, payload, sent = call(self.DOC, limiter=limiter)
+        self.assertEqual((status, sent), (429, []))
+        self.assertIn("error", payload)
+        self.assertEqual(call(self.DOC, headers(x_forwarded_for="198.51.100.9"), limiter=limiter)[0], 202)   # another IP is separate
+
+    def test_bad_requests_count_too_and_get_429_before_validation(self):
+        limiter = api.RateLimiter(limit=2, window_s=600)
+        for _ in range(2):
+            self.assertEqual(call({"kind": "nope", "ids": []}, limiter=limiter)[0], 400)
+        self.assertEqual(call({"kind": "nope", "ids": []}, limiter=limiter)[0], 429)
+        self.assertEqual(call(self.DOC, method="GET", limiter=limiter)[0], 405)                # wrong method is not counted
+
+    def test_the_window_slides(self):
+        lim = api.RateLimiter(limit=2, window_s=600)
+        self.assertEqual([lim.allow("a", 0), lim.allow("a", 100), lim.allow("a", 200)], [True, True, False])
+        self.assertTrue(lim.allow("a", 601))                                                   # the first hit has aged out
+        self.assertFalse(lim.allow("a", 650))
+
+    def test_the_table_is_bounded(self):
+        lim = api.RateLimiter(limit=1, window_s=600, max_keys=3)
+        self.assertTrue(all(lim.allow(f"ip{i}", 0) for i in range(3)))
+        self.assertFalse(lim.allow("ip-new", 10))                                              # full of live clients: refused
+        self.assertTrue(lim.allow("ip-new", 700))                                              # old ones pruned
+        self.assertLessEqual(len(lim.hits), 3)
+
+    def test_client_ip(self):
+        self.assertEqual(api.client_ip({"x-azure-clientip": "203.0.113.7", "x-forwarded-for": "1.1.1.1"}), "203.0.113.7")
+        self.assertEqual(api.client_ip({"x-forwarded-for": "6.6.6.6, 203.0.113.7:51234"}), "203.0.113.7")   # forged first entry ignored
+        self.assertEqual(api.client_ip({"x-forwarded-for": "[2001:db8::1]:443"}), "2001:db8::1")
+        self.assertEqual(api.client_ip({"x-forwarded-for": "2001:db8::1"}), "2001:db8::1")
+        self.assertEqual(api.client_ip({}), "unknown")
+        self.assertEqual(len(api.client_ip({"x-forwarded-for": "a" * 500})), 64)
 
     def test_header_names_are_case_insensitive(self):
-        h = {"X-MS-Client-Principal": principal(), "Content-Type": "application/json; charset=utf-8"}
+        h = {"X-Forwarded-For": "203.0.113.7", "Content-Type": "application/json; charset=utf-8"}
         self.assertEqual(call(self.DOC, h)[0], 202)
-
-    def test_owner_login_setting_pins_the_account(self):
-        env = dict(ENV, OWNER_LOGIN="Owner-Login")
-        self.assertEqual(call(self.DOC, env=env)[0], 202)
-        self.assertEqual(call(self.DOC, headers(x_ms_client_principal=principal(user="someone-else")), env=env)[0], 403)
 
 
 class Queue(unittest.TestCase):

@@ -1,4 +1,4 @@
-"""The owner's competition page: search, filter and tick off what to enter by hand; see and re-enter the auto-entries.
+"""The competition page: search, filter and tick off what to enter by hand; see and re-enter the auto-entries.
 
     python3 -m workers.site                 # writes site/index.html (published by .github/workflows/site.yml)
     python3 -m workers.site --out DIR       # somewhere else
@@ -17,10 +17,10 @@ searching, filtering and sorting (gamer-chic theme: purple fuzz, neon orange, pa
   Approvals    skill competitions: approved answers not entered yet (Submit now, or Submit all approved) and those
                waiting for the owner's answer (Write answer / Edit answer: an in-page editor, saved by
                workers/answers.py within the word limit).
-Every button sends POST /api/action (azure/site-api, a Static Web Apps managed API) when the owner is signed in with
-GitHub; the API queues it and the Container Apps job lotto-actions applies it (workers/actions.py).  A visitor who is
-not signed in sees the page read-only, and a button tap sends them to the GitHub login.  main() also writes
-staticwebapp.config.json (SWA_CONFIG): /api/* needs the role owner, and the role is given by an SWA invitation.
+Every button sends POST /api/action (azure/site-api, a Static Web Apps managed API); the API queues it and the
+Container Apps job lotto-actions applies it (workers/actions.py).  There is no login anywhere on the site: every tab and
+button always works, and the public API protects itself with strict validation, size limits and a per-client-IP cap
+(429 when exceeded).  main() also writes staticwebapp.config.json (SWA_CONFIG), which 404s every /.auth/login/* provider.
   Winners      draw date, how winners are told, claim deadline and winners page for every auto-entered comp and every
                comp ticked Done (data/entries/winners.csv from workers/winners.py), with a flag when the owner's
                surname was seen on a published winners page.
@@ -44,20 +44,18 @@ ENTRIES = ROOT / "data" / "entries"
 FREEBIES = ROOT / "data" / "freebies" / "freebies.csv"
 OUT = ROOT / "site"
 DONE = "done.json"
-# Written next to index.html as staticwebapp.config.json.  tools/cost_guard.py (C12) reads this literal: /api/* must
-# keep allowedRoles ["owner"], and the runtime must match limits.json.  Pages stay public (read-only).
+# Written next to index.html as staticwebapp.config.json.  tools/cost_guard.py (C12) reads this literal: no login is
+# offered (every /.auth/login/* provider 404s, GitHub included), and the runtime must match limits.json.  Pages and the
+# API are public; the API's own abuse caps (azure/site-api/lotto_actions.py) are checked by the guard.
 SWA_CONFIG = {
     "routes": [
-        {"route": "/api/*", "allowedRoles": ["owner"]},
+        {"route": "/.auth/login/github", "statusCode": 404},
         {"route": "/.auth/login/aad", "statusCode": 404},
         {"route": "/.auth/login/google", "statusCode": 404},
         {"route": "/.auth/login/twitter", "statusCode": 404},
         {"route": "/.auth/login/facebook", "statusCode": 404},
         {"route": "/.auth/login/apple", "statusCode": 404},
     ],
-    "responseOverrides": {
-        "401": {"redirect": "/.auth/login/github?post_login_redirect_uri=.referrer", "statusCode": 302},
-    },
     "platform": {"apiRuntime": "python:3.11"},
     "globalHeaders": {"X-Content-Type-Options": "nosniff"},
 }
@@ -441,7 +439,7 @@ button[disabled]{opacity:.5;cursor:default}
 .hero .bt{display:inline-block;background:#1a0b2e;color:var(--orange);font:400 14px Bungee;padding:9px 14px;border-radius:999px;margin-top:10px;text-decoration:none}
 </style></head><body>
 <header><div class="wrap">
-<h1>Comp Quest</h1><div class="sub" id="summary"></div><div class="sub" id="who"></div>
+<h1>Comp Quest</h1><div class="sub" id="summary"></div>
 <div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="social">Social</button><button class="tab" data-tab="auto">Entered</button><button class="tab" data-tab="appr">Approvals</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
 <input type="search" id="q" placeholder="Search prize, brand or title">
 <div class="chips" id="cats"></div>
@@ -569,21 +567,18 @@ function render() {
   $("#selcount").textContent = `${sel.size} selected`;
   store.set("comps-ui", S);
 }
-// Actions: POST /api/action (the Static Web App API; the owner role is checked at the edge). The page updates at once and a
-// failed send is undone with a message. Not signed in: the page is read-only and a button sends you to the GitHub login.
-const api = { auth: null, readonly: false };   // auth: true = signed in as owner, false = not, null = not known yet
-const goLogin = () => { location.href = "/.auth/login/github?post_login_redirect_uri=" + encodeURIComponent(location.pathname + location.search); };
+// Actions: POST /api/action (the Static Web App API; open to everyone; it caps requests per client IP). The page updates at
+// once and a failed send is undone with a message.
 let toastTimer;
 function toast(msg, link) {
   const t = $("#toast"); t.textContent = msg;
   if (link) { const a = document.createElement("a"); a.href = link.href; a.textContent = " " + link.text; t.append(a); }
   t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 4500);
 }
-async function post(body) {   // "ok" | "auth" | "fail" | "net"
+async function post(body) {   // "ok" | "limit" | "fail" | "net"
   try {
-    const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-                                           redirect: "manual", body: JSON.stringify(body) });
-    if (r.type === "opaqueredirect" || r.status === 401 || r.status === 403) return "auth";   // the edge redirects to the login
+    const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (r.status === 429) return "limit";   // too many actions from this connection; wait a few minutes
     return r.status === 202 ? "ok" : "fail";
   } catch { return "net"; }
 }
@@ -596,8 +591,6 @@ const SAID = { remove: "Removed. It leaves the lists within a couple of minutes.
 const forEntries = (id, fn) => { for (const k of ["todo", "auto", "appr"]) for (const x of D[k]) if (String(x.id) === id) fn(x); };
 async function act(kind, ids, extra) {
   ids = [...new Set(ids.map(String))]; if (!ids.length) return;
-  if (api.readonly) { toast("This copy of the page is read-only."); return; }
-  if (api.auth === false) { toast("Sign in with GitHub first"); setTimeout(goLogin, 700); return; }
   const before = {}, now = Date.now();
   if (kind === "remove" || kind === "broken") { const g = gone(); for (const id of ids) g[id] = now; store.set("comps-removed", g); }
   if (kind === "reenter") { const p = pending(); for (const id of ids) p[id] = now; store.set("comps-pending", p); }
@@ -611,15 +604,15 @@ async function act(kind, ids, extra) {
   if (kind === "answer") { forEntries(ids[0], (x) => { [x.a, x.st] = before[x.id] || [x.a, x.st]; }); const m = store.get("comps-answers", {}); delete m[ids[0]]; store.set("comps-answers", m);
     editing.add(ids[0]); drafts[ids[0]] = extra.answer; }
   render();
-  if (r === "auth") { toast("Signing you in…"); setTimeout(goLogin, 700); }
-  else toast(r === "net" ? "No connection: nothing was sent." : "The server did not accept it: nothing was sent.");
+  toast(r === "net" ? "No connection: nothing was sent." : r === "limit" ? "Too many actions just now: nothing was sent. Try again in a few minutes."
+        : "The server did not accept it: nothing was sent.");
 }
 let syncToasted = false;
 async function syncDone(kind, id) {   // best effort: the tick is already saved on this phone
-  const say = (m) => { if (!syncToasted) { syncToasted = true; toast(m, api.auth === false ? { href: "/.auth/login/github?post_login_redirect_uri=" + encodeURIComponent(location.pathname + location.search), text: "Sign in" } : null); } };
-  if (api.readonly || api.auth === false) return say("Ticks are saved on this phone only.");
+  const say = (m) => { if (!syncToasted) { syncToasted = true; toast(m); } };
   const r = await send(kind, [id]);
-  if (r === "auth") say("Ticks are saved on this phone only. Sign in to sync them."); else if (r !== "ok") say("Could not sync the tick; it is saved on this phone.");
+  if (r === "limit") say("Too many actions just now: the tick is saved on this phone and will sync on a later tick.");
+  else if (r !== "ok") say("Could not sync the tick; it is saved on this phone.");
 }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest(".tab"); if (t) { S.tab = t.dataset.tab; S.cats = []; render(); return; }
@@ -673,11 +666,6 @@ $("#q").addEventListener("input", (e) => { S.q = e.target.value; render(); });
   if (dirty) store.set("comps-answers", mine);
 })();
 render();
-fetch("/.auth/me", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : Promise.reject())).then((j) => {
-  const p = j && j.clientPrincipal; api.auth = !!(p && (p.userRoles || []).includes("owner"));
-  $("#who").innerHTML = api.auth ? "Signed in: buttons are live" : p ? "Signed in without the owner role: read-only" :
-    `Read-only. <a href="/.auth/login/github?post_login_redirect_uri=${encodeURIComponent(location.pathname + location.search)}">Sign in</a> to use the buttons`;
-}).catch(() => { api.readonly = location.protocol === "file:" || !/\.(azurestaticapps\.net|asynym\.dev)$/.test(location.hostname); });
 </script></body></html>
 """
 

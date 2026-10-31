@@ -1,4 +1,4 @@
-"""Offline tests for the owner's competition page and the re-entry queue."""
+"""Offline tests for the competition page and the re-entry queue."""
 import csv
 import datetime as dt
 import json
@@ -80,13 +80,14 @@ class Buttons(unittest.TestCase):
         self.assertNotIn("repo", json.loads(re.search(r"const D = (\{.*?\});\n", html).group(1)))
         self.assertNotIn("JesseAllomes", html)
 
-    def test_actions_go_through_the_api_with_the_login_redirect(self):
+    def test_actions_go_through_the_public_api_with_no_login_or_read_only_state(self):
         html = build_page()
         self.assertIn('fetch("/api/action", { method: "POST"', html)
-        self.assertIn('redirect: "manual"', html)                                       # the edge's 302 login redirect is detected, not followed
-        self.assertIn("/.auth/login/github?post_login_redirect_uri=", html)
-        self.assertIn("r.status === 401 || r.status === 403", html)
-        self.assertIn("/.auth/me", html)                                                # read-only page when not signed in
+        self.assertIn("r.status === 429", html)                                         # the API's per-IP cap is reported, not hidden
+        code = re.sub(r"const D = \{.*?\};\n", "", html, flags=re.S)                  # the data may say "needs a login"
+        for text in ("/.auth", "readonly", "read-only", "Read-only", "Sign in", "sign in", "goLogin", "api.auth", "login",
+                     'redirect: "manual"', "opaqueredirect", "clientPrincipal", 'id="who"'):
+            self.assertNotIn(text, code, text)
         for kind in ("remove", "broken", "reenter", "answer", "done", "undone"):
             self.assertIn(f'"{kind}"', html, kind)
 
@@ -96,7 +97,6 @@ class Buttons(unittest.TestCase):
                     'data-act="edit-answer"', 'data-act="save-answer"'):
             self.assertIn(act, html, act)
         self.assertIn('id="toast"', html)
-        self.assertIn("Sign in", html)
 
     def test_done_ticks_are_kept_locally_and_synced(self):
         html = build_page()
@@ -124,21 +124,17 @@ class Buttons(unittest.TestCase):
 
 
 class StaticWebAppConfig(unittest.TestCase):
-    def test_api_needs_the_owner_role_and_pages_stay_public(self):
+    def test_no_login_anywhere_and_the_api_is_public(self):
         cfg = site.SWA_CONFIG
         routes = {r["route"]: r for r in cfg["routes"]}
-        self.assertEqual(routes["/api/*"]["allowedRoles"], ["owner"])
-        self.assertNotIn("methods", routes["/api/*"])                                   # every method, not just POST
+        self.assertNotIn("/api/*", routes)                                              # no role rule on the API
+        self.assertNotIn("allowedRoles", json.dumps(cfg))
         for route in routes:
-            if route != "/api/*" and not route.startswith("/.auth/"):
-                self.fail(f"unexpected route {route}")                                  # no page route restricts the public site
-        for provider in ("aad", "google", "twitter", "facebook", "apple"):
+            self.assertTrue(route.startswith("/.auth/login/"), f"unexpected route {route}")   # no page route restricts the site
+        for provider in ("github", "aad", "google", "twitter", "facebook", "apple"):
             self.assertEqual(routes[f"/.auth/login/{provider}"]["statusCode"], 404)
-        self.assertNotIn("/.auth/login/github", routes)
-        self.assertEqual(cfg["responseOverrides"]["401"]["redirect"], "/.auth/login/github?post_login_redirect_uri=.referrer")
-        self.assertEqual(cfg["responseOverrides"]["401"]["statusCode"], 302)
+        self.assertNotIn("responseOverrides", cfg)                                      # no 401 redirect to a login
         self.assertEqual(cfg["platform"]["apiRuntime"], "python:3.11")
-        self.assertNotIn("anonymous", json.dumps(cfg["routes"]))
 
     def test_main_writes_the_config_next_to_the_page(self):
         with tempfile.TemporaryDirectory() as d, mock.patch.object(site, "page", return_value="<html></html>"):
