@@ -56,12 +56,16 @@
               "value": "JesseAllomes/Lotto-project"
             },
             {
-              "name": "GITHUB_BRANCH",
-              "value": "main"
-            },
-            {
               "name": "GITHUB_TOKEN",
               "secretRef": "github-token"
+            },
+            {
+              "name": "AZURE_CLIENT_ID",
+              "value": "519729c8-1505-4e6b-b7cc-85c29cfc38d5"
+            },
+            {
+              "name": "LOTTO_DATA_ACCOUNT",
+              "value": "stpersonalv5ethud2i3cfq"
             },
             {
               "name": "ENTRANT_PROFILE_JSON",

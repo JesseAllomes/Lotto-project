@@ -1,65 +1,77 @@
 #!/usr/bin/env python3
 """Run one Lotto worker in an ephemeral Azure Container Apps Job.
 
-The image contains only this launcher and its runtime dependencies.  Each due
-execution makes a shallow sparse checkout, runs one bounded unit of work,
-commits the generated registers, and exits.  Nothing sleeps until the next
-schedule window, so idle time is never billable.
+The image carries the code (workers/, analysis/ under /app/repo) and this launcher; it does not use git.  Each due
+execution pulls the job's data prefixes from the Azure Blob container lotto-data (azure/blobsync.py), runs one
+bounded unit of work, uploads only the files that changed, and exits.  The `site` job builds the page from that data
+and deploys it to the Static Web App.  Nothing sleeps until the next schedule window, so idle time is never billable.
 """
 
 from __future__ import annotations
 
-import base64
 import datetime as dt
 import json
 import os
 import signal
 import subprocess
 import sys
-import tempfile
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import blobsync  # noqa: E402  (next to this file, in the image and in the repository)
+
 REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "JesseAllomes/Lotto-project")
-BRANCH = os.environ.get("GITHUB_BRANCH", "main")
+REPO_ROOT = Path(os.environ.get("LOTTO_REPO_ROOT", "/app/repo"))
+SWA_BIN = "/opt/playwright/node_modules/.bin/swa"
 BURST_MINUTES = frozenset({5, 10, 15, 20, 25})
 MAX_ISSUE_PAGES = 10
 # Every external step is bounded (seconds), well inside the job's replicaTimeout (azure/jobs/*.json), so a hung
 # step fails the run with its work saved instead of waiting for Azure to kill the replica.
-CLONE_TIMEOUT_S = 120
-GIT_STEP_TIMEOUT_S = 60
-GIT_NETWORK_TIMEOUT_S = 90
 QUEUE_TIMEOUT_S = 120
-COMMIT_ENTRIES_TIMEOUT_S = 120
 WORKER_TIMEOUT_S = 1500          # draws, jackpots
 COMPS_TIMEOUT_S = 900            # workers.comps (capped by COMPS_MAX_NEW; progress is saved every 50 listings)
 COMPS_MAX_NEW = 300
 COMPS_STEP_TIMEOUT_S = 240       # comp_odds, skill_rank, winners
 REENTER_BUILD_TIMEOUT_S = 120
+# The site job (replicaTimeout 900 in azure/jobs/lotto-site.json): pull, freebies, winners, build, deploy.
+SITE_FREEBIES_TIMEOUT_S = 90
+SITE_WINNERS_TIMEOUT_S = 60
+SITE_BUILD_TIMEOUT_S = 120
+SITE_DEPLOY_TIMEOUT_S = 420
 # Entrant defaults when run from here (jobs also set these in env): coherent with replicaTimeout 280 on lotto-entries.
 ENTRANT_DEFAULT_TIMEOUT_S = 150
 ENTRANT_DEFAULT_CONCURRENCY = 3
 ENTRANT_DEFAULT_ITEM_TIMEOUT_S = 85
 ENTRANT_DEFAULT_MAX = 30
-# Never handed to node/Chromium or the Python scrapers (git gets only its own auth header).
+# Never handed to node/Chromium or the Python scrapers.  The identity variables let a process mint storage tokens.
 SECRET_VARS = (
     "GITHUB_TOKEN",
     "ENTRANT_PROFILE_JSON",
-    "GIT_CONFIG_COUNT",
-    "GIT_CONFIG_KEY_0",
-    "GIT_CONFIG_VALUE_0",
+    "SWA_DEPLOY_TOKEN",
+    "IDENTITY_ENDPOINT",
+    "IDENTITY_HEADER",
 )
 
-SPARSE_PATHS = {
-    "comps": ("workers", "analysis", "data/comps", "data/entries", ".gitattributes"),
-    "draws": ("workers", "data/draws", ".gitattributes"),
-    "jackpots": ("workers", "data/jackpots", ".gitattributes"),
-    "entries": ("workers", "data/comps", "data/entries", ".gitattributes"),
-    "reenter": ("workers", "data/comps", "data/entries", ".gitattributes"),
-    "site": ("workers", "data/comps", "data/entries", ".gitattributes"),
+# Blob prefixes pulled at the start of each job (blob name = repo-relative path).
+DATA_PREFIXES = {
+    "comps": ("data/comps/", "data/entries/"),
+    "draws": ("data/draws/",),
+    "jackpots": ("data/jackpots/",),
+    "entries": ("data/comps/", "data/entries/"),
+    "reenter": ("data/comps/", "data/entries/"),
+    "site": ("data/comps/", "data/entries/"),
 }
+# What each job may upload (the site job uploads nothing).
+PUSH_PATHS = {
+    "comps": ("data/comps", "data/entries/winners.csv", "data/entries/winner_checks.jsonl"),
+    "draws": ("data/draws",),
+    "jackpots": ("data/jackpots",),
+    "entries": ("data/entries",),
+    "reenter": ("data/entries",),
+}
+PACE_BLOB = "data/entries/pace.json"
 
 
 class ProfileError(Exception):
@@ -143,11 +155,14 @@ def github_request(method: str, path: str, payload: object | None = None) -> obj
 
 
 def current_pace() -> dict:
+    """data/entries/pace.json from the blob store (one GET, no full pull); a safe default when unreadable."""
+    default = {"last_day_listings": 0, "next_run_minutes": 180}
     try:
-        record = github_request("GET", f"contents/data/entries/pace.json?ref={BRANCH}")
-        return json.loads(base64.b64decode(record["content"]))
-    except (KeyError, ValueError, urllib.error.URLError, TimeoutError, OSError):
-        return {"last_day_listings": 0, "next_run_minutes": 180}
+        text = blobsync.read_text(PACE_BLOB)
+        pace = json.loads(text) if text else None
+    except (blobsync.BlobError, ValueError, OSError):
+        return default
+    return pace if isinstance(pace, dict) else default
 
 
 def entry_due(now: dt.datetime, pace: dict) -> bool:
@@ -160,29 +175,12 @@ def entry_due(now: dt.datetime, pace: dict) -> bool:
 
 
 def child_environment() -> dict[str, str]:
-    """Environment for node and the Python scrapers: no token, profile JSON, git header or ENTRANT_*."""
+    """Environment for node and the Python scrapers: no token, profile JSON, identity or deploy token, no ENTRANT_*."""
     return {
         key: value
         for key, value in os.environ.items()
         if key not in SECRET_VARS and not key.startswith("ENTRANT_")
     }
-
-
-def git_environment() -> dict[str, str]:
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        raise RuntimeError("GITHUB_TOKEN is required")
-    basic = base64.b64encode(f"x-access-token:{token}".encode()).decode()
-    env = child_environment()
-    env.update(
-        {
-            "GIT_CONFIG_COUNT": "1",
-            "GIT_CONFIG_KEY_0": "http.https://github.com/.extraheader",
-            "GIT_CONFIG_VALUE_0": f"AUTHORIZATION: basic {basic}",
-            "GIT_TERMINAL_PROMPT": "0",
-        }
-    )
-    return env
 
 
 def command(
@@ -203,109 +201,28 @@ def command(
     )
 
 
-def checkout(job: str, parent: Path) -> tuple[Path, dict[str, str]]:
-    env = git_environment()
-    root = parent / "repo"
-    command(
-        [
-            "git",
-            "clone",
-            "--depth=1",
-            "--filter=blob:none",
-            "--no-checkout",
-            "--branch",
-            BRANCH,
-            f"https://github.com/{REPOSITORY}.git",
-            str(root),
-        ],
-        parent,
-        env=env,
-        timeout=CLONE_TIMEOUT_S,
-    )
-    command(
-        ["git", "sparse-checkout", "init", "--cone"],
-        root,
-        env=env,
-        timeout=GIT_STEP_TIMEOUT_S,
-    )
-    command(
-        ["git", "sparse-checkout", "set", *SPARSE_PATHS[job]],
-        root,
-        env=env,
-        timeout=GIT_STEP_TIMEOUT_S,
-    )
-    command(["git", "checkout", BRANCH], root, env=env, timeout=GIT_NETWORK_TIMEOUT_S)
-    command(
-        ["git", "config", "user.name", "lotto-azure-worker"],
-        root,
-        env=env,
-        timeout=GIT_STEP_TIMEOUT_S,
-    )
-    command(
-        ["git", "config", "user.email", "azure@users.noreply.github.com"],
-        root,
-        env=env,
-        timeout=GIT_STEP_TIMEOUT_S,
-    )
-    return root, env
+def prepare(job: str) -> Path:
+    """Pull the job's data prefixes into the image's repo folder (where the workers expect data/)."""
+    root = REPO_ROOT
+    root.mkdir(parents=True, exist_ok=True)
+    count = blobsync.pull(DATA_PREFIXES[job], root)
+    print(f"Pulled {count} file(s) from the blob store: {', '.join(DATA_PREFIXES[job])}", flush=True)
+    return root
 
 
-def git_status(
-    args: list[str], root: Path, env: dict[str, str], timeout: int, **options: object
-) -> int:
-    """Return a git step's exit code; a step that overruns its timeout counts as failed (124)."""
-    try:
-        return subprocess.run(
-            args, cwd=root, env=env, check=False, timeout=timeout, **options
-        ).returncode
-    except subprocess.TimeoutExpired:
-        print(f"Step timed out after {timeout}s: {' '.join(args[:2])}", flush=True)
-        return 124
-
-
-def push(root: Path, env: dict[str, str], message: str, paths: list[str]) -> bool:
-    present = [path for path in paths if (root / path).exists()]
-    if not present:
+def push(root: Path, message: str, paths: list[str] | tuple[str, ...]) -> bool:
+    """Upload the changed files under paths (conditional on the pulled ETags); DRY_RUN only lists them."""
+    files = blobsync.local_files(root, paths)
+    if not files:
         print("No generated paths exist", flush=True)
         return False
-    command(["git", "add", *present], root, env=env, timeout=GIT_STEP_TIMEOUT_S)
-    if (
-        git_status(["git", "diff", "--cached", "--quiet"], root, env, GIT_STEP_TIMEOUT_S)
-        == 0
-    ):
-        print("No generated changes", flush=True)
-        return False
     if dry_run():
-        print(f"DRY_RUN: would commit and push to {BRANCH}: {message}", flush=True)
+        names = blobsync.changed_names(files)
+        print(f"DRY_RUN: would upload {len(names)} changed file(s) to the blob store: {message}", flush=True)
         return False
-    command(["git", "commit", "-m", message], root, env=env, timeout=GIT_STEP_TIMEOUT_S)
-    for attempt in range(1, 5):
-        if (
-            git_status(
-                ["git", "pull", "--rebase", "-X", "theirs", "origin", BRANCH],
-                root,
-                env,
-                GIT_NETWORK_TIMEOUT_S,
-            )
-            == 0
-            and git_status(
-                ["git", "push", "origin", f"HEAD:{BRANCH}"],
-                root,
-                env,
-                GIT_NETWORK_TIMEOUT_S,
-            )
-            == 0
-        ):
-            return True
-        git_status(
-            ["git", "rebase", "--abort"],
-            root,
-            env,
-            GIT_STEP_TIMEOUT_S,
-            capture_output=True,
-        )
-        time.sleep(attempt * 5)
-    raise RuntimeError("could not push generated data after four attempts")
+    uploaded = blobsync.push(files)
+    print(f"{message}: uploaded {len(uploaded)} changed file(s)", flush=True)
+    return bool(uploaded)
 
 
 def run_soft(args: list[str], cwd: Path, *, env: dict, timeout: int | None = None) -> None:
@@ -316,7 +233,7 @@ def run_soft(args: list[str], cwd: Path, *, env: dict, timeout: int | None = Non
         print(f"Step did not finish, continuing: {type(exc).__name__}", flush=True)
 
 
-def run_comps(root: Path, env: dict[str, str], profile_ok: bool = True) -> None:
+def run_comps(root: Path, profile_ok: bool = True) -> None:
     scrape = child_environment()
     try:
         command(
@@ -383,13 +300,12 @@ def run_comps(root: Path, env: dict[str, str], profile_ok: bool = True) -> None:
     finally:
         push(
             root,
-            env,
             f"comps: Azure update {dt.datetime.now(dt.UTC):%Y-%m-%d}",
-            ["data/comps", "data/entries/winners.csv", "data/entries/winner_checks.jsonl"],
+            PUSH_PATHS["comps"],
         )
 
 
-def run_draws(root: Path, env: dict[str, str]) -> None:
+def run_draws(root: Path) -> None:
     command(
         [sys.executable, "-m", "workers.draws"],
         root,
@@ -398,9 +314,8 @@ def run_draws(root: Path, env: dict[str, str]) -> None:
     )
     push(
         root,
-        env,
         f"draws: Azure update {dt.datetime.now(dt.UTC):%Y-%m-%d}",
-        ["data/draws"],
+        PUSH_PATHS["draws"],
     )
 
 
@@ -420,7 +335,7 @@ def create_alert_issues(alerts: list[dict]) -> None:
             )
 
 
-def run_jackpots(root: Path, env: dict[str, str]) -> None:
+def run_jackpots(root: Path) -> None:
     alert_path = root / ".azure-alerts.json"
     command(
         [sys.executable, "-m", "workers.jackpots", "--alerts", str(alert_path)],
@@ -431,9 +346,8 @@ def run_jackpots(root: Path, env: dict[str, str]) -> None:
     # Data first: a slow or failing GitHub issues API must not lose the day's register.
     push(
         root,
-        env,
         f"jackpots: Azure update {dt.datetime.now(dt.UTC):%Y-%m-%d}",
-        ["data/jackpots"],
+        PUSH_PATHS["jackpots"],
     )
     create_alert_issues(json.loads(alert_path.read_text()))
 
@@ -450,7 +364,7 @@ def entrant_environment(
         }
     )
     out["NODE_PATH"] = "/opt/playwright/node_modules"
-    # Bounded by default so a run ends, and its log is committed, before Azure kills the replica.
+    # Bounded by default so a run ends, and its log is uploaded, before Azure kills the replica.
     timeout = entrant_timeout()
     out.setdefault("ENTRANT_ITEM_TIMEOUT_S", str(ENTRANT_DEFAULT_ITEM_TIMEOUT_S))
     try:
@@ -470,16 +384,13 @@ def entrant_environment(
     return out
 
 
-def commit_entries(root: Path, env: dict[str, str], message: str) -> None:
-    if dry_run():
-        print(f"DRY_RUN: would commit and push the entry log: {message}", flush=True)
-        return
-    command(
-        ["bash", "workers/commit_entries.sh", message],
-        root,
-        env=env,
-        timeout=COMMIT_ENTRIES_TIMEOUT_S,
-    )
+def finish_entries(root: Path, message: str) -> None:
+    """Rebuild the queue, manual list, register and PREFERENCES.md from the log (the old GitHub flow did this after
+    merging the log), then upload data/entries.  A log appended to elsewhere meanwhile is union-merged by blobsync."""
+    scrape = child_environment()
+    run_soft([sys.executable, "-m", "workers.entry_queue"], root, env=scrape, timeout=QUEUE_TIMEOUT_S)
+    run_soft([sys.executable, "-m", "workers.removals"], root, env=scrape, timeout=QUEUE_TIMEOUT_S)
+    push(root, message, PUSH_PATHS["entries"])
 
 
 def queue_is_empty(path: Path) -> bool:
@@ -490,7 +401,7 @@ def queue_is_empty(path: Path) -> bool:
         return False
 
 
-def run_entries(root: Path, env: dict[str, str]) -> None:
+def run_entries(root: Path) -> None:
     command(
         [sys.executable, "-m", "workers.entry_queue"],
         root,
@@ -513,12 +424,22 @@ def run_entries(root: Path, env: dict[str, str]) -> None:
                 "ENTRANT_EMAIL is unset; queue refreshed without submitting", flush=True
             )
     finally:
-        commit_entries(
-            root, env, f"entries: Azure {dt.datetime.now(dt.UTC):%Y-%m-%d %H:%M}"
+        finish_entries(root, f"entries: Azure {dt.datetime.now(dt.UTC):%Y-%m-%d %H:%M}")
+
+
+def new_log_rows(log: Path, before: int) -> list[dict]:
+    """The rows this run appended to the re-entry log (read before any merge with the stored copy)."""
+    try:
+        return (
+            [json.loads(line) for line in log.read_text().splitlines()[before:]]
+            if log.exists()
+            else []
         )
+    except ValueError:
+        return []
 
 
-def run_reenter(root: Path, env: dict[str, str]) -> None:
+def run_reenter(root: Path) -> None:
     title = os.environ.get("ISSUE_TITLE", "")
     number = os.environ.get("ISSUE_NUMBER", "")
     if not title or not number:
@@ -526,6 +447,7 @@ def run_reenter(root: Path, env: dict[str, str]) -> None:
     log = root / "data/entries/log_reenter.jsonl"
     before = log.read_text().count("\n") if log.exists() else 0
     failure = ""
+    rows: list[dict] | None = None
     try:
         queue = root / ".azure-reenter.json"
         result = subprocess.run(
@@ -550,25 +472,14 @@ def run_reenter(root: Path, env: dict[str, str]) -> None:
                     timeout=entrant_timeout(),
                 )
         finally:
-            command(
-                [sys.executable, "-m", "workers.entry_queue"],
-                root,
-                env=child_environment(),
-                timeout=QUEUE_TIMEOUT_S,
-            )
-            commit_entries(root, env, f"reenter: issue #{number}")
+            rows = new_log_rows(log, before)
+            finish_entries(root, f"reenter: issue #{number}")
     except BaseException as exc:
         failure = f"{type(exc).__name__}: {exc}"
         raise
     finally:
-        try:
-            rows = (
-                [json.loads(line) for line in log.read_text().splitlines()[before:]]
-                if log.exists()
-                else []
-            )
-        except ValueError:
-            rows = []
+        if rows is None:
+            rows = new_log_rows(log, before)
         summary = (
             "\n".join(f"- {row.get('id')}: {row.get('result')}" for row in rows)
             or "Nothing could be entered."
@@ -587,18 +498,49 @@ def run_reenter(root: Path, env: dict[str, str]) -> None:
                 raise
 
 
+def run_site(root: Path) -> None:
+    """The same steps as the build job of site.yml, then deploy the folder to the Static Web App."""
+    scrape = child_environment()
+    run_soft([sys.executable, "-m", "workers.freebies"], root, env=scrape, timeout=SITE_FREEBIES_TIMEOUT_S)
+    run_soft([sys.executable, "-m", "workers.winners"], root, env=scrape, timeout=SITE_WINNERS_TIMEOUT_S)
+    command(
+        [sys.executable, "-m", "workers.site", "--out", "site"],
+        root,
+        env=scrape,
+        timeout=SITE_BUILD_TIMEOUT_S,
+    )
+    if not (root / "site" / "index.html").is_file():
+        raise RuntimeError("the site build wrote no site/index.html; nothing to deploy")
+    deploy_site(root)
+
+
+def deploy_site(root: Path) -> None:
+    """Deploy ./site with the SWA CLI.  The token reaches the CLI only through its environment, never argv or logs."""
+    if dry_run():
+        print("DRY_RUN: would deploy site/ to the Static Web App", flush=True)
+        return
+    token = os.environ.get("SWA_DEPLOY_TOKEN", "")
+    if not token:
+        raise RuntimeError("SWA_DEPLOY_TOKEN is required to deploy the site")
+    env = child_environment()
+    env["SWA_CLI_DEPLOYMENT_TOKEN"] = token
+    command(
+        [SWA_BIN, "deploy", "site", "--env", "production"],
+        root,
+        env=env,
+        timeout=SITE_DEPLOY_TIMEOUT_S,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = argv or sys.argv[1:]
-    if len(argv) != 1 or argv[0] not in SPARSE_PATHS:
+    if len(argv) != 1 or argv[0] not in DATA_PREFIXES:
         print(
-            f"usage: {Path(sys.argv[0]).name} {'|'.join(SPARSE_PATHS)}", file=sys.stderr
+            f"usage: {Path(sys.argv[0]).name} {'|'.join(DATA_PREFIXES)}", file=sys.stderr
         )
         return 2
     install_sigterm_handler()
     job = argv[0]
-    if job == "site":
-        print("The site stays on GitHub Pages (site.yml); nothing to do here")
-        return 0
     if os.environ.get("AZURE_JOBS_DISABLED") == "1":
         print("Azure jobs are disabled by the cost kill switch")
         return 0
@@ -617,17 +559,17 @@ def main(argv: list[str] | None = None) -> int:
     if profile_error and job in ("entries", "reenter"):
         print(f"{job}: {profile_error}; fix the profile secret", file=sys.stderr)
         return 1
-    with tempfile.TemporaryDirectory(prefix=f"lotto-{job}-") as directory:
-        root, env = checkout(job, Path(directory))
-        if job == "comps":
-            run_comps(root, env, profile_ok=not profile_error)
-        else:
-            {
-                "draws": run_draws,
-                "jackpots": run_jackpots,
-                "entries": run_entries,
-                "reenter": run_reenter,
-            }[job](root, env)
+    root = prepare(job)
+    if job == "comps":
+        run_comps(root, profile_ok=not profile_error)
+    else:
+        {
+            "draws": run_draws,
+            "jackpots": run_jackpots,
+            "entries": run_entries,
+            "reenter": run_reenter,
+            "site": run_site,
+        }[job](root)
     return 0
 
 

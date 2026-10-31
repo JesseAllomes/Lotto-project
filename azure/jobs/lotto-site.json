@@ -1,0 +1,75 @@
+{
+  "name": "lotto-site",
+  "location": "Australia East",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourcegroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq": {}
+    }
+  },
+  "properties": {
+    "configuration": {
+      "triggerType": "Schedule",
+      "replicaTimeout": 900,
+      "replicaRetryLimit": 0,
+      "scheduleTriggerConfig": {
+        "cronExpression": "37 */2 * * *",
+        "parallelism": 1,
+        "replicaCompletionCount": 1
+      },
+      "registries": [
+        {
+          "identity": "",
+          "passwordSecretRef": "ghcr-token",
+          "server": "ghcr.io",
+          "username": "JesseAllomes"
+        }
+      ],
+      "secrets": [
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/ghcr-publish-token",
+          "name": "ghcr-token"
+        },
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/swa-lotto-deploy-token",
+          "name": "swa-deploy-token"
+        }
+      ]
+    },
+    "template": {
+      "containers": [
+        {
+          "name": "worker",
+          "image": "IMAGE",
+          "args": [
+            "site"
+          ],
+          "env": [
+            {
+              "name": "AZURE_CLIENT_ID",
+              "value": "519729c8-1505-4e6b-b7cc-85c29cfc38d5"
+            },
+            {
+              "name": "LOTTO_DATA_ACCOUNT",
+              "value": "stpersonalv5ethud2i3cfq"
+            },
+            {
+              "name": "SWA_DEPLOY_TOKEN",
+              "secretRef": "swa-deploy-token"
+            },
+            {
+              "name": "AZURE_JOBS_DISABLED",
+              "value": "1"
+            }
+          ],
+          "resources": {
+            "cpu": 0.5,
+            "memory": "1Gi"
+          }
+        }
+      ]
+    }
+  }
+}

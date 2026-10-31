@@ -30,11 +30,6 @@
           "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
           "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/ghcr-publish-token",
           "name": "ghcr-token"
-        },
-        {
-          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
-          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/lotto-github-token",
-          "name": "github-token"
         }
       ]
     },
@@ -48,16 +43,12 @@
           ],
           "env": [
             {
-              "name": "GITHUB_REPOSITORY",
-              "value": "JesseAllomes/Lotto-project"
+              "name": "AZURE_CLIENT_ID",
+              "value": "519729c8-1505-4e6b-b7cc-85c29cfc38d5"
             },
             {
-              "name": "GITHUB_BRANCH",
-              "value": "main"
-            },
-            {
-              "name": "GITHUB_TOKEN",
-              "secretRef": "github-token"
+              "name": "LOTTO_DATA_ACCOUNT",
+              "value": "stpersonalv5ethud2i3cfq"
             },
             {
               "name": "AZURE_JOBS_DISABLED",

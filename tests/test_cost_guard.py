@@ -116,6 +116,35 @@ class AsDelivered(Fixture):
             holds = "ENTRANT_PROFILE_JSON" in view["env"]
             self.assertEqual(holds, path.stem in ("lotto-entries", "lotto-reenter", "lotto-comps"), path.name)
 
+    def test_github_token_only_where_issues_are_still_made(self):
+        for path in (REPO / "azure" / "jobs").glob("*.json"):
+            view = guard.job_view(json.loads(path.read_text()))
+            self.assertEqual("GITHUB_TOKEN" in view["env"], path.stem in ("lotto-jackpots", "lotto-reenter"), path.name)
+
+    def test_every_job_reads_the_blob_store_through_the_identity(self):
+        for path in (REPO / "azure" / "jobs").glob("*.json"):
+            view = guard.job_view(json.loads(path.read_text()))
+            self.assertEqual(view["env"]["LOTTO_DATA_ACCOUNT"], {"value": "stpersonalv5ethud2i3cfq"}, path.name)
+            self.assertIn("AZURE_CLIENT_ID", view["env"], path.name)
+            self.assertEqual(len(view["identities"]), 1, path.name)
+
+    def test_site_job_every_two_hours_with_only_the_deploy_token(self):
+        view = guard.job_view(json.loads((REPO / "azure" / "jobs" / "lotto-site.json").read_text()))
+        self.assertEqual((view["cron"], view["timeout"], view["cpu"], view["memory_gi"]), ("37 */2 * * *", 900, 0.5, 1.0))
+        self.assertEqual(view["args"], ["site"])
+        self.assertEqual(view["env"]["SWA_DEPLOY_TOKEN"], {"secretRef": "swa-deploy-token"})
+        self.assertEqual(dict(view["secret_urls"])["swa-deploy-token"],
+                         "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/swa-lotto-deploy-token")
+        self.assertNotIn("GITHUB_TOKEN", view["env"])
+        self.assertNotIn("ENTRANT_PROFILE_JSON", view["env"])
+        stats = guard.cron_stats(view["cron"])
+        self.assertEqual((stats["per_day"], stats["min_gap_min"]), (12, 120))
+
+    def test_site_workflow_deploys_to_azure_only_by_hand(self):
+        text = (REPO / ".github" / "workflows" / "site.yml").read_text()
+        azure = text[text.index("\n  azure:"):]
+        self.assertIn("github.event_name == 'workflow_dispatch'", azure.split("steps:")[0])
+
 
 class Cron(unittest.TestCase):
     def test_parked_cron_runs_nothing(self):
@@ -300,7 +329,7 @@ class C7(Fixture):
         self.assertNotIn("C7", self.rules())
 
     def test_removing_a_timeout_in_the_runner(self):
-        self.edit_file("azure/runner.py", lambda t: t.replace("timeout=COMMIT_ENTRIES_TIMEOUT_S,", "", 1))
+        self.edit_file("azure/runner.py", lambda t: t.replace("timeout=QUEUE_TIMEOUT_S,", "", 1))
         self.assertIn("C7", self.rules())
 
     def test_while_true_without_exit(self):
@@ -562,7 +591,7 @@ class Drift(Fixture):
     def test_secret_reference_drift(self):
         def edit(name, doc):
             if name == "lotto-draws":
-                self.conf(doc)["secrets"][1]["keyVaultUrl"] = "https://kv/secrets/other"
+                self.conf(doc)["secrets"][-1]["keyVaultUrl"] = "https://kv/secrets/other"
         rep = self.check(live_dir=self.make_live(edit))
         self.assertTrue(any("secret_urls" in v[3] for v in rep.violations))
 

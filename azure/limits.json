@@ -6,7 +6,7 @@
   },
   "budget_usd_month": {
     "total": 15,
-    "hard_ceiling_all_timeouts": 25
+    "hard_ceiling_all_timeouts": 27
   },
   "image_repository": "ghcr.io/jesseallomes/lotto-azure-runner",
   "jobs": {
@@ -20,7 +20,7 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["GITHUB_TOKEN"]
+      "may_hold_secrets": []
     },
     "lotto-jackpots": {
       "trigger": "Schedule",
@@ -44,7 +44,7 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["GITHUB_TOKEN", "ENTRANT_PROFILE_JSON"]
+      "may_hold_secrets": ["ENTRANT_PROFILE_JSON"]
     },
     "lotto-entries": {
       "trigger": "Schedule",
@@ -57,11 +57,24 @@
       "parallelism": 1,
       "replica_completion_count": 1,
       "replica_retry_limit": 0,
-      "may_hold_secrets": ["GITHUB_TOKEN", "ENTRANT_PROFILE_JSON"],
+      "may_hold_secrets": ["ENTRANT_PROFILE_JSON"],
       "max_env": {
         "ENTRANT_CONCURRENCY": 3,
         "ENTRANT_TIMEOUT_S": 150
       }
+    },
+    "lotto-site": {
+      "trigger": "Schedule",
+      "max_runs_per_day": 12,
+      "min_interval_min": 120,
+      "max_replica_timeout_s": 900,
+      "budget_s_per_run": 300,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": ["SWA_DEPLOY_TOKEN"]
     },
     "lotto-reenter": {
       "trigger": "Manual",

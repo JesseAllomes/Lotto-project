@@ -1,7 +1,10 @@
-# The owner's competition page (workers/site.py). Built once, then deployed to two hosts from the same artifact:
+# The owner's competition page (workers/site.py). Built once, then deployed from the same artifact:
 #   azure : the Free-tier Azure Static Web App swa-lotto-v5ethud2i3cfq (ambitious-plant-0e97ae900.6.azurestaticapps.net).
-#           Main branch only: the federated credential matches refs/heads/main. No stored deployment token: the job
-#           logs in with OIDC (azure/login), reads the token with `az staticwebapp secrets list` and masks it.
+#           MANUAL ONLY (workflow_dispatch) since az5: the Azure Container Apps job lotto-site (azure/jobs/lotto-site.json)
+#           builds from the blob data and deploys the page every 2 hours, so this job must not overwrite it with a
+#           build from the git data. Main branch only: the federated credential matches refs/heads/main. No stored
+#           deployment token: the job logs in with OIDC (azure/login), reads the token with
+#           `az staticwebapp secrets list` and masks it.
 #   pages : GitHub Pages, kept as a backup. One-time setup: Settings > Pages > Build and deployment > Source: GitHub Actions.
 # Rebuilt after every comps or entries run (those workflows are manual-only now), on pushes that change the data or
 # the page (data pushes come from the Azure jobs), and every two hours as a fallback. Token-free.
@@ -65,7 +68,7 @@ jobs:
 
   azure:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # No `environment:` here: it would change the OIDC subject and the federated credential would no longer match.

@@ -1,6 +1,7 @@
 # Desired state for the Azure Container Apps jobs lives in git (azure/jobs/*.json); this workflow applies it.
 #   guard  : tools/cost_guard.py (cron, size, timeout, cost, code and workflow rules) and the runner/guard tests.
-#   build  : rebuilds the worker image only when azure/** changed, else resolves the digest of :latest; pushes to GHCR.
+#   build  : rebuilds the worker image only when azure/**, workers/** or analysis/** changed (the image carries the code;
+#            data lives in the Azure Blob container lotto-data, not in git), else resolves the digest of :latest; pushes to GHCR.
 #   deploy : substitutes the digest for IMAGE in each job file, PATCHes the job (secrets, registries and identity are
 #            sent exactly as in the file), then exports the live jobs and re-runs the guard with --live so drift
 #            (portal edits, other tools) fails the run.
@@ -13,12 +14,13 @@ on:
     paths:
       - "azure/**"
       - "workers/**"
+      - "analysis/**"
       - "tools/**"
       - ".github/workflows/azure-*.yml"
   workflow_dispatch:
     inputs:
       rebuild:
-        description: "Rebuild the worker image even if azure/** did not change"
+        description: "Rebuild the worker image even if azure/**, workers/** and analysis/** did not change"
         type: boolean
         default: false
       limits_approved:
@@ -47,7 +49,7 @@ jobs:
       - name: Cost guard
         run: python3 -B tools/cost_guard.py --limits azure/limits.json --base HEAD^
       - name: Runner and guard tests
-        run: python3 -B -m unittest tests.test_azure_runner tests.test_cost_guard
+        run: python3 -B -m unittest tests.test_azure_runner tests.test_blobsync tests.test_cost_guard
 
   build:
     needs: guard
@@ -69,7 +71,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Did azure/** change?
+      - name: Did the image inputs (azure/, workers/, analysis/) change?
         id: changed
         env:
           BEFORE: ${{ github.event.before }}
@@ -86,7 +88,7 @@ jobs:
             if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
               base="HEAD^"
             fi
-            if git diff --quiet "$base" HEAD -- azure/; then
+            if git diff --quiet "$base" HEAD -- azure/ workers/ analysis/; then
               rebuild=false
             else
               rebuild=true
