@@ -59,7 +59,7 @@ RETRY_FROM = "2026-10-30T16:30:00Z"
 CHECK_FIX_FROM = "2026-10-30T22:45:00Z"
 # "Field is required" failures before the Mantine/komo form fixes (answer box, State and dial-code pickers).
 FORM_FIX_FROM = "2026-10-30T23:20:00Z"
-BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form", "blocked"}
+BLOCKING = {"captcha", "login", "human_check", "payment", "unfillable", "closed", "no_form", "blocked", "moved"}
 
 
 def read_jsonl(path):

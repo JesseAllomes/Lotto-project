@@ -86,6 +86,7 @@ def why(reason):
     return {"captcha": "human check (CAPTCHA)", "human_check": "the site's bot check", "no_form": "form not reachable",
             "unfillable": "a field only you can answer", "login": "needs a login",
             "blocked": "the site blocks automated browsers",
+            "moved": "entry page moved or gone",
             "entry route manual": "manual entry", "entry route unknown": "entry method unclear",
             "terms ban automated entry": "terms ban automated entry"}.get(r, r if not r.startswith("failing") else
                                                                           "the auto-entrant failed here")

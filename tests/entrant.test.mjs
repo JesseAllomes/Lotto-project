@@ -154,3 +154,55 @@ test("error lines are masked before logging", async () => {
   const { errorLine } = await import("../workers/entrant.mjs");
   assert.equal(errorLine("a\nb", "a\nb\nError: jo@x.com already used, call 0412 345 678"), "Error: <email> already used, call <number>");
 });
+
+// Fixes from data/analysis/ENTRY_ERRORS.md (Fable's audit of run 41141359948).
+test("underscored names and John Doe placeholders classify as names", () => {
+  assert.equal(classify("sw__login_name John Doe", "text"), "full");
+  assert.equal(classify("contact[first-name]", "text"), "first");
+  assert.equal(classify("store_location Favourite store location", "text"), null);
+});
+
+test("SweepWidget-style login (no <form>, Full Name box named sw__login_name) is filled and counts as entered", async () => {
+  const [r] = await run({ queue: [{ id: 1, entry_url: url("sweepwidget.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["entered", "form cleared"]);
+  assert.ok(r.fields.includes("full") && r.fields.includes("email"));
+});
+
+test("a page whose only email box is a footer newsletter has no entry form", async () => {
+  const [r] = await run({ queue: [{ id: 2, entry_url: url("footer_only.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["skipped", "no_form"]);
+});
+
+test("a form that appears 9 s after load is still found", async () => {
+  const [r] = await run({ queue: [{ id: 3, entry_url: url("late_embed.html") }], live: false, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["dry_ok", 'would click "Enter now"']);
+});
+
+test("Umbraco-style GUID fields: the Email label is found, the Organisation box stops the entry", async () => {
+  const [r] = await run({ queue: [{ id: 4, entry_url: url("umbraco.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["skipped", "unfillable"]);
+  assert.match(r.fields[0], /Organisation/);
+});
+
+test("no-form sub-reasons: moved (redirected elsewhere on the site), login (hidden member modal), blocked (embed interstitial)", async () => {
+  const out = await run({ queue: [{ id: 5, entry_url: url("moved_from.html") }, { id: 6, entry_url: url("login_wall.html") },
+                                  { id: 7, entry_url: url("gleam_blocked.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual(out.map((r) => [r.result, r.reason]), [["skipped", "moved"], ["skipped", "login"], ["skipped", "blocked"]]);
+});
+
+test("a Klaviyo form's generic submit error is the vendor's bot check: manual list, not a retry", async () => {
+  const [r] = await run({ queue: [{ id: 8, entry_url: url("klaviyo_error.html") }], live: true, logPath: tmpLog() });
+  assert.deepEqual([r.result, r.reason], ["skipped", "human_check"]);
+  assert.match(r.said, /^klaviyo: An error occurred when submitting/);
+});
+
+test("a terms page that names the entry page leads there; 'Prefer not to say' answers the gender box; the answer box needs the owner", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "terms-"));
+  const terms = path.join(dir, "terms.html");
+  fs.writeFileSync(terms, `<html><body><h1>Giveaway Terms</h1><p>5) How to Enter. No purchase is necessary. To enter the Promotion, visit: ${url("wf_entry.html")} (Australian residents) during the Promotion Period.</p></body></html>`);
+  const [a] = await run({ queue: [{ id: 9, entry_url: "file://" + terms }], live: true, logPath: tmpLog() });
+  assert.deepEqual([a.result, a.reason], ["skipped", "needs_answer"]);
+  const [b] = await run({ queue: [{ id: 9, entry_url: "file://" + terms, answer: "Approved words." }], live: true, logPath: tmpLog() });
+  assert.equal(b.result, "entered");
+  assert.ok(b.fields.includes("declined") && b.fields.includes("answer") && b.fields.includes("postcode"), b.fields.join());
+});

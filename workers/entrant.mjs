@@ -65,7 +65,7 @@ async function findEmail(page) {
   let best = null;
   for (const f of page.frames()) {
     try {
-      const boxes = f.locator(EMAIL);
+      const boxes = f.locator(EMAIL).or(f.getByLabel(/\be-?mail\b/i).and(f.locator("input:visible")));   // GUID-named boxes with an "Email" label
       const n = Math.min(await boxes.count(), 6);
       for (let i = 0; i < n; i++) {
         const box = boxes.nth(i);
@@ -83,7 +83,7 @@ async function findEmail(page) {
       }
     } catch { /* frame went away */ }
   }
-  return best;
+  return best && best.score >= 0 ? best : null;   // only a footer sign-up or a discount pop-up: not the entry form
 }
 
 // Close cookie banners and pop-ups that sit over the form.
@@ -136,13 +136,13 @@ export function profile(env = process.env) {
 
 // Which owner detail a form field asks for, from its name, id, placeholder, aria-label, autocomplete and label.
 export function classify(desc, type) {
-  const d = desc.toLowerCase();
+  const d = desc.toLowerCase().replace(/[_\-.[\]]+/g, " ");      // sw__login_name, contact[first-name] -> words
   if (type === "password") return "password";
   if (/confirm.*e-?mail|e-?mail.*(confirm|again|repeat)/.test(d)) return "email";
   if (type === "email" || /e-?mail/.test(d)) return "email";
   if (/first|given|fname|forename/.test(d)) return "first";
   if (/last|surname|family|lname/.test(d)) return "last";
-  if (/full ?name|your name|^name$|\bname\b/.test(d)) return "full";
+  if (/full ?name|your name|^name$|\bname\b|john doe|jane doe/.test(d)) return "full";
   if (type === "tel" || /phone|mobile|\btel\b|contact number/.test(d)) return "phone";
   if (/post ?code|zip/.test(d)) return "postcode";
   if (/suburb|city|town|locality/.test(d)) return "suburb";
@@ -248,13 +248,26 @@ export async function challengeAfterSubmit(page) {
 // A Cloudflare/hCaptcha interstitial in front of the whole page (gleam.io and the like), not a form widget.
 async function interstitial(page) {
   if (/just a moment|attention required/i.test(await page.title().catch(() => ""))) return true;
-  if (/complete this security check to access/i.test(await page.locator("body").innerText().catch(() => ""))) return true;
+  for (const f of page.frames()) {                                        // the page, or an embed (gleam.io, ViralSweep), is a Cloudflare page
+    if (/just a moment|performing security verification|verify you are human|complete this security check/i.test(await f.locator("body").innerText().catch(() => ""))) return true;
+  }
   for (const f of page.frames()) {
     if (!/challenges\.cloudflare\.com\/|hcaptcha\.com\/.*hcaptcha\.html/i.test(f.url())) continue;
     const el = await f.frameElement().catch(() => null);
     if (el && (await el.evaluate(geometry).catch(() => ({ shown: false }))).shown) return true;
   }
   return false;
+}
+
+// A terms page that names the entry page ("To enter the Promotion, visit: https://host/pages/x"): that page, once, on the same site.
+async function entryPageFromTerms(page) {
+  const text = await page.locator("body").innerText().catch(() => "");
+  const m = text.match(/(?:to enter|how to enter|entry form|enter (?:the|this) (?:promotion|competition|giveaway))[^]{0,200}?(https?:\/\/[^\s)",']+|file:\/\/[^\s)",']+)/i);
+  if (!m) return null;
+  try {
+    const u = new URL(m[1]), here = new URL(page.url());
+    return u.host === here.host && u.pathname !== here.pathname ? u.href : null;
+  } catch { return null; }
 }
 
 // Custom dropdowns (Mantine, Headless UI, React Select): a button or combobox that opens a list of role=option
@@ -307,8 +320,8 @@ export async function fillForm(page, item, who, live) {
   }
   await dismissOverlays(page);
   let found = await findEmail(page);
-  if (!found) {                                   // late-loading forms
-    await page.waitForTimeout(5000);
+  for (const deadline = Date.now() + 15000; !found && Date.now() < deadline;) {   // late-loading forms and embeds (SweepWidget)
+    await page.waitForTimeout(1500);
     found = await findEmail(page);
   }
   if (!found) {                                   // forms behind an "Enter now" button
@@ -319,12 +332,31 @@ export async function fillForm(page, item, who, live) {
       found = await findEmail(page);
     }
   }
-  if (!found) return { result: "skipped", reason: (await interstitial(page)) ? "blocked" : "no_form", fields: [] };
+  if (!found) {                                   // a terms page that says where the entry form is
+    const next = await entryPageFromTerms(page);
+    if (next) {
+      await page.goto(next, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {});
+      await page.waitForTimeout(2500);
+      await dismissOverlays(page);
+      found = await findEmail(page);
+    }
+  }
+  if (!found) {
+    if (await interstitial(page)) return { result: "skipped", reason: "blocked", fields: [] };
+    const here = new URL(page.url()), from = new URL(item.entry_url);
+    const trim = (u) => [u.hostname.replace(/^www\./, ""), u.pathname.replace(/\/+$/, "")];
+    if (trim(here)[0] === trim(from)[0] && trim(here)[1] !== trim(from)[1]) return { result: "skipped", reason: "moved", fields: [] };   // the site redirected the entry page away
+    if (await page.locator("input[type=password]").count()) return { result: "skipped", reason: "login", fields: [] };   // members-only page with a (hidden) login/register modal
+    return { result: "skipped", reason: "no_form", fields: [] };
+  }
   const { root, box: emailBox } = found;
   if (await root.locator("input[type=password]:visible").count()) return { result: "skipped", reason: "login", fields: [] };
   const form = root.locator("form").filter({ has: emailBox }).first();
   const scope = (await form.count()) ? form : root.locator("body");
   const filled = new Set();
+  // Klaviyo embedded forms post to a.klaviyo.com, which DataDome fronts (data/analysis/ENTRY_ERRORS.md): a refusal there
+  // comes back as the form's generic error line, so any such reply goes to the manual list, not a retry.
+  const klaviyo = await scope.evaluate((e) => !!(e.closest("form.klaviyo-form") || e.querySelector("form.klaviyo-form, input[name='phone-number'][type='tel']"))).catch(() => false);
   const hasCC = await scope.locator("select:visible").evaluateAll((els) => els.some((e) =>
     /country|dial|calling|prefix|code/i.test([e.name, e.id, e.getAttribute("aria-label")].join(" ")) &&
     [...e.options].some((o) => /\+\s?61\b|\(61\)/.test(o.text + " " + o.value))));
@@ -378,6 +410,8 @@ export async function fillForm(page, item, who, live) {
         const opt = info.options.find((o) => AUSTRALIA.test(o.split("|")[0])) || info.options.find((o) => AUSTRALIA.test(o));
         if (opt) { await el.selectOption({ value: opt.split("|")[1] }); filled.add("country"); continue; }
       }
+      const decline = info.options.find((o) => /prefer not to say|rather not say|not specified|unspecified/i.test(o.split("|")[0]));
+      if (decline) { await el.selectOption({ value: decline.split("|")[1] }); filled.add("declined"); continue; }
       if (info.required) return { result: "skipped", reason: "unfillable", fields: [`select: ${info.desc.slice(0, 60)}`] };
       continue;
     }
@@ -439,9 +473,10 @@ export async function fillForm(page, item, who, live) {
     if (/captcha|recaptcha|hcaptcha/i.test(said)) {
       return { result: "skipped", reason: "captcha", fields: [...filled], said };       // the site's invisible check said no
     }
+    const fieldError = /required|invalid|not valid|please (enter|provide|select|check|complete|fill)/i.test(said);
     if (/blocked|suspicious|unusual|robot|automated|verify you are human/i.test(said) ||
-        (/\/pages\//.test(item.entry_url) && /an error occurred when submitting/i.test(said))) {
-      return { result: "skipped", reason: "human_check", fields: [...filled], said };   // anti-bot rejection (Shopify's)
+        (!fieldError && (klaviyo || /an error occurred when submitting/i.test(said)))) {
+      return { result: "skipped", reason: "human_check", fields: [...filled], said: klaviyo ? `klaviyo: ${said}` : said };   // a bot check said no (Klaviyo/DataDome, Shopify)
     }
     return { result: "failed", reason: `form said: ${err[0].toLowerCase()}`, fields: [...filled], said };
   }
