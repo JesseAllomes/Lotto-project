@@ -83,10 +83,21 @@ class LastDay(unittest.TestCase):
                         "31 October 2026.", closes="2026-10-31T23:59:59+10:00")
         self.assertEqual(entry_queue.closes_at(r), dt.datetime(2026, 10, 31, 7, 0, tzinfo=dt.timezone.utc))
         self.assertEqual(entry_queue.closes_at(rec(2, closes="2026-10-31T23:59:59+10:00")),
-                         dt.datetime(2026, 10, 31, 13, 59, 59, tzinfo=dt.timezone.utc))
+                         dt.datetime(2026, 10, 31, 12, 59, tzinfo=dt.timezone.utc))      # 23:59 in Melbourne, that day
         now = dt.datetime(2026, 10, 30, 22, 0, tzinfo=dt.timezone.utc)
         self.assertTrue(entry_queue.last_day(r, now))
         self.assertFalse(entry_queue.last_day(rec(3), now))
+
+    def test_listing_dates_against_the_summary(self):
+        typo = rec(3, desc="**When does it close?** The competition closes at midnight on 20th August 2024.",
+                   closes="2204-08-20T23:59:59+10:00")
+        self.assertEqual(entry_queue.close_date(typo), "2024-08-20")                  # year 2204 is a typo
+        longer = rec(4, desc="**When?** The competition closes at 11:59 PM Sydney time on 15 November 2026.",
+                     closes="2026-10-31T23:59:59+10:00")
+        self.assertEqual(entry_queue.close_date(longer), "2026-11-15")                # the later, stated date
+        aest = rec(5, desc="**When?** The competition closes at 11:59 PM AEST on 31 October 2026.",
+                   closes="2026-10-31T23:59:59+10:00")
+        self.assertEqual(entry_queue.closes_at(aest).astimezone(entry_queue.MELB).strftime("%d %H:%M"), "31 23:59")
 
     def test_last_day_pace(self):
         may = entry_queue.may_enter

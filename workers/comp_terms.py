@@ -203,9 +203,10 @@ def history(store):
 def targets(store, today):
     """Open listings a Victorian can enter: free web-form ones first (auto-entry candidates, read for entry limits and
     an automation ban; soonest-closing first), then paid ones (for caps; raffles and lotteries first)."""
+    from workers import entry_queue           # imports this module: import here, not at the top
     paid, free = [], []
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
-        if not (r.get("open_to_vic") and r.get("entry_url") and (r.get("closes") or "9")[:10] >= today):
+        if not (r.get("open_to_vic") and r.get("entry_url") and (entry_queue.close_date(r) or "9") >= today):
             continue
         a = comp_odds.assess(r)
         if a["purchase"] == "yes":

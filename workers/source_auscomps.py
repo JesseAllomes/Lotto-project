@@ -85,7 +85,7 @@ def parse(page, url):
             continue
     return {
         "id": ID_BASE + int(post.group(1)),
-        "title": html.unescape(re.sub(r"<[^>]+>", "", title.group(1))).strip(),
+        "title": comps.clean_title(html.unescape(re.sub(r"<[^>]+>", "", title.group(1)))),
         "category": None, "category_slug": None,
         "brand": _detail(page, "Brand"),
         "prize_pool": float(value.group(1).replace(",", "")) if value and value.group(1).replace(",", "").replace(".", "").isdigit() else None,

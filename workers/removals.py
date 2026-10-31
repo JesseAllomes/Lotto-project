@@ -1,6 +1,7 @@
 """Competitions the owner removed, and the pattern of what they keep and what they remove.
 
     python3 -m workers.removals "remove: 75870 76058"   # record removals (used by .github/workflows/remove.yml)
+    python3 -m workers.removals "broken: 75870"         # the site's Doesn't work button: removed, not a dislike
     python3 -m workers.removals                         # rebuild data/entries/PREFERENCES.md only
 
 The site's Remove button opens a pre-filled issue "remove: <ids>"; when the repository owner submits it, remove.yml
@@ -42,7 +43,10 @@ def describe(r):
 
 
 def record(text, store=comps.STORE, entries=ENTRIES, now=None):
-    """Append a removal for each listing id in text; returns the ids recorded (ids already removed are skipped)."""
+    """Append a removal for each listing id in text; returns the ids recorded (ids already removed are skipped).
+    "broken: <ids>" (the site's Doesn't work button) records why = "doesn't work": removed the same way, but kept out
+    of the likes-and-dislikes pattern and listed on its own."""
+    why = "doesn't work" if re.match(r"(?i)\s*broken", text or "") else "not for me"
     now = now or dt.datetime.now(dt.timezone.utc)
     recs = {json.loads(l)["comp"]["id"]: json.loads(l)["comp"] for l in comps.stored(store).values()}
     done, out = removed_ids(entries), []
@@ -52,7 +56,7 @@ def record(text, store=comps.STORE, entries=ENTRIES, now=None):
             if i in done or i not in recs:
                 continue
             fh.write(json.dumps({"time_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "id": i, "mode": "owner",
-                                 "result": "removed", **describe(recs[i])}) + "\n")
+                                 "result": "removed", "why": why, **describe(recs[i])}) + "\n")
             out.append(i)
     return out
 
@@ -60,13 +64,18 @@ def record(text, store=comps.STORE, entries=ENTRIES, now=None):
 def report(store=comps.STORE, entries=ENTRIES, today=None):
     """PREFERENCES.md: removed vs still-listed open competitions a Victorian can enter for free."""
     today = (today or dt.date.today()).isoformat()
-    removed = [r for r in entry_queue.read_jsonl(entries / "log_removed.jsonl") if r.get("result") == "removed"]
-    gone = {r["id"] for r in removed}
+    rows = [r for r in entry_queue.read_jsonl(entries / "log_removed.jsonl") if r.get("result") == "removed"]
+    gone = {r["id"] for r in rows}
+    removed = [r for r in rows if r.get("why") != "doesn't work"]          # dislikes; broken ones are listed below
+    broken = [r for r in rows if r.get("why") == "doesn't work"]
     kept = [describe(r) for r in (json.loads(l)["comp"] for l in comps.stored(store).values())
-            if r.get("open_to_vic") and (r.get("closes") or "9")[:10] >= today and r["id"] not in gone
+            if r.get("open_to_vic") and (entry_queue.close_date(r) or "9") >= today and r["id"] not in gone
             and comp_odds.assess(r)["purchase"] != "yes"]
     lines = ["# What the owner removes", "",
              f"{len(removed)} competitions removed, {len(kept)} open free ones still listed (built {today}).", ""]
+    if broken:
+        lines += [f"## Marked \"doesn't work\" ({len(broken)}; not counted as dislikes)", ""] + \
+                 [f"- {r['id']} {r['title'][:70]} ({r['platform']}, {r['entry_route']})" for r in broken] + [""]
     if not removed:
         lines += ["Nothing removed yet. Use the Remove button on the site; the pattern shows here after a few."]
     for key, name in (("category", "Category"), ("entry_route", "Entry route"), ("prize_band", "Prize"),

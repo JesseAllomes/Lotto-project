@@ -39,5 +39,19 @@ class Removals(unittest.TestCase):
             self.assertIn("hamper (1)", text)
 
 
+    def test_doesnt_work_is_removed_but_not_a_dislike(self):
+        with tempfile.TemporaryDirectory() as d:
+            store, entries = Path(d) / "comps", Path(d) / "entries"
+            comps.append(store, [rec(10001, "Win a Wine Hamper"), rec(10002, "Win a $500 Bunnings Voucher")], "t")
+            now = dt.datetime(2026, 10, 31, 4, tzinfo=dt.timezone.utc)
+            removals.record("broken: 10001", store, entries, now)
+            self.assertEqual(json.loads((entries / "log_removed.jsonl").read_text())["why"], "doesn't work")
+            self.assertEqual(removals.removed_ids(entries), {10001})
+            removals.report(store, entries, dt.date(2026, 10, 31))
+            text = (entries / "PREFERENCES.md").read_text()
+            self.assertIn("0 competitions removed", text)
+            self.assertIn("Marked \"doesn't work\" (1; not counted as dislikes)", text)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -33,7 +33,7 @@ class Info(unittest.TestCase):
 
     def test_estimates_the_draw_when_not_stated(self):
         i = winners.info(rec(2, desc="**How do I enter?** Fill in the form."))
-        self.assertEqual(i["draw_date"], dt.date(2026, 11, 8))
+        self.assertEqual(i["draw_date"], dt.date(2026, 11, 7))
         self.assertTrue(i["draw_estimated"])
         self.assertEqual(i["notify"], "")
 

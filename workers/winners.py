@@ -170,7 +170,7 @@ def build(store=STORE, entries=ENTRIES, today=None):
         i = info(r)
         c = seen.get(r["id"], {})
         rows.append({"id": r["id"], "title": r.get("title", ""), "brand": r.get("brand", ""),
-                     "prize_pool": r.get("prize_pool"), "closes": (r.get("closes") or "")[:10],
+                     "prize_pool": r.get("prize_pool"), "closes": entry_queue.close_date(r),
                      "auto_entries": reg.get(r["id"], 0), "status": status(r, i, today),
                      **i, "draw_date": i["draw_date"].isoformat() if i["draw_date"] else "",
                      "claim_by": i["claim_by"].isoformat() if i["claim_by"] else "",

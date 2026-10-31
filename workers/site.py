@@ -5,7 +5,8 @@
 
 One static page built from the registers after each run. All the data is embedded as JSON and the phone does the
 searching, filtering and sorting. Four tabs:
-  Remove       on To enter and Auto-entered: opens a pre-filled issue "remove: <ids>" (.github/workflows/remove.yml,
+  Remove       (and Doesn't work: "broken: <ids>", not counted as a dislike)
+               on To enter and Auto-entered: opens a pre-filled issue "remove: <ids>" (.github/workflows/remove.yml,
                owner only) that stops entries, drops the comp from both lists and records it for the owner's pattern
                of likes and dislikes (workers/removals.py -> data/entries/PREFERENCES.md); hidden on the phone at once.
   To enter     open competitions a Victorian can enter that the auto-entrant cannot (bot-checked web forms,
@@ -38,24 +39,43 @@ FREEBIES = ROOT / "data" / "freebies" / "freebies.csv"
 OUT = ROOT / "site"
 REPO = "JesseAllomes/Lotto-project"
 MELB = ZoneInfo("Australia/Melbourne")
-CATEGORIES = [   # first match wins; the title is checked before the aggregator's own category
-    ("Prize homes & lotteries", r"prize home|\bhouse\b|apartment|penthouse|lottery|art union|raffle|dream home"),
-    ("Cars & vehicles", r"\bcar\b|\bute\b|4wd|4x4|e-?bike|\bbike\b|motorcycle|caravan|camper|\bboat\b|scooter|"
-                        r"vehicle|landcruiser|prado|rav4|harley|ranger"),
-    ("Travel", r"\btrip\b|holiday|getaway|cruise|flight|\bstay\b|resort|escape|travel|nights?\b|retreat|adventure|"
-               r"tour\b|island"),
-    ("Tickets & experiences", r"tickets?\b|passes|double pass|concert|festival|experience|\bvip\b|screening|movie|"
-                              r"\bshow\b|grand final|\bmatch\b|membership"),
-    ("Tech & gaming", r"\btv\b|laptop|phone|iphone|samsung|playstation|ps5|xbox|nintendo|console|camera|headphones|"
-                      r"speaker|tablet|ipad|gaming|\bpc\b|drone|smart ?watch|blu-?ray|robot"),
-    ("Home & garden", r"sofa|\bbed\b|bedroom|bedding|kitchen|appliance|vacuum|fridge|bbq|garden|\bpool\b|furniture|"
-                      r"mattress|cookware|air fryer|steamer|homewares|bathroom|renovat|playroom|desk"),
-    ("Fashion & beauty", r"wardrobe|fashion|clothing|apparel|shoes|sneakers|jewellery|ring|watch\b|handbag|\bbag\b|"
-                         r"beauty|skincare|makeup|fragrance|perfume|\bhair\b|swimwear|merch"),
-    ("Kids & baby", r"\bbaby\b|kids|toddler|pram|\btoys?\b|lego|plush|nursery|parenting"),
-    ("Food & drink", r"food|grocer|hamper|wine|beer|whisky|spirits|gin\b|coffee|chocolate|dinner|restaurant|snack|"
-                     r"pantry|dining|chef|nuts\b"),
-    ("Cash & vouchers", r"cash|gift ?card|voucher|eftpos|credit|\$\d[\d,]*k?\b(?! of)"),
+CATEGORIES = [   # first match wins, on the title (AusComps notes stripped); then the aggregator's own category
+    ("Prize homes & lotteries", r"prize home|\bhouse\b|apartment|penthouse|lottery|art union|raffle|dream home|"
+                                r"\bhome lottery"),
+    ("Cars & vehicles", r"\bcars?\b|\bute\b|4wd|4x4|e-?bike|\bbikes?\b|motorcycle|motorbike|caravan|camper|\bboat\b|"
+                        r"scooter|vehicle|landcruiser|prado|rav4|harley|\branger\b|hilux|porsche|ferrari|lamborghini|"
+                        r"\bbmw\b|tesla|mercedes|\baudi\b|toyota|mazda|hyundai|\bkia\b|volkswagen|\bjeep\b|jet ?ski"),
+    # strong travel words first, so "a family trip to see The Wiggles" is travel ...
+    ("Travel", r"\btrips?\b|holiday|getaway|cruise|flights?\b|resort|\bnights?\b|travel voucher|retreat|\bstay\b|"
+               r"\bvacation"),
+    # ... but "double passes to the ... Australian tour" is tickets
+    ("Tickets & experiences", r"tickets?\b|passes\b|\bpass\b|\bdps?\b|concert|festival|experience|\bvip\b|screening|"
+                              r"preview|premiere|movie|\bfilms?\b|cinema|\bshows?\b|musical|theatre|theater|symphony|"
+                              r"opera|\bgig\b|grand final|\bmatch\b|courtside|race ?day|\brace\b|membership|"
+                              r"\bseats?\b|meet (?:&|and) greet"),
+    # a voucher, gift card or cash prize; a bare "$500" in "Products worth $500" is not cash
+    ("Cash & vouchers", r"\bcash\b|gift ?cards?|e-?gift|vouchers?|eftpos|store credit|prepaid|\bvisa card|shopping spree|"
+                        r"^(?:[^–-]*[–-]\s*)?win (?:a |an )?(?:share of )?\$\d[\d,.]*\s?(?:k|m|million)?\s*"
+                        r"(?:$|every|each|a |per |for |drawn|\+|&|plus)"),
+    ("Travel", r"\bescape\b|adventure|\btour\b|island|travel|suitcase|luggage"),
+    ("Tech & gaming", r"\btvs?\b|laptop|\bphones?\b|iphone|samsung|playstation|ps5|xbox|nintendo|console|camera|"
+                      r"headphones|earbuds|airpods|speaker|tablet|ipad|gaming|\bpc\b|drone|smart ?watch|blu-?ray|"
+                      r"robot|intel\b|\bcpu\b|\bgpu\b|graphics card|monitor|keyboard|\bmouse\b|computer|macbook|"
+                      r"apple watch|garmin|projector|soundbar"),
+    ("Home & garden", r"sofa|\bbed\b|bedroom|bedding|kitchen|appliance|vacuum|fridge|freezer|bbq|garden|\bpool\b|"
+                      r"furniture|mattress|cookware|air fryer|steamer|homewares|bathroom|renovat|playroom|\bdesk\b|"
+                      r"\brug\b|lawn ?mower|cleaning|candle|diffuser|\btools?\b|power tools|coffee machine|blender|sheets?\b|"
+                      r"linen|towels?\b|quilt|\bthrow\b|slush|mixers?\b|ev charger|solar|heater|\bfan\b"),
+    ("Fashion & beauty", r"wardrobe|fashion|clothing|apparel|\bshoes?\b|sneakers|boots\b|jewellery|jewelry|"
+                         r"\brings?\b|\bwatch\b|handbag|\bbags?\b|wallet|beauty|skin ?care|makeup|fragrance|perfume|"
+                         r"\bhair\b|swimwear|merch|grooming|\bface\b|\bbody\b|serum|cosmetic|sunglasses|tee\b|"
+                         r"t-?shirt|hoodie"),
+    ("Kids & baby", r"\bbaby\b|\bkids?\b|toddler|infant|newborn|colic|\bpram\b|\btoys?\b|lego|plush|nursery|"
+                    r"parenting|school|wiggles|bluey"),
+    ("Food & drink", r"food|grocer|hamper|wine|\bbeer\b|whisky|whiskey|spirits|\bgin\b|coffee|chocolate|dinner|"
+                     r"restaurant|snack|pantry|dining|\bchef\b|\bnuts\b|cheese|\btea\b|\bbbq sauce|meal"),
+    ("Books & media", r"\bbooks?\b|novel|reading copy|\bcopy of\b|audiobook|vinyl|\balbum\b|\bdvds?\b|"
+                      r"magazine|puzzler|box ?set|\bguitar\b|instrument"),
 ]
 SLUG_CATEGORY = {"cash-competitions": "Cash & vouchers", "travel-competitions": "Travel",
                  "home-garden-competitions": "Home & garden", "home-appliances": "Home & garden",
@@ -69,6 +89,7 @@ GROUP_NAMES = {"web": "Web form with a human check", "social": "Social media", "
 
 
 def category(title, slug=None):
+    title = comps.clean_title(title)
     for name, pat in CATEGORIES:
         if re.search(pat, title or "", re.I):
             return name
@@ -144,7 +165,8 @@ def items(entries=ENTRIES, today=None, recs=None):
         closes, at = close_of(rec, r.get("closes") or "")
         if closes and closes < today or not r.get("entry_url"):
             continue
-        out.append({"id": r["id"], "t": r["title"], "b": r.get("brand") or "", "p": _num(r.get("prize_pool")),
+        pv, est = comps.prize_value(rec or r)
+        out.append({"id": r["id"], "t": comps.clean_title(r["title"]), "b": r.get("brand") or "", "p": pv or 0, "pe": est,
                     "c": closes, "ct": at, "u": r["entry_url"], "w": why(r.get("reason") or ""),
                     "g": group_of(r.get("reason") or "", r.get("entry_platform") or "", r["entry_url"]),
                     "k": category(r["title"], rec.get("category_slug")), "a": ans.get(str(r["id"])),
@@ -160,26 +182,32 @@ def autos(entries=ENTRIES, today=None, recs=None):
     out, seen = [], set()
     for r in (csv.DictReader(open(path)) if path.exists() else []):
         seen.add(r["id"])
-        out.append({"id": r["id"], "t": r["title"], "b": r.get("brand") or "", "p": _num(r.get("prize_pool")),
-                    "c": r.get("closes") or "", "u": r.get("entry_url") or "", "n": int(r["entries"]),
+        pv, est = comps.prize_value(recs.get(r["id"]) or r)
+        out.append({"id": r["id"], "t": comps.clean_title(r["title"]), "b": r.get("brand") or "", "p": pv or 0, "pe": est,
+                    "c": entry_queue.close_date(recs[r["id"]]) if r["id"] in recs else r.get("closes") or "",
+                    "u": r.get("entry_url") or "", "n": int(r["entries"]),
                     "l": melb(r["last_entered_utc"]), "k": category(r["title"], recs.get(r["id"], {}).get("category_slug")),
                     "a": ans.get(r["id"]), "open": (r.get("closes") or "9") >= today})
     for k, v in ans.items():
         rec = recs.get(k)
-        if k in seen or not rec or (rec.get("closes") or "9")[:10] < today:
+        if k in seen or not rec or (entry_queue.close_date(rec) or "9") < today:
             continue
-        out.append({"id": k, "t": rec["title"], "b": rec.get("brand") or "", "p": _num(rec.get("prize_pool")),
-                    "c": (rec.get("closes") or "")[:10], "u": rec.get("entry_url") or "", "n": 0, "l": "waiting",
+        pv, est = comps.prize_value(rec)
+        out.append({"id": k, "t": comps.clean_title(rec["title"]), "b": rec.get("brand") or "", "p": pv or 0, "pe": est,
+                    "c": entry_queue.close_date(rec), "u": rec.get("entry_url") or "", "n": 0, "l": "waiting",
                     "k": category(rec["title"], rec.get("category_slug")), "a": v, "open": True})
     return out
 
 
-def winners(entries=ENTRIES):
+def winners(entries=ENTRIES, recs=None):
     """The 'Winners' list (all tracked comps; the page shows the auto-entered and the ones ticked Done)."""
     path = entries / "winners.csv"
     if not path.exists():
         return []
-    return [{"id": r["id"], "t": r["title"], "b": r.get("brand") or "", "p": _num(r.get("prize_pool")),
+    recs = recs if recs is not None else records()
+    value = lambda r: comps.prize_value(recs.get(r["id"]) or r)
+    return [{"id": r["id"], "t": comps.clean_title(r["title"]), "b": r.get("brand") or "", "p": value(r)[0] or 0,
+             "pe": value(r)[1],
              "c": r.get("draw_date") or r.get("closes") or "", "cl": r.get("closes") or "", "n": int(r.get("auto_entries") or 0),
              "st": r["status"], "est": r.get("draw_estimated") == "True", "h": r.get("notify") or "",
              "nw": r.get("notify_within_days") or "", "cw": r.get("claim_within_days") or "", "cb": r.get("claim_by") or "",
@@ -212,8 +240,8 @@ def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
     gone = removed(entries)
     data = {"todo": [x for x in items(entries, today, recs) if x["id"] not in gone],
             "auto": [x for x in autos(entries, today, recs) if x["id"] not in gone], "free": freebies(freebie_path),
-            "win": [x for x in winners(entries) if x["id"] not in gone], "removed": len(gone),
-            "stats": stats(entries), "groups": GROUP_NAMES, "categories": [c for c, _ in CATEGORIES] + ["Other"],
+            "win": [x for x in winners(entries, recs) if x["id"] not in gone], "removed": len(gone),
+            "stats": stats(entries), "groups": GROUP_NAMES, "categories": list(dict.fromkeys(c for c, _ in CATEGORIES)) + ["Other"],
             "repo": REPO, "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
     blob = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     return TEMPLATE.replace("__DATA__", blob)
@@ -239,7 +267,7 @@ ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px so
 .top{display:flex;justify-content:space-between;gap:8px}.prize{font-weight:700;color:var(--accent)}.soon{color:var(--warn);font-weight:600}
 .title{display:block;font-weight:600;color:var(--ink);text-decoration:none;margin:4px 0}
 .tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted);margin-right:4px}
-.acts{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
+.acts{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
 .go{background:var(--accent);color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:600;border:0;font:inherit}
 .ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:7px 11px;border-radius:8px;font:inherit;font-weight:600;text-decoration:none}
 .done{display:flex;gap:6px;align-items:center}.done input{width:22px;height:22px}
@@ -274,10 +302,12 @@ const done = () => store.get("comps-done", {});
 const sel = new Set();
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const days = (c) => c ? Math.round((new Date(c.slice(0, 10) + "T00:00:00") - today) / 864e5) : 9999;
-const money = (p) => p ? "$" + Math.round(p).toLocaleString("en-AU") : "prize n/a";
+const money = (p, est) => p ? (est ? "~$" : "$") + Math.round(p).toLocaleString("en-AU") : "prize n/a";   // ~ = estimated from the title
 const rmIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("remove: " + ids.join(" "))}&body=${encodeURIComponent("Remove these competitions: no more entries, off both lists, and add them to the pattern of what I don't like. Submit this issue; the remove workflow does the rest.")}`;
 const gone = () => store.get("comps-removed", {});
-const rmBtn = (x) => `<a class="ghost rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Remove</a>`;
+const brokenIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("broken: " + ids.join(" "))}&body=${encodeURIComponent("This competition doesn't work (entry page broken, closed early or not as listed). Stop entering it and take it off the lists; not a dislike. Submit this issue; the remove workflow does the rest.")}`;
+const rmBtn = (x) => `<a class="ghost rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Remove</a>` +
+  `<a class="ghost rm" href="${brokenIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Doesn't work</a>`;
 const issue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("reenter: " + ids.join(" "))}&body=${encodeURIComponent("Re-enter these competitions now. Submit this issue; the reenter workflow does the rest and closes it.")}`;
 $("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps` + (D.removed ? ` · ${D.removed} removed` : "") + ` · updated ${D.built}`;
 for (const [k, v] of Object.entries(D.groups)) $("#grp").insertAdjacentHTML("beforeend", `<option value="${k}">${esc(v)}</option>`);
@@ -296,14 +326,14 @@ function card(x) {
     const st = x.seen === "yes" ? `<span class="soon">Your surname is on the winners page</span>` : `<span class="${/watch/.test(x.st) ? "soon" : ""}">${esc(x.st)}</span>`;
     const draw = x.c ? `${x.est ? "drawn by about" : "drawn"} ${esc(x.c)}` : "draw date not stated";
     const claim = x.cb ? `claim by ${esc(x.cb)}` : x.cw ? `claim within ${esc(x.cw)} days` : "";
-    return `<li class="card"><div class="top"><span class="prize">${money(x.p)}</span><span class="meta">${st}</span></div>
+    return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${st}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)} · ${x.st === "open" ? "closes" : "closed"} ${esc(x.cl)} · ${draw}</div>
     <div class="meta">Winners told by ${esc(x.h || "not stated")}${x.nw ? ` within ${esc(x.nw)} days` : ""}${claim ? " · " + claim : ""}${x.n ? ` · ${x.n} auto-entries` : " · entered by hand"}</div>
     ${x.pn ? `<div class="meta">${esc(x.pn)}</div>` : ""}
     <div class="acts">${x.wp ? `<a class="go" href="${esc(x.wp)}" target="_blank" rel="noopener">Winners page</a>` : `<span class="meta">Watch your email, phone and spam folder</span>`}<a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Listing</a></div></li>`;
   }
-  if (S.tab === "auto") return `<li class="card"><div class="top"><span class="prize">${money(x.p)}</span><span class="meta">${when}</span></div>
+  if (S.tab === "auto") return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
     <div class="meta">${x.n ? `<b>${x.n}</b> ${x.n === 1 ? "entry" : "entries"} · last ${esc(x.l)}` : "waiting for the next burst"}</div>${ans}
@@ -314,7 +344,7 @@ function card(x) {
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a><div class="meta">${esc(x.d)}</div>
     <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Get it</a><label class="done"><input type="checkbox" class="tick" data-id="f:${esc(x.u)}" ${dn ? "checked" : ""}> Done</label></div></li>`; }
   const isDone = !!done()[x.id];
-  return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p)}</span><span class="meta">${when}</span></div>
+  return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>${ans}
     <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open entry page</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;

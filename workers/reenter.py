@@ -23,7 +23,7 @@ def build(text, store=comps.STORE, entries=entry_queue.ENTRIES, today=None):
     out = []
     for i in ids:
         r = recs.get(i)
-        if not r or not r.get("entry_url") or (r.get("closes") or "9")[:10] < today:
+        if not r or not r.get("entry_url") or (entry_queue.close_date(r) or "9") < today:
             continue
         out.append({"id": i, "entry_url": r["entry_url"], "answer": answers.get(str(i))})
     return out

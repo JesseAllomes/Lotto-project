@@ -131,6 +131,31 @@ def stored(store):
     return {json.loads(l)["comp"]["id"]: l for l in path.read_text().splitlines() if l.strip()}
 
 
+def _dollars(num, unit):
+    v = float(num.replace(",", ""))
+    return v * {"k": 1e3, "m": 1e6, "million": 1e6}.get((unit or "").lower(), 1)
+
+
+def prize_value(r):
+    """(dollars, estimated): the listing's prize pool, or when it has none, an estimate from the title ("5 x $100",
+    "1 of 10 $250 vouchers", "1/3 $200 cards", "a $1K voucher"); (None, False) when the title names no amount."""
+    if r.get("prize_pool"):
+        return float(r["prize_pool"]), False
+    t = r.get("title") or ""
+    amount = re.search(r"\$\s?(\d[\d,]*(?:\.\d+)?)\s?(k|m|million)?\b", t, re.I)
+    if not amount:
+        return None, False
+    v = _dollars(amount.group(1), amount.group(2))
+    many = re.search(r"(?i)\b(\d{1,4})\s?x\s?\$|\b1\s?(?:of|/)\s?(\d{1,4})\b", t)
+    n = int(many.group(1) or many.group(2)) if many else 1
+    return v * n, True
+
+
+def clean_title(t):
+    """AusComps puts notes in titles: "Sanitarium – win 5 x $100 vouchers (? Close date)"."""
+    return re.sub(r"\s*\([^()]*\bclose\b[^()]*\)", "", t or "", flags=re.I).strip()   # "(? Close date)", "(9:30am close, M/R)"
+
+
 def append(store, recs, fetched):
     """Append listings not yet stored. Returns how many were new. Existing lines are never touched."""
     store.mkdir(parents=True, exist_ok=True)

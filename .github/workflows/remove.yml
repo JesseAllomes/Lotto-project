@@ -1,4 +1,5 @@
-# Remove on request: the site's Remove button opens a pre-filled issue "remove: <ids>". When the repository owner
+# Remove on request: the site's Remove button opens a pre-filled issue "remove: <ids>" (Doesn't work: "broken: <ids>",
+# removed the same way but kept out of the likes-and-dislikes pattern). When the repository owner
 # submits it, this records the removals (workers/removals.py -> data/entries/log_removed.jsonl): the queue never
 # enters those comps again, both lists drop them, and data/entries/PREFERENCES.md is rebuilt from the pattern of
 # what was removed. Then it comments, closes the issue and refreshes the site. Issues from anyone else are ignored.
@@ -15,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   remove:
-    if: github.event.issue.user.login == github.repository_owner && startsWith(github.event.issue.title, 'remove')
+    if: github.event.issue.user.login == github.repository_owner && (startsWith(github.event.issue.title, 'remove') || startsWith(github.event.issue.title, 'broken'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

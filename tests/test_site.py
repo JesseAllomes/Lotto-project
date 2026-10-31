@@ -52,6 +52,16 @@ class Page(unittest.TestCase):
         self.assertEqual(site.category("Win a Custom Toyota Landcruiser"), "Cars & vehicles")
         self.assertEqual(site.category("Win $5,000 Cash"), "Cash & vouchers")
         self.assertEqual(site.category("Win something", "travel-competitions"), "Travel")
+        # fixes from the 31 Oct review
+        self.assertEqual(site.category("Win 1 of 2 $55 Spring Cleaning Kits"), "Home & garden")         # not "ring"
+        self.assertEqual(site.category("Win a Sheet Set Worth $158"), "Home & garden")                  # "$158" is not cash
+        self.assertEqual(site.category("Win 1 X 5 Double Passes to the Piano Symphony Australian Tour"),
+                         "Tickets & experiences")
+        self.assertEqual(site.category("Switch – Win 1/5 of La Bola Negra DPs (9:30am close, M/R)"), "Tickets & experiences")
+        self.assertEqual(site.category("Win a Crime Book Pack"), "Books & media")
+        self.assertEqual(site.category("Trade to Win a Porsche 911 GTS"), "Cars & vehicles")
+        self.assertEqual(site.category("Win $3K for your Summer Fund Every Week"), "Cash & vouchers")
+        self.assertEqual(site.category("Win a $20,000 Cruise Voucher"), "Travel")
 
 
 class Freebies(unittest.TestCase):

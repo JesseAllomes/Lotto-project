@@ -77,7 +77,7 @@ def write_register(store, entries, entered):
     for i, times in entered.items():
         r = recs.get(i, {})
         rows.append({"id": i, "title": r.get("title", ""), "brand": r.get("brand", ""),
-                     "prize_pool": r.get("prize_pool"), "closes": (r.get("closes") or "")[:10], "entries": len(times),
+                     "prize_pool": r.get("prize_pool"), "closes": close_date(r) if r else "", "entries": len(times),
                      "first_entered_utc": min(times).strftime("%Y-%m-%d %H:%M"),
                      "last_entered_utc": max(times).strftime("%Y-%m-%d %H:%M"), "entry_url": r.get("entry_url", "")})
     rows.sort(key=lambda x: (-x["entries"], x["title"]))
@@ -89,12 +89,17 @@ def write_register(store, entries, entered):
     return rows
 
 
-ZONES = {"aedt": 11, "aest": 10, "acdt": 10.5, "acst": 9.5, "awst": 8}
+# Promoters write AEST and AEDT loosely for "Eastern time", so a stated zone means that place's local time.
+ZONES = {"aedt": "Australia/Melbourne", "aest": "Australia/Melbourne", "acdt": "Australia/Adelaide",
+         "acst": "Australia/Adelaide", "awst": "Australia/Perth"}
 # "closes at 6:00 PM AEDT on Saturday, 31 October 2026": the listing's timestamp is often a default (23:59 +10:00)
 # while its summary states the promoter's real closing time.
 STATED_CLOSE = (r"(?i)clos(?:es|ing)[^.]{0,30}?\b(\d{1,2})(?:[:.](\d\d))? ?([ap])\.?m\.? ?\(?(" + "|".join(ZONES) +
                 r")\)?[^.]{0,25}?(\d{1,2})(?:st|nd|rd|th)? (january|february|march|april|may|june|july|august|september|"
                 r"october|november|december),? (20\d\d)")
+# "The competition closes at 11:59 PM Sydney time on 15 November 2026": a close date in the summary, any time format.
+CLOSE_DATE = (r"(?i)\bclos(?:es|ing|e)\b[^.]{0,70}?\b(\d{1,2})(?:st|nd|rd|th)? (january|february|march|april|may|june|"
+              r"july|august|september|october|november|december),? (20\d\d)")
 MONTH_NO = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
                                         "september", "october", "november", "december"], 1)}
 
@@ -109,23 +114,42 @@ def closes_at(r):
         t = dt.datetime.fromisoformat(c.replace("Z", "+00:00"))
     except ValueError:
         return None
-    if len(c) <= 10:
+    if len(c) <= 10 or (t.hour, t.minute) == (23, 59):
+        # A bare date, or the aggregators' "end of day" (23:59:59 at a fixed +10:00 or +11:00): the end of that day in
+        # Melbourne. Read literally, +10:00 in daylight saving is 00:59 the next day and showed every date a day late.
         t = dt.datetime.combine(t.date(), dt.time(23, 59), MELB)
     elif t.tzinfo is None:
         t = t.replace(tzinfo=MELB)
-    m = re.search(STATED_CLOSE, r.get("description") or "")
+    desc = r.get("description") or ""
+    said = re.search(CLOSE_DATE, desc)
+    if said:
+        try:
+            day = dt.date(int(said.group(3)), MONTH_NO[said.group(2).lower()], int(said.group(1)))
+            if t.year > dt.date.today().year + 3 or day > t.astimezone(MELB).date() + dt.timedelta(days=1):
+                # the listing's year is a typo (2204), or the summary says the competition runs longer than listed:
+                # trust the later, stated date (entering a closed comp only fails; missing an open one loses it)
+                t = dt.datetime.combine(day, dt.time(23, 59), MELB)
+        except ValueError:
+            pass
+    m = re.search(STATED_CLOSE, desc)
     if m:
         h, mi, ap, zone, d, mon, y = m.groups()
         h = int(h) % 12 + (12 if ap.lower() == "p" else 0)
         try:
             day = dt.date(int(y), MONTH_NO[mon.lower()], int(d))
-            tz = dt.timezone(dt.timedelta(hours=ZONES[zone.lower()]))
+            tz = ZoneInfo(ZONES[zone.lower()])
             stated = dt.datetime.combine(day, dt.time(h, int(mi or 0)), tz)
             if abs((stated.date() - t.date()).days) <= 1:
                 return stated.astimezone(dt.timezone.utc)
         except ValueError:
             pass
     return t.astimezone(dt.timezone.utc)
+
+
+def close_date(r):
+    """The listing's closing date in Melbourne ("2026-10-31"), from closes_at; "" when unknown."""
+    t = closes_at(r)
+    return t.astimezone(MELB).date().isoformat() if t else ""
 
 
 def last_day(r, now):
@@ -159,7 +183,6 @@ def may_enter(limit, entered, now, n=None, excessive=False, final=False):
 
 def build(store=STORE, entries=ENTRIES, now=None):
     now = now or dt.datetime.now(dt.timezone.utc)
-    iso = now.astimezone(MELB).date().isoformat()
     tags, caps = comp_odds.tags(store), comp_odds.caps(store)
     terms = comp_terms.history(store)
     log = sorted((x for f in sorted(entries.glob("log*.jsonl")) for x in read_jsonl(f)),   # main and re-enter logs
@@ -197,7 +220,7 @@ def build(store=STORE, entries=ENTRIES, now=None):
                 blocked.pop(e["id"], None)
     queue, manual, last_day_ids = [], [], set()
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
-        if not r.get("open_to_vic") or (r.get("closes") or "9")[:10] < iso or (closes_at(r) or now) < now:
+        if not r.get("open_to_vic") or (closes_at(r) or now) < now:
             continue
         if r["id"] in removed:
             continue
