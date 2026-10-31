@@ -89,3 +89,38 @@ def bands(scores):
         f = k / max(1, len(order))
         out[i] = "high" if f < 0.2 else "medium" if f < 0.6 else "low"
     return out
+
+
+def reason(r, a=None, today=None):
+    """A short why for the chance band: the factors that move the estimate most, best first."""
+    a = a or comp_odds.assess(r)
+    today = today or dt.date.today()
+    _, kind, n = estimate(r, a, today)
+    value = comps.prize_value(r)[0]
+    closes = entry_queue.close_date(r)
+    days_left = (dt.date.fromisoformat(closes) - today).days + 1 if closes else None
+    good, bad = [], []
+    if n > 1:
+        good.append(f"{n:,} prizes")
+    if re.search(GATED, r.get("description") or ""):
+        good.append("members/customers only")
+    if kind == "skill":
+        good.append("judged answer keeps entries low")
+    elif kind == "mail":
+        good.append("mail-in, few bother")
+    elif kind == "manual":
+        good.append("fiddly entry thins the field")
+    elif kind == "social":
+        bad.append("social giveaways draw crowds")
+    if a["entry_limit"] == "daily" and days_left:
+        good.append(f"enter daily ({min(days_left, 30)} goes)")
+    if value and value < 300:
+        good.append("small prize, fewer entrants")
+    elif value and value >= 20000:
+        bad.append(f"${value:,.0f} draws crowds")
+    elif value and value >= 5000 and n == 1:
+        bad.append("one big prize")
+    if n == 1 and not bad and not good:
+        bad.append("one prize")
+    parts = (good + bad) if len(good) >= len(bad) else (bad + good)
+    return ", ".join(parts[:2]) or "typical web entry"

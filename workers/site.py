@@ -290,7 +290,8 @@ def add_chance(data, recs, today=None):
     for key in ("todo", "auto", "appr"):
         for x in data[key]:
             if x["id"] in scores:
-                x.update(ch=scores[x["id"]], cb=band[x["id"]], cw=extra[x["id"]])
+                x.update(ch=scores[x["id"]], cb=band[x["id"]], cw=extra[x["id"]],
+                         why=chance.reason(recs[str(x["id"])], today=today))
 
 
 def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
@@ -311,7 +312,7 @@ TEMPLATE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Comp Quest</title><meta name="theme-color" content="#1a0b2e">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=VT323&display=swap" rel="stylesheet">
 <style>
 /* Gamer-chic retro: purple fuzz, neon orange, paint splatter. Dark by design. */
 :root{--bg:#1a0b2e;--bg2:#2b1150;--card:#241042;--card2:#2f1658;--ink:#f6efff;--muted:#bba6d9;--line:#4a2a7a;
@@ -333,13 +334,13 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='%23b44dff' d='M96 22c14 6 8 30 26 34s30-16 40-2-12 26 0 40 34 6 30 26-30 10-38 26 8 36-10 40-20-24-38-22-30 26-44 14 8-30-6-42-40-4-38-22 30-12 30-30-24-36-6-44 26 18 40 12 14-36 34-28z'/%3E%3Ccircle cx='20' cy='30' r='6' fill='%23b44dff'/%3E%3Ccircle cx='186' cy='150' r='8' fill='%23b44dff'/%3E%3C/svg%3E") calc(100% + 70px) 38%/260px no-repeat,
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='%23ff3ea5' d='M104 40c12 4 6 24 22 28s28-10 32 4-18 18-10 32 30 14 22 28-28-2-38 10 0 32-16 30-12-26-26-26-28 20-38 8 10-24-2-36-34-14-26-28 30 0 34-14-14-30 0-36 22 12 34 6 0-10 12-6z'/%3E%3Ccircle cx='160' cy='30' r='5' fill='%23ff3ea5'/%3E%3C/svg%3E") -70px calc(100% + 60px)/240px no-repeat}
 header,main,.bar{position:relative;z-index:1}
-header{background:linear-gradient(180deg,rgba(26,11,46,.92),rgba(26,11,46,.75));backdrop-filter:blur(6px);border-bottom:2px solid var(--purple);box-shadow:0 0 24px rgba(180,77,255,.35)}
+header{background:transparent;border-bottom:2px solid var(--purple)}
 .wrap{max-width:820px;margin:0 auto;padding:14px 16px}
 h1{font-family:Bungee,"Space Grotesk",sans-serif;font-weight:400;font-size:1.7rem;letter-spacing:.02em;margin:0;line-height:1.1;
   color:var(--orange);text-shadow:0 0 10px rgba(255,107,26,.7),3px 3px 0 var(--purple)}
 .sub,.meta,.hint{color:var(--muted);font-size:.88rem}
 .tabs{display:flex;gap:8px;margin:12px 0 10px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}
-.tab{flex:1 0 auto;padding:9px 12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);
+.tab{flex:1 0 auto;padding:9px 12px;border-radius:12px;border:2px solid var(--line);background:#241042;color:var(--ink);
   font:inherit;font-weight:700;letter-spacing:.02em;cursor:pointer;box-shadow:3px 3px 0 #0b0418}
 .tab[aria-selected=true]{background:var(--orange);color:#1a0b2e;border-color:var(--orange2);box-shadow:3px 3px 0 var(--purple),0 0 16px rgba(255,107,26,.6)}
 input[type=search],select{font:inherit;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg2);color:var(--ink)}
@@ -375,9 +376,35 @@ a{color:var(--orange2)}
 .bar.show{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .empty{color:var(--muted);text-align:center;padding:30px 0}
 #count .go{display:inline-block;margin:8px 0 2px}
+/* tickets: stub (number, prize, chance meter and why) | perforation | body */
+.t{display:grid;grid-template-columns:112px 1fr;margin:14px 0;filter:drop-shadow(5px 6px 0 #0b0418)}
+.stub{background:var(--orange);color:#1a0b2e;padding:10px 9px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;border-radius:12px 0 0 12px;
+ -webkit-mask:radial-gradient(circle 9px at 100% 0,#0000 98%,#000) top/100% 51% no-repeat,radial-gradient(circle 9px at 100% 100%,#0000 98%,#000) bottom/100% 51% no-repeat;
+ mask:radial-gradient(circle 9px at 100% 0,#0000 98%,#000) top/100% 51% no-repeat,radial-gradient(circle 9px at 100% 100%,#0000 98%,#000) bottom/100% 51% no-repeat}
+.stub .no{font:400 16px VT323;opacity:.75}.stub .p{font:400 18px/1.05 Bungee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stub .l{font:700 10px "Space Grotesk";letter-spacing:.07em;text-transform:uppercase}
+.why{display:block;font:500 11px/1.25 "Space Grotesk";letter-spacing:0;text-transform:none;margin-top:2px}
+.mt{font:400 24px/1 VT323;letter-spacing:1px}.mt em{font-style:normal;opacity:.3}
+.body{background:linear-gradient(160deg,var(--card2),var(--card));border-left:3px dashed var(--orange);border-radius:0 12px 12px 0;padding:10px 12px;min-width:0;
+ -webkit-mask:radial-gradient(circle 9px at 0 0,#0000 98%,#000) top/100% 51% no-repeat,radial-gradient(circle 9px at 0 100%,#0000 98%,#000) bottom/100% 51% no-repeat;
+ mask:radial-gradient(circle 9px at 0 0,#0000 98%,#000) top/100% 51% no-repeat,radial-gradient(circle 9px at 0 100%,#0000 98%,#000) bottom/100% 51% no-repeat}
+.body .title{font-size:15px;margin:3px 0 4px}.body .when{font-size:12.5px;font-weight:700;color:var(--lime)}
+.t.is-done{opacity:.45}.t.is-done .title{text-decoration:line-through}
+.t .acts{margin-top:8px;gap:6px}.t .go{background:var(--purple);color:#fff;padding:7px 12px;box-shadow:3px 3px 0 #0b0418}
+.ic{display:inline-grid;place-items:center;width:36px;height:34px;border-radius:9px;color:var(--orange2);font-size:18px;font-weight:700;text-decoration:none;cursor:pointer;border:2px solid transparent}
+.ic:hover,.ic:focus-visible{border-color:var(--orange)}.ic input{position:absolute;opacity:0;pointer-events:none}
+.ic:has(input:checked){background:var(--lime);color:#1a0b2e}
+.t .acts .sel{margin-left:auto}
+/* best shot today: the top pick as a paint splat */
+.hero{margin:18px 0 8px;position:relative;padding:24px 20px 20px;color:#1a0b2e;isolation:isolate}
+.hero::before{content:"";position:absolute;inset:-12px -6px;z-index:-1;background:var(--orange);
+ clip-path:polygon(4% 9%,22% 0,41% 6%,63% 1%,86% 7%,100% 24%,96% 47%,100% 71%,90% 94%,66% 100%,44% 93%,20% 99%,3% 86%,0 60%,5% 38%,0 20%)}
+.hero .kick{font:400 12px Bungee;letter-spacing:.06em}.hero h2{font:400 clamp(19px,4.6vw,26px)/1.1 Bungee;margin:8px 0}
+.hero h2 a{color:inherit;text-decoration:none}.hero .info{font-weight:600}
+.hero .bt{display:inline-block;background:#1a0b2e;color:var(--orange);font:400 14px Bungee;padding:9px 14px;border-radius:999px;margin-top:10px;text-decoration:none}
 </style></head><body>
 <header><div class="wrap">
-<h1>Comps to enter</h1><div class="sub" id="summary"></div>
+<h1>Comp Quest</h1><div class="sub" id="summary"></div>
 <div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="social">Social</button><button class="tab" data-tab="auto">Entered</button><button class="tab" data-tab="appr">Approvals</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
 <input type="search" id="q" placeholder="Search prize, brand or title">
 <div class="chips" id="cats"></div>
@@ -409,6 +436,15 @@ const money = (p, est) => p ? (est ? "~$" : "$") + Math.round(p).toLocaleString(
 const rmIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("remove: " + ids.join(" "))}&body=${encodeURIComponent("Remove these competitions: no more entries, off both lists, and add them to the pattern of what I don't like. Submit this issue; the remove workflow does the rest.")}`;
 const gone = () => store.get("comps-removed", {});
 const brokenIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("broken: " + ids.join(" "))}&body=${encodeURIComponent("This competition doesn't work (entry page broken, closed early or not as listed). Stop entering it and take it off the lists; not a dislike. Submit this issue; the remove workflow does the rest.")}`;
+const BLOCKS = { high: 5, medium: 3, low: 1 };
+const meter = (x) => { const k = BLOCKS[x.cb] || 0; return `<span class="mt" aria-label="${esc(x.cb || "unknown")} chance">${"▮".repeat(k)}<em>${"▯".repeat(5 - k)}</em></span>`; };
+const stub = (x) => `<div class="stub"><div><div class="no">No. ${esc(String(x.id).slice(-5))}</div><div class="p">${money(x.p, x.pe)}</div></div>
+  <div title="Estimated from the number of prizes, the prize size, how much effort entering takes and how long it runs. A ranking, not real odds.">${meter(x)}<div class="l">${esc(x.cb || "unrated")} chance<span class="why">${esc(x.why || "")}</span></div></div></div>`;
+const icons = (x) => `<a class="ic rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}" title="Remove: not for me" aria-label="Remove">✕</a>` +
+  `<a class="ic rm" href="${brokenIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}" title="Doesn't work" aria-label="Doesn't work">⚠</a>`;
+const doneBox = (id, on) => `<label class="ic" title="Done" aria-label="Done"><input type="checkbox" class="tick" data-id="${esc(id)}" ${on ? "checked" : ""}>✓</label>`;
+const hero = (x) => `<section class="hero"><div class="kick">Best shot today</div><h2><a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a></h2>
+  <div class="info">${money(x.p, x.pe)} · ${meter(x)} ${esc(x.cb || "")} chance${x.why ? " · " + esc(x.why) : ""}</div><a class="bt" href="${esc(x.u)}" target="_blank" rel="noopener">Enter now →</a></section>`;
 const rmBtn = (x) => `<a class="ghost rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Remove</a>` +
   `<a class="ghost rm" href="${brokenIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Doesn't work</a>`;
 const answerIssue = (x) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("answer: " + x.id)}&body=${encodeURIComponent(
@@ -441,30 +477,28 @@ function card(x) {
   if (S.tab === "appr") {
     const body = x.a ? `<div class="ans"><p>${esc(x.a)}</p><button class="ghost copy" data-copy="${esc(x.a)}">Copy answer</button></div>`
                      : `<div class="meta">${x.q ? "Question: " + esc(x.q) : "Open the entry page to see the question."}</div>`;
-    return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
+    return `<li class="t">${stub(x)}<div class="body"><div class="when">${when}</div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta">${chanceTag(x)}<span class="tag">${x.st === "ok" ? (x.hand ? "approved: enter by hand" : "approved, waiting to go in") : "needs your answer"}</span>${esc(x.b)} · up to ${x.lim} words</div>${body}
-    <div class="acts"><a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>
-    <a class="ghost" href="${answerIssue(x)}" target="_blank" rel="noopener">${x.a ? "Edit answer" : "Write answer"}</a>
-    ${x.a && !x.hand ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Submit now</a>` : ""}${rmBtn(x)}</div></li>`;
+    <div class="meta"><span class="tag">${x.st === "ok" ? (x.hand ? "approved: enter by hand" : "approved, waiting to go in") : "needs your answer"}</span>${esc(x.b)} · up to ${x.lim} words</div>${body}
+    <div class="acts"><a class="ghost" href="${answerIssue(x)}" target="_blank" rel="noopener">${x.a ? "Edit answer" : "Write answer"}</a>
+    ${x.a && !x.hand ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Submit now</a>` : `<a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>`}${icons(x)}</div></div></li>`;
   }
-  if (S.tab === "auto") return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
+  if (S.tab === "auto") return `<li class="t">${stub(x)}<div class="body"><div class="when">${when}</div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta">${chanceTag(x)}<span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
-    <div class="meta">${x.n ? `<b>${x.n}</b> ${x.n === 1 ? "entry" : "entries"} · last ${esc(x.l)}` : "waiting for the next burst"}</div>${ans}
-    <div class="acts"><a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>
-    ${rmBtn(x)}${x.open ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Re-enter</a><label class="done"><input type="checkbox" class="pick" data-id="${esc(x.id)}" ${sel.has(x.id) ? "checked" : ""}> Select</label>` : `<span class="meta">closed</span>`}</div></li>`;
+    <div class="meta"><span class="tag">${esc(x.k)}</span>${x.n ? `<b>${x.n}</b> ${x.n === 1 ? "entry" : "entries"} · last ${esc(x.l)}` : "waiting for the next burst"}</div>${ans}
+    <div class="acts">${x.open ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Re-enter</a>` : `<span class="meta">closed</span>`}${icons(x)}
+    ${x.open ? `<label class="ic sel" title="Select for Re-enter selected"><input type="checkbox" class="pick" data-id="${esc(x.id)}" ${sel.has(x.id) ? "checked" : ""}>☐</label>` : ""}</div></div></li>`;
   if (S.tab === "free") { const dn = !!done()["f:" + x.u];
     return `<li class="card ${dn ? "is-done" : ""}"><div class="top"><span class="tag">${esc(x.k)}</span><span class="meta">${esc(x.c)}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a><div class="meta">${esc(x.d)}</div>
     <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Get it</a><label class="done"><input type="checkbox" class="tick" data-id="f:${esc(x.u)}" ${dn ? "checked" : ""}> Done</label></div></li>`; }
   const isDone = !!done()[x.id];
-  return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
+  return `<li class="t ${isDone ? "is-done" : ""}">${stub(x)}<div class="body"><div class="when">${when}</div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta">${chanceTag(x)}<span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>
+    <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)} · ${esc(x.w)}</div>
     ${x.bad ? `<div class="meta soon">Checked: ${esc(x.bad)}. The button opens the listing page instead; the competition may have ended early. <a href="${esc(x.orig)}" target="_blank" rel="noopener">Try link</a></div>` : ""}
     ${x.tu ? `<div class="meta">The listing links the terms${x.u !== x.tu ? "; the button opens the entry page they name" : ""}.${x.how ? " " + esc(x.how) : ""} <a href="${esc(x.tu)}" target="_blank" rel="noopener">Terms</a></div>` : ""}${ans}
-    <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">${x.bad ? "Open listing" : "Open entry page"}</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
+    <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">${x.bad ? "Listing" : "Enter"}</a>${doneBox(x.id, isDone)}${icons(x)}</div></div></li>`;
 }
 function inBand(p) {   // prize range "lo-hi"; old saved "500" style values mean any
   const m = /^([\d.e]+)-([\d.e]+)$/.exec(S.min || ""); return !m || (p >= +m[1] && p < +m[2]);
@@ -487,7 +521,8 @@ function render() {
   $("#count").innerHTML = esc($("#count").textContent) + (S.tab === "appr"
     ? ` · ${list.filter((x) => x.st === "ok").length} approved, ${list.filter((x) => x.st !== "ok").length} need an answer` + (ok.length ? ` <a class="go" href="${issue(ok.map((x) => x.id))}" target="_blank" rel="noopener">Submit all approved (${ok.length})</a>` : "")
     : "");
-  $("#list").innerHTML = list.map(card).join("") || `<li class="empty">${S.tab === "win" ? "Nothing entered yet. Tick Done on the To enter tab to track a comp here." : "Nothing matches. Clear a filter."}</li>`;
+  const top = ["todo", "social", "appr"].includes(S.tab) && S.sort === "chance" && list.length > 1 && !(dn[list[0].id]) ? list[0] : null;
+  $("#list").innerHTML = (top ? `<li>${hero(top)}</li>` : "") + (top ? list.slice(1) : list).map(card).join("") || `<li class="empty">${S.tab === "win" ? "Nothing entered yet. Tick Done on the To enter tab to track a comp here." : "Nothing matches. Clear a filter."}</li>`;
   $("#bar").classList.toggle("show", S.tab === "auto" && sel.size > 0);
   $("#selcount").textContent = `${sel.size} selected`; $("#reselect").href = issue([...sel]); $("#rmselect").href = rmIssue([...sel]);
   store.set("comps-ui", S);
