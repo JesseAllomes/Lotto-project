@@ -31,6 +31,10 @@ jobs:
         run: |
           sudo apt-get install -y -qq poppler-utils > /dev/null || true
           python3 -m workers.comp_terms
+      - name: What each entry link opens (form, or only the terms and how to enter)
+        timeout-minutes: 15
+        continue-on-error: true
+        run: python3 -m workers.entry_pages --max 300
       - name: Entry types, odds variables and the skill list
         run: python3 -m workers.comp_odds --tags
       - name: Rank the skill competitions

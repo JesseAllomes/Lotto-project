@@ -4,7 +4,7 @@
     python3 -m workers.site --out DIR       # somewhere else
 
 One static page built from the registers after each run. All the data is embedded as JSON and the phone does the
-searching, filtering and sorting. Four tabs:
+searching, filtering and sorting. Five tabs:
   Remove       (and Doesn't work: "broken: <ids>", not counted as a dislike)
                on To enter and Auto-entered: opens a pre-filled issue "remove: <ids>" (.github/workflows/remove.yml,
                owner only) that stops entries, drops the comp from both lists and records it for the owner's pattern
@@ -15,6 +15,9 @@ searching, filtering and sorting. Four tabs:
   Auto-entered the auto-entry register: every competition entered automatically, how many times, when last, with a
                Re-enter button (opens a pre-filled GitHub issue; .github/workflows/reenter.yml acts on the owner's
                issues only) and multi-select to re-enter several at once.
+  Approvals    skill competitions: approved answers not entered yet (Submit now, or Submit all approved: a
+               "reenter: <ids>" issue) and those waiting for the owner's answer (Write answer: an "answer: <id>"
+               issue, .github/workflows/answer.yml, saved by workers/answers.py within the word limit).
   Winners      draw date, how winners are told, claim deadline and winners page for every auto-entered comp and every
                comp ticked Done (data/entries/winners.csv from workers/winners.py), with a flag when the owner's
                surname was seen on a published winners page.
@@ -31,7 +34,7 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from workers import comps, entry_queue
+from workers import answers, comps, entry_pages, entry_queue
 
 ROOT = comps.ROOT
 ENTRIES = ROOT / "data" / "entries"
@@ -154,10 +157,12 @@ def records():
     return {str(r["id"]): r for r in (json.loads(l)["comp"] for l in comps.stored(comps.STORE).values())}
 
 
-def items(entries=ENTRIES, today=None, recs=None):
-    """The 'To enter' list."""
+def items(entries=ENTRIES, today=None, recs=None, pages=None):
+    """The 'To enter' list. pages: workers/entry_pages.py results; a link that only opens the terms gets the "To enter"
+    sentence on the card, and the entry page when one was found."""
     today = (today or dt.date.today()).isoformat()
     ans, recs = load_answers(entries), recs if recs is not None else records()
+    pages = pages if pages is not None else entry_pages.latest()
     path = entries / "manual.csv"
     out = []
     for r in (csv.DictReader(open(path)) if path.exists() else []):
@@ -166,8 +171,12 @@ def items(entries=ENTRIES, today=None, recs=None):
         if closes and closes < today or not r.get("entry_url"):
             continue
         pv, est = comps.prize_value(rec or r)
+        pg = pages.get(int(r["id"]), {}) if str(r["id"]).isdigit() else {}
+        terms = pg.get("kind") == "terms"
         out.append({"id": r["id"], "t": comps.clean_title(r["title"]), "b": r.get("brand") or "", "p": pv or 0, "pe": est,
-                    "c": closes, "ct": at, "u": r["entry_url"], "w": why(r.get("reason") or ""),
+                    "c": closes, "ct": at, "u": (terms and pg.get("better_url")) or r["entry_url"],
+                    "tu": r["entry_url"] if terms else "", "how": pg.get("how") if terms else "",
+                    "w": why(r.get("reason") or ""),
                     "g": group_of(r.get("reason") or "", r.get("entry_platform") or "", r["entry_url"]),
                     "k": category(r["title"], rec.get("category_slug")), "a": ans.get(str(r["id"])),
                     "s": rec.get("source_site") or "competitions.com.au"})
@@ -175,7 +184,7 @@ def items(entries=ENTRIES, today=None, recs=None):
 
 
 def autos(entries=ENTRIES, today=None, recs=None):
-    """The 'Auto-entered' list: the register, plus approved skill answers still waiting to go in."""
+    """The 'Auto-entered' list: the register (competitions the entrant has actually entered)."""
     today = (today or dt.date.today()).isoformat()
     ans, recs = load_answers(entries), recs if recs is not None else records()
     path = entries / "register.csv"
@@ -188,14 +197,32 @@ def autos(entries=ENTRIES, today=None, recs=None):
                     "u": r.get("entry_url") or "", "n": int(r["entries"]),
                     "l": melb(r["last_entered_utc"]), "k": category(r["title"], recs.get(r["id"], {}).get("category_slug")),
                     "a": ans.get(r["id"]), "open": (r.get("closes") or "9") >= today})
-    for k, v in ans.items():
+    return out
+
+
+def approvals(entries=ENTRIES, today=None, recs=None):
+    """The 'Approvals' list: skill competitions with an approved answer not entered yet ("ok"), and those the
+    auto-entrant could enter once the owner writes an answer ("need", from the queue)."""
+    today = (today or dt.date.today()).isoformat()
+    ans, recs = load_answers(entries), recs if recs is not None else records()
+    reg = entries / "register.csv"
+    entered = {r["id"] for r in csv.DictReader(open(reg))} if reg.exists() else set()
+    queued = {}
+    if (entries / "queue.csv").exists():
+        queued = {r["id"]: r for r in csv.DictReader(open(entries / "queue.csv")) if r.get("needs_answer") == "True"}
+    manual = {r["id"] for r in csv.DictReader(open(entries / "manual.csv"))} if (entries / "manual.csv").exists() else set()
+    out = []
+    for k in list(dict.fromkeys([*ans, *queued])):
         rec = recs.get(k)
-        if k in seen or not rec or (entry_queue.close_date(rec) or "9") < today:
+        if not rec or k in entered or (entry_queue.close_date(rec) or "9") < today:
             continue
+        q = answers.question(rec, (queued.get(k) or {}).get("question"))
         pv, est = comps.prize_value(rec)
         out.append({"id": k, "t": comps.clean_title(rec["title"]), "b": rec.get("brand") or "", "p": pv or 0, "pe": est,
-                    "c": entry_queue.close_date(rec), "u": rec.get("entry_url") or "", "n": 0, "l": "waiting",
-                    "k": category(rec["title"], rec.get("category_slug")), "a": v, "open": True})
+                    "c": entry_queue.close_date(rec), "u": rec.get("entry_url") or "", "q": q,
+                    "lim": answers.word_limit(q), "a": ans.get(k), "st": "ok" if k in ans else "need",
+                    "hand": k in manual,
+                    "k": category(rec["title"], rec.get("category_slug"))})
     return out
 
 
@@ -240,6 +267,7 @@ def page(entries=ENTRIES, today=None, built=None, freebie_path=FREEBIES):
     gone = removed(entries)
     data = {"todo": [x for x in items(entries, today, recs) if x["id"] not in gone],
             "auto": [x for x in autos(entries, today, recs) if x["id"] not in gone], "free": freebies(freebie_path),
+            "appr": [x for x in approvals(entries, today, recs) if x["id"] not in gone],
             "win": [x for x in winners(entries, recs) if x["id"] not in gone], "removed": len(gone),
             "stats": stats(entries), "groups": GROUP_NAMES, "categories": list(dict.fromkeys(c for c, _ in CATEGORIES)) + ["Other"],
             "repo": REPO, "built": built or dt.datetime.now(MELB).strftime("%a %d %b, %I:%M%p").replace(" 0", " ")}
@@ -257,7 +285,7 @@ TEMPLATE = r"""<!doctype html>
 header{background:var(--bg);border-bottom:1px solid var(--line)}
 .wrap{max-width:820px;margin:0 auto;padding:12px 16px}h1{font-size:1.35rem;margin:0}
 .sub,.meta,.hint{color:var(--muted);font-size:.88rem}
-.tabs{display:flex;gap:6px;margin:10px 0 8px}.tab{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600}
+.tabs{display:flex;gap:6px;margin:10px 0 8px;overflow-x:auto;scrollbar-width:none}.tab{flex:1 0 auto;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:600}
 .tab[aria-selected=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
 input[type=search],select{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 input[type=search]{width:100%}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1 1 auto}
@@ -278,7 +306,7 @@ ul{list-style:none;padding:0;margin:0}.card{background:var(--card);border:1px so
 </style></head><body>
 <header><div class="wrap">
 <h1>Comps to enter</h1><div class="sub" id="summary"></div>
-<div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="auto">Auto-entered</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
+<div class="tabs" role="tablist"><button class="tab" data-tab="todo">To enter</button><button class="tab" data-tab="auto">Entered</button><button class="tab" data-tab="appr">Approvals</button><button class="tab" data-tab="win">Winners</button><button class="tab" data-tab="free">Freebies</button></div>
 <input type="search" id="q" placeholder="Search prize, brand or title">
 <div class="chips" id="cats"></div>
 <div class="row" style="margin-top:6px">
@@ -308,10 +336,12 @@ const gone = () => store.get("comps-removed", {});
 const brokenIssue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("broken: " + ids.join(" "))}&body=${encodeURIComponent("This competition doesn't work (entry page broken, closed early or not as listed). Stop entering it and take it off the lists; not a dislike. Submit this issue; the remove workflow does the rest.")}`;
 const rmBtn = (x) => `<a class="ghost rm" href="${rmIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Remove</a>` +
   `<a class="ghost rm" href="${brokenIssue([x.id])}" target="_blank" rel="noopener" data-id="${esc(x.id)}">Doesn't work</a>`;
+const answerIssue = (x) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("answer: " + x.id)}&body=${encodeURIComponent(
+  `${x.t}\nQuestion: ${x.q || "(see the entry page)"}\nUp to ${x.lim} words. Writing the answer here approves it; it is entered on the next run.\nWrite your answer below this line.\n---\n${x.a || ""}`)}`;
 const issue = (ids) => `https://github.com/${D.repo}/issues/new?title=${encodeURIComponent("reenter: " + ids.join(" "))}&body=${encodeURIComponent("Re-enter these competitions now. Submit this issue; the reenter workflow does the rest and closes it.")}`;
 $("#summary").textContent = `${D.todo.length} to enter by hand · ${D.stats.entries} auto-entries in ${D.stats.comps} comps` + (D.removed ? ` · ${D.removed} removed` : "") + ` · updated ${D.built}`;
 for (const [k, v] of Object.entries(D.groups)) $("#grp").insertAdjacentHTML("beforeend", `<option value="${k}">${esc(v)}</option>`);
-const pool = () => S.tab === "todo" ? D.todo : S.tab === "auto" ? D.auto : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
+const pool = () => S.tab === "todo" ? D.todo : S.tab === "auto" ? D.auto : S.tab === "appr" ? D.appr : S.tab === "win" ? D.win.filter((x) => x.n || done()[x.id] || x.seen === "yes") : D.free;
 function chips() {
   const src = S.tab === "free" ? [...new Set(D.free.map((x) => x.k))] : D.categories;
   $("#cats").innerHTML = src.map((c) => { const n = pool().filter((x) => x.k === c).length;
@@ -333,6 +363,16 @@ function card(x) {
     ${x.pn ? `<div class="meta">${esc(x.pn)}</div>` : ""}
     <div class="acts">${x.wp ? `<a class="go" href="${esc(x.wp)}" target="_blank" rel="noopener">Winners page</a>` : `<span class="meta">Watch your email, phone and spam folder</span>`}<a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Listing</a></div></li>`;
   }
+  if (S.tab === "appr") {
+    const body = x.a ? `<div class="ans"><p>${esc(x.a)}</p><button class="ghost copy" data-copy="${esc(x.a)}">Copy answer</button></div>`
+                     : `<div class="meta">${x.q ? "Question: " + esc(x.q) : "Open the entry page to see the question."}</div>`;
+    return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
+    <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
+    <div class="meta"><span class="tag">${x.st === "ok" ? (x.hand ? "approved: enter by hand" : "approved, waiting to go in") : "needs your answer"}</span>${esc(x.b)} · up to ${x.lim} words</div>${body}
+    <div class="acts"><a class="ghost" href="${esc(x.u)}" target="_blank" rel="noopener">Open</a>
+    <a class="ghost" href="${answerIssue(x)}" target="_blank" rel="noopener">${x.a ? "Edit answer" : "Write answer"}</a>
+    ${x.a && !x.hand ? `<a class="go" href="${issue([x.id])}" target="_blank" rel="noopener">Submit now</a>` : ""}${rmBtn(x)}</div></li>`;
+  }
   if (S.tab === "auto") return `<li class="card"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta"><span class="tag">${esc(x.k)}</span>${esc(x.b)}</div>
@@ -346,7 +386,8 @@ function card(x) {
   const isDone = !!done()[x.id];
   return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
-    <div class="meta"><span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>${ans}
+    <div class="meta"><span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>
+    ${x.tu ? `<div class="meta">The listing links the terms${x.u !== x.tu ? "; the button opens the entry page they name" : ""}.${x.how ? " " + esc(x.how) : ""} <a href="${esc(x.tu)}" target="_blank" rel="noopener">Terms</a></div>` : ""}${ans}
     <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open entry page</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
 }
 function render() {
@@ -363,6 +404,10 @@ function render() {
   list.sort(by[S.sort]);
   const total = list.reduce((s, x) => s + (x.p || 0), 0);
   $("#count").textContent = `${list.length} shown` + (S.tab !== "free" ? ` · ${money(total)} in prizes` : "") + (S.tab === "todo" ? ` · ${P.filter((x) => !dn[x.id]).length} not done` : "") + (S.tab === "win" ? " · auto-entered and ticked Done; close-date filter uses the draw date" : "");
+  const ok = S.tab === "appr" ? list.filter((x) => x.st === "ok" && !x.hand) : [];
+  $("#count").innerHTML = esc($("#count").textContent) + (S.tab === "appr"
+    ? ` · ${list.filter((x) => x.st === "ok").length} approved, ${list.filter((x) => x.st !== "ok").length} need an answer` + (ok.length ? ` <a class="go" href="${issue(ok.map((x) => x.id))}" target="_blank" rel="noopener">Submit all approved (${ok.length})</a>` : "")
+    : "");
   $("#list").innerHTML = list.map(card).join("") || `<li class="empty">${S.tab === "win" ? "Nothing entered yet. Tick Done on the To enter tab to track a comp here." : "Nothing matches. Clear a filter."}</li>`;
   $("#bar").classList.toggle("show", S.tab === "auto" && sel.size > 0);
   $("#selcount").textContent = `${sel.size} selected`; $("#reselect").href = issue([...sel]); $("#rmselect").href = rmIssue([...sel]);

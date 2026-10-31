@@ -269,7 +269,10 @@ def build(store=STORE, entries=ENTRIES, now=None):
             w = csv.DictWriter(fh, fields, extrasaction="ignore")
             w.writeheader()
             w.writerows(rows)
-    ready_items = [{"id": q["id"], "entry_url": q["entry_url"], "answer": answers.get(str(q["id"]))}
+    from workers import entry_pages            # imports this module
+    pages = entry_pages.latest(store)
+    better = lambda q: pages.get(q["id"], {}).get("better_url") if pages.get(q["id"], {}).get("kind") == "terms" else None
+    ready_items = [{"id": q["id"], "entry_url": better(q) or q["entry_url"], "answer": answers.get(str(q["id"]))}
                    for q in queue if not q["needs_answer"]]
     (entries / "queue.json").write_text(json.dumps(ready_items, indent=1))
     ready = len(ready_items)
