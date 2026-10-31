@@ -1,7 +1,9 @@
 # Desired state for the Azure Container Apps jobs lives in git (azure/jobs/*.json); this workflow applies it.
 #   guard  : tools/cost_guard.py (cron, size, timeout, cost, code and workflow rules) and the runner/guard tests.
-#   build  : rebuilds the worker image only when azure/**, workers/** or analysis/** changed (the image carries the code;
-#            data lives in the Azure Blob container lotto-data, not in git), else resolves the digest of :latest; pushes to GHCR.
+#   build  : the image carries the code (data lives in the Azure Blob container lotto-data, not in git). It is tagged
+#            src-<SHA> where SHA is the last commit that touched azure/, workers/ or analysis/. It rebuilds when that tag is
+#            missing from GHCR (or a manual run asks), else resolves the digest of the src-<SHA> tag, never of :latest, so a
+#            skipped or failed earlier run cannot leave new job specs on an old image; pushes to GHCR.
 #   deploy : substitutes the digest for IMAGE in each job file, PATCHes the job (secrets, registries and identity are
 #            sent exactly as in the file), then exports the live jobs and re-runs the guard with --live so drift
 #            (portal edits, other tools) fails the run.
@@ -20,9 +22,9 @@ on:
   workflow_dispatch:
     inputs:
       rebuild:
-        description: "Rebuild the worker image even if azure/**, workers/** and analysis/** did not change"
+        description: "Rebuild the worker image even if an image already exists for the current azure/**, workers/** and analysis/** content"
         type: boolean
-        default: false
+        default: true
       limits_approved:
         description: "Owner approves a loosened azure/limits.json (the guard's ratchet)"
         type: boolean
@@ -73,31 +75,24 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Did the image inputs (azure/, workers/, analysis/) change?
+      - name: Is there an image for the current inputs (azure/, workers/, analysis/)?
         id: changed
         env:
-          BEFORE: ${{ github.event.before }}
           REBUILD: ${{ inputs.rebuild }}
         run: |
+          # Content-based, not a diff against the previous commit: a push whose guard failed builds nothing, and a later
+          # commit that leaves these paths alone must still find (or build) the image for them.
+          src=$(git log -1 --format=%H -- azure/ workers/ analysis/)
           rebuild=false
           if [ "$REBUILD" = "true" ]; then
             rebuild=true
-          elif ! docker buildx imagetools inspect "$IMAGE_REPO:latest" > /dev/null 2>&1; then
-            echo "No :latest image yet"
+          elif ! docker buildx imagetools inspect "$IMAGE_REPO:src-$src" > /dev/null 2>&1; then
+            echo "No $IMAGE_REPO:src-$src image yet"
             rebuild=true
-          else
-            base="$BEFORE"
-            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
-              base="HEAD^"
-            fi
-            if git diff --quiet "$base" HEAD -- azure/ workers/ analysis/; then
-              rebuild=false
-            else
-              rebuild=true
-            fi
           fi
+          echo "src=$src" >> "$GITHUB_OUTPUT"
           echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-          echo "rebuild image: $rebuild"
+          echo "image inputs last changed in $src; rebuild image: $rebuild"
       - name: Build and push
         id: push
         if: steps.changed.outputs.rebuild == 'true'
@@ -108,15 +103,17 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_REPO }}:sha-${{ github.sha }}
+            ${{ env.IMAGE_REPO }}:src-${{ steps.changed.outputs.src }}
             ${{ env.IMAGE_REPO }}:latest
       - name: Resolve the image digest
         id: digest
         env:
           BUILT: ${{ steps.push.outputs.digest }}
+          SRC: ${{ steps.changed.outputs.src }}
         run: |
           digest="$BUILT"
           if [ -z "$digest" ]; then
-            digest=$(docker buildx imagetools inspect "$IMAGE_REPO:latest" --format '{{.Manifest.Digest}}')
+            digest=$(docker buildx imagetools inspect "$IMAGE_REPO:src-$SRC" --format '{{.Manifest.Digest}}')
           fi
           if ! printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$'; then
             echo "Unexpected digest: $digest" >&2
