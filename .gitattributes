@@ -1,0 +1,2 @@
+# Append-only registers and logs: when two workers append at once, keep both sides' lines.
+*.jsonl merge=union

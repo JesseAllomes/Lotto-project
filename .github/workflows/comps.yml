@@ -42,5 +42,10 @@ jobs:
           git add data/comps data/entries/winners.csv
           git add data/entries/winner_checks.jsonl 2>/dev/null || true
           git diff --cached --quiet || git commit -m "comps: register update $(date -u +%F)"
-          git pull --rebase origin main
-          git push
+          # Other workers push while this runs: .jsonl registers merge by union (.gitattributes); regenerated CSVs and
+          # summaries take this run's version.
+          for i in 1 2 3 4; do
+            git pull --rebase -X theirs origin main && git push && exit 0
+            git rebase --abort 2>/dev/null; sleep $((i * 5))
+          done
+          exit 1
