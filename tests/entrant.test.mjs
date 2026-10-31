@@ -216,3 +216,46 @@ test("survey questions are not personal fields; an open Yes/No question or an un
   assert.deepEqual(out.map((r) => [r.result, r.reason]), [["skipped", "unfillable"], ["skipped", "needs_answer"]]);
 });
 
+
+// Cost guards (no real browser: a fake `launch` stands in for Chromium).
+test("an empty queue never starts a browser", async () => {
+  let launched = false;
+  const out = await run({ queue: [], live: false, logPath: tmpLog(), launch: async () => { launched = true; } });
+  assert.deepEqual(out, []);
+  assert.equal(launched, false);
+});
+
+function fakeBrowser(hang) {
+  const closed = [];
+  return {
+    closed,
+    async newContext() {
+      return {
+        async newPage() {
+          return { async goto() { if (hang) await new Promise(() => {}); }, async waitForTimeout() {} };
+        },
+        async close() { closed.push(1); },
+      };
+    },
+    async close() {},
+  };
+}
+
+test("the per-item watchdog logs a hung form as failed and closes its context", async () => {
+  const logPath = tmpLog();
+  const browser = fakeBrowser(true);
+  const [r] = await run({ queue: [{ id: 90, entry_url: "http://x.invalid/" }], live: false, logPath,
+                          launch: async () => browser, itemTimeoutMs: 50 });
+  assert.equal(r.result, "failed");
+  assert.match(r.reason, /item watchdog/);
+  assert.equal(browser.closed.length, 1);
+  assert.equal(JSON.parse(fs.readFileSync(logPath, "utf8").trim()).id, 90);
+});
+
+test("the time budget stops new forms from starting", async () => {
+  const logPath = tmpLog();
+  const queue = [1, 2, 3].map((id) => ({ id: 91 + id, entry_url: "http://x.invalid/" }));
+  const out = await run({ queue, live: false, logPath, launch: async () => fakeBrowser(true), itemTimeoutMs: 80,
+                          concurrency: 1, budgetMs: 30 });
+  assert.equal(out.length, 1);               // the first form ran into its watchdog; the budget had gone by the next
+});

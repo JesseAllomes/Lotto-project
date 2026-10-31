@@ -1,5 +1,5 @@
 # Lotto worker image for Azure Container Apps Jobs: azure/runner.py plus git, poppler-utils, Node and Playwright's
-# headless Chromium. It holds no repo code; runner.py clones main at run time. Built by .github/workflows/azure-image.yml
+# headless Chromium. It holds no repo code; runner.py clones main at run time. Built by .github/workflows/azure-deploy.yml
 # (context = repo root). Rebuilt from the image history; the Node major version is a best guess (22) as history
 # only records that /usr/local was copied from a Node image.
 FROM node:22-bookworm-slim AS node

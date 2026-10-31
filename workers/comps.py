@@ -181,23 +181,35 @@ def write_csv(store):
     return len(recs)
 
 
-def run(store=STORE, max_new=None, fetch=get, delay=DELAY_S):
+BATCH = 50      # listings are saved every BATCH pages, so a timed-out or killed run keeps its work
+
+
+def run(store=STORE, max_new=None, fetch=get, delay=DELAY_S, batch=BATCH):
     fetched = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     have = set(stored(store))
     todo = [(i, u) for i, u in listing_urls(fetch(SITEMAP)) if i not in have]
     if max_new is not None:
         todo = todo[:max_new]
-    recs, failed = [], 0
-    for i, u in todo:
+    recs, failed, n, vic = [], 0, 0, 0
+
+    def save():
+        nonlocal recs, n, vic
+        n += append(store, recs, fetched)
+        vic += sum(1 for r in recs if r["open_to_vic"])
+        recs = []
+        write_csv(store)
+
+    for k, (i, u) in enumerate(todo, 1):
         try:
             recs.append(parse(fetch(u), i, u))
         except (urllib.error.URLError, TimeoutError, ValueError) as exc:
             failed += 1                       # retried on the next run, since nothing was stored for it
             print(f"skip {u}: {exc}", flush=True)
         time.sleep(delay)
-    n = append(store, recs, fetched)
+        if k % batch == 0:
+            save()
+    save()
     total = write_csv(store)
-    vic = sum(1 for r in recs if r["open_to_vic"])
     print(f"comps: {n} new listings ({vic} open to Victoria), {failed} failed, {total} in register", flush=True)
     return n
 

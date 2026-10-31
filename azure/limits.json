@@ -1,0 +1,117 @@
+{
+  "_note": "Owner-approved limits read by tools/cost_guard.py. Raising any number or adding to any list is a loosening: the guard fails it (check C10) unless LIMITS_APPROVED=1. Costs: budget_s_per_run is the average billed seconds of a run (default: the full replicaTimeout); budget_usd_month.total is checked against it, hard_ceiling_all_timeouts against every run using its whole timeout. Prices are USD list prices, without the free monthly grant.",
+  "prices": {
+    "aca_vcpu_s": 0.000024,
+    "aca_gib_s": 0.000003
+  },
+  "budget_usd_month": {
+    "total": 15,
+    "hard_ceiling_all_timeouts": 25
+  },
+  "image_repository": "ghcr.io/jesseallomes/lotto-azure-runner",
+  "jobs": {
+    "lotto-draws": {
+      "trigger": "Schedule",
+      "max_runs_per_day": 1,
+      "min_interval_min": 1440,
+      "max_replica_timeout_s": 1800,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": ["GITHUB_TOKEN"]
+    },
+    "lotto-jackpots": {
+      "trigger": "Schedule",
+      "max_runs_per_day": 1,
+      "min_interval_min": 1440,
+      "max_replica_timeout_s": 1800,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": ["GITHUB_TOKEN"]
+    },
+    "lotto-comps": {
+      "trigger": "Schedule",
+      "max_runs_per_day": 1,
+      "min_interval_min": 1440,
+      "max_replica_timeout_s": 5400,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": ["GITHUB_TOKEN", "ENTRANT_PROFILE_JSON"]
+    },
+    "lotto-entries": {
+      "trigger": "Schedule",
+      "max_runs_per_day": 120,
+      "min_interval_min": 5,
+      "max_replica_timeout_s": 280,
+      "budget_s_per_run": 120,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": ["GITHUB_TOKEN", "ENTRANT_PROFILE_JSON"],
+      "max_env": {
+        "ENTRANT_CONCURRENCY": 3,
+        "ENTRANT_TIMEOUT_S": 150
+      }
+    },
+    "lotto-reenter": {
+      "trigger": "Manual",
+      "max_runs_per_day": 10,
+      "min_interval_min": 1,
+      "max_replica_timeout_s": 600,
+      "max_cpu": 0.5,
+      "max_memory_gi": 1,
+      "parallelism": 1,
+      "replica_completion_count": 1,
+      "replica_retry_limit": 0,
+      "may_hold_secrets": ["GITHUB_TOKEN", "ENTRANT_PROFILE_JSON"],
+      "max_env": {
+        "ENTRANT_CONCURRENCY": 3,
+        "ENTRANT_TIMEOUT_S": 150
+      }
+    }
+  },
+  "allowed_resource_types": [
+    "Microsoft.App/jobs",
+    "Microsoft.App/managedEnvironments",
+    "Microsoft.ManagedIdentity/userAssignedIdentities",
+    "Microsoft.KeyVault/vaults",
+    "Microsoft.Storage/storageAccounts",
+    "Microsoft.Web/sites",
+    "Microsoft.Web/serverfarms",
+    "Microsoft.Web/staticSites",
+    "Microsoft.CognitiveServices/accounts"
+  ],
+  "log_analytics_max_daily_gb": 0.5,
+  "workflows": {
+    "max_timeout_minutes": 300,
+    "max_cron_fires_per_day": 300,
+    "concurrency_exempt": ["probe.yml"]
+  },
+  "code": {
+    "max_issue_pages": 10,
+    "max_retry_loop": 5,
+    "comps_max_new": 300,
+    "runner_entrant_concurrency": 3,
+    "runner_entrant_timeout_s": 150,
+    "entrant_default_max": 200,
+    "entrant_default_concurrency": 6
+  },
+  "ratchet": {
+    "unbounded_subprocess": 0,
+    "unbounded_while": 0,
+    "self_dispatch_workflows": ["entries.yml"],
+    "workflow_run_allowed": {
+      "site.yml": ["comps", "entries"]
+    }
+  }
+}

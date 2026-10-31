@@ -500,14 +500,27 @@ export async function fillForm(page, item, who, live) {
 // comps takes minutes, not a quarter of an hour; results keep the queue's order. Pacing between entries to the
 // same comp is entry_queue's job and is unchanged.
 const CONCURRENCY = Math.max(1, +(process.env.ENTRANT_CONCURRENCY || 6));
+// Cost and safety bounds (the Azure runner sets all three; GitHub Actions keeps the defaults):
+//   ENTRANT_MAX            most queue items taken per run
+//   ENTRANT_ITEM_TIMEOUT_S one form may take at most this long, then it is logged as failed and its browser context closed
+//   ENTRANT_BUDGET_S       no new form is started after this many seconds, so the run ends (and its log is committed)
+//                          before the caller's own timeout kills it; 0 = no budget
+const MAX_ITEMS = Math.max(1, +(process.env.ENTRANT_MAX || 200));
+const ITEM_TIMEOUT_MS = Math.max(1, +(process.env.ENTRANT_ITEM_TIMEOUT_S || 120)) * 1000;
+const BUDGET_MS = Math.max(0, +(process.env.ENTRANT_BUDGET_S || 0)) * 1000;
 
-export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max = 200, shots = process.env.ENTRANT_SHOTS,
+export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max = MAX_ITEMS, shots = process.env.ENTRANT_SHOTS,
                             logPath = process.env.ENTRANT_LOG || path.join(ENTRIES, "log.jsonl"), launch,
-                            concurrency = CONCURRENCY } = {}) {
+                            concurrency = CONCURRENCY, itemTimeoutMs = ITEM_TIMEOUT_MS, budgetMs = BUDGET_MS } = {}) {
   const who = profile();
   if (!who.email || !who.first || !who.last) throw new Error("owner details missing: set the ENTRANT_* secrets");
   const qfile = process.env.ENTRANT_QUEUE || path.join(ENTRIES, "queue.json");
   const items = (queue ?? JSON.parse(fs.readFileSync(qfile, "utf8"))).slice(0, max);
+  if (!items.length) {                       // nothing to enter: do not start a browser at all
+    console.log("entrant: queue is empty");
+    return [];
+  }
+  const started = Date.now();
   const { chromium } = require("playwright");
   const browser = await (launch ? launch() : chromium.launch());
   const out = new Array(items.length);
@@ -516,14 +529,24 @@ export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max 
     const context = await browser.newContext();
     const page = await context.newPage();
     let r;
+    let watchdog;
     try {
-      await page.goto(item.entry_url, { waitUntil: "domcontentloaded", timeout: 45000 });
-      await page.waitForTimeout(2500);
-      r = await fillForm(page, item, who, live);
-      if (shots) await page.screenshot({ path: path.join(shots, `${item.id}.png`), fullPage: true });
+      const work = (async () => {
+        await page.goto(item.entry_url, { waitUntil: "domcontentloaded", timeout: 45000 });
+        await page.waitForTimeout(2500);
+        const res = await fillForm(page, item, who, live);
+        if (shots) await page.screenshot({ path: path.join(shots, `${item.id}.png`), fullPage: true });
+        return res;
+      })();
+      work.catch(() => {});                  // if the watchdog wins, closing the context makes this reject: ignore it
+      const limit = new Promise((_, reject) => {
+        watchdog = setTimeout(() => reject(new Error(`item watchdog: over ${Math.round(itemTimeoutMs / 1000)}s`)), itemTimeoutMs);
+      });
+      r = await Promise.race([work, limit]);
     } catch (e) {
       r = { result: "failed", reason: String(e.message || e).split("\n")[0].slice(0, 120), fields: [] };
     } finally {
+      clearTimeout(watchdog);
       await context.close().catch(() => {});
     }
     const rec = { time_utc: new Date().toISOString().slice(0, 19) + "Z", id: item.id, mode: live ? "live" : "dry", ...r };
@@ -533,7 +556,7 @@ export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max 
   }
   try {
     await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-      while (next < items.length) {
+      while (next < items.length && !(budgetMs && Date.now() - started > budgetMs)) {
         const i = next++;
         out[i] = await one(items[i]);
       }
@@ -541,7 +564,8 @@ export async function run({ queue, live = process.env.ENTRANT_LIVE === "1", max 
   } finally {
     await browser.close();
   }
-  return out;
+  if (next < items.length) console.log(`entrant: time budget reached, ${items.length - next} of ${items.length} left for the next run`);
+  return out.filter(Boolean);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

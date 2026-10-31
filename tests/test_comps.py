@@ -75,6 +75,25 @@ class Store(unittest.TestCase):
             self.assertEqual(comps.run(store, max_new=0, fetch=fetch, delay=0), 0)
 
 
+    def test_progress_is_saved_every_batch_so_a_killed_run_keeps_its_work(self):
+        pages = {comps.SITEMAP: page("comps_sitemap.xml"), RAFFLE_URL: page("comp_76171.html"),
+                 CASH_URL: page("comp_76174.html")}
+
+        def fetch(url):
+            if url == RAFFLE_URL:
+                raise KeyboardInterrupt            # the replica is stopped part way through the crawl
+            if url not in pages:
+                raise ValueError("not saved")
+            return pages[url]
+
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d)
+            with self.assertRaises(KeyboardInterrupt):
+                comps.run(store, fetch=fetch, delay=0, batch=1)
+            ids = [json.loads(l)["comp"]["id"] for l in (store / "comps.jsonl").read_text().splitlines()]
+            self.assertEqual(ids, [76174])
+            self.assertEqual(len((store / "comps.csv").read_text().splitlines()), 2)
+
 
 class AusComps(unittest.TestCase):
     def test_page_becomes_a_register_record(self):

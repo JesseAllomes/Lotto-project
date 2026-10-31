@@ -1,0 +1,178 @@
+# Desired state for the Azure Container Apps jobs lives in git (azure/jobs/*.json); this workflow applies it.
+#   guard  : tools/cost_guard.py (cron, size, timeout, cost, code and workflow rules) and the runner/guard tests.
+#   build  : rebuilds the worker image only when azure/** changed, else resolves the digest of :latest; pushes to GHCR.
+#   deploy : substitutes the digest for IMAGE in each job file, PATCHes the job (secrets, registries and identity are
+#            sent exactly as in the file), then exports the live jobs and re-runs the guard with --live so drift
+#            (portal edits, other tools) fails the run.
+# Nothing here wakes the jobs: they stay inert while AZURE_JOBS_DISABLED is "1" in azure/jobs/*.json (the owner flips
+# that in one commit at cutover). Limits can only be loosened by running this workflow by hand with limits_approved.
+name: azure-deploy
+on:
+  push:
+    branches: [main]
+    paths:
+      - "azure/**"
+      - "workers/**"
+      - "tools/**"
+      - ".github/workflows/azure-*.yml"
+  workflow_dispatch:
+    inputs:
+      rebuild:
+        description: "Rebuild the worker image even if azure/** did not change"
+        type: boolean
+        default: false
+      limits_approved:
+        description: "Owner approves a loosened azure/limits.json (the guard's ratchet)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: azure-deploy
+  cancel-in-progress: false
+env:
+  IMAGE_REPO: ghcr.io/jesseallomes/lotto-azure-runner
+  AZURE_SUBSCRIPTION_ID: 78e367c0-cd4d-4334-8c02-69fa04c8bffd
+  AZURE_RESOURCE_GROUP: rg-personal-automation-aue
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      LIMITS_APPROVED: ${{ inputs.limits_approved && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Cost guard
+        run: python3 -B tools/cost_guard.py --limits azure/limits.json --base HEAD^
+      - name: Runner and guard tests
+        run: python3 -B -m unittest tests.test_azure_runner tests.test_cost_guard
+
+  build:
+    needs: guard
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Did azure/** change?
+        id: changed
+        env:
+          BEFORE: ${{ github.event.before }}
+          REBUILD: ${{ inputs.rebuild }}
+        run: |
+          rebuild=false
+          if [ "$REBUILD" = "true" ]; then
+            rebuild=true
+          elif ! docker buildx imagetools inspect "$IMAGE_REPO:latest" > /dev/null 2>&1; then
+            echo "No :latest image yet"
+            rebuild=true
+          else
+            base="$BEFORE"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
+              base="HEAD^"
+            fi
+            if git diff --quiet "$base" HEAD -- azure/; then
+              rebuild=false
+            else
+              rebuild=true
+            fi
+          fi
+          echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
+          echo "rebuild image: $rebuild"
+      - name: Build and push
+        id: push
+        if: steps.changed.outputs.rebuild == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: azure/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPO }}:sha-${{ github.sha }}
+            ${{ env.IMAGE_REPO }}:latest
+      - name: Resolve the image digest
+        id: digest
+        env:
+          BUILT: ${{ steps.push.outputs.digest }}
+        run: |
+          digest="$BUILT"
+          if [ -z "$digest" ]; then
+            digest=$(docker buildx imagetools inspect "$IMAGE_REPO:latest" --format '{{.Manifest.Digest}}')
+          fi
+          if ! printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$'; then
+            echo "Unexpected digest: $digest" >&2
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          {
+            echo "Image \`$IMAGE_REPO@$digest\` (rebuilt: ${{ steps.changed.outputs.rebuild }})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      IMAGE: ghcr.io/jesseallomes/lotto-azure-runner@${{ needs.build.outputs.digest }}
+      LIMITS_APPROVED: ${{ inputs.limits_approved && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: azure/login@v2
+        with:
+          client-id: 7ab2c182-e73b-4027-b30b-9cb9ddc841f7
+          tenant-id: f1575bc8-e389-49bf-8ab0-31155227f4c3
+          subscription-id: 78e367c0-cd4d-4334-8c02-69fa04c8bffd
+      - name: Apply azure/jobs/*.json
+        run: |
+          set -eu
+          for file in azure/jobs/*.json; do
+            name=$(basename "$file" .json)
+            body="$RUNNER_TEMP/$name.patch.json"
+            jq --arg image "$IMAGE" \
+              'del(.name, .location) | .properties.template.containers[0].image = $image' "$file" > "$body"
+            echo "PATCH $name -> $IMAGE"
+            az rest --method patch --only-show-errors \
+              --url "https://management.azure.com/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.App/jobs/$name?api-version=2024-03-01" \
+              --body "@$body" > /dev/null
+          done
+      - name: Export the live jobs
+        run: |
+          set -eu
+          az extension add --name containerapp --only-show-errors
+          mkdir -p live
+          for file in azure/jobs/*.json; do
+            name=$(basename "$file" .json)
+            state=""
+            for attempt in $(seq 1 18); do
+              state=$(az containerapp job show --only-show-errors -g "$AZURE_RESOURCE_GROUP" -n "$name" \
+                --query properties.provisioningState -o tsv)
+              [ "$state" = "Succeeded" ] && break
+              echo "$name is $state; waiting"
+              sleep 10
+            done
+            [ "$state" = "Succeeded" ] || { echo "$name did not finish provisioning ($state)" >&2; exit 1; }
+            az containerapp job show --only-show-errors -g "$AZURE_RESOURCE_GROUP" -n "$name" -o json > "live/$name.json"
+          done
+      - name: Drift check (live state must match git and the limits)
+        run: python3 -B tools/cost_guard.py --limits azure/limits.json --live live --image "$IMAGE" --base HEAD^

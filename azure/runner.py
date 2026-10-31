@@ -25,7 +25,24 @@ from pathlib import Path
 REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "JesseAllomes/Lotto-project")
 BRANCH = os.environ.get("GITHUB_BRANCH", "main")
 BURST_MINUTES = frozenset({5, 10, 15, 20, 25})
-MAX_ISSUE_PAGES = 100
+MAX_ISSUE_PAGES = 10
+# Every external step is bounded (seconds), well inside the job's replicaTimeout (azure/jobs/*.json), so a hung
+# step fails the run with its work saved instead of waiting for Azure to kill the replica.
+CLONE_TIMEOUT_S = 120
+GIT_STEP_TIMEOUT_S = 60
+GIT_NETWORK_TIMEOUT_S = 90
+QUEUE_TIMEOUT_S = 120
+COMMIT_ENTRIES_TIMEOUT_S = 120
+WORKER_TIMEOUT_S = 1500          # draws, jackpots
+COMPS_TIMEOUT_S = 900            # workers.comps (capped by COMPS_MAX_NEW; progress is saved every 50 listings)
+COMPS_MAX_NEW = 300
+COMPS_STEP_TIMEOUT_S = 240       # comp_odds, skill_rank, winners
+REENTER_BUILD_TIMEOUT_S = 120
+# Entrant defaults when run from here (jobs also set these in env): coherent with replicaTimeout 280 on lotto-entries.
+ENTRANT_DEFAULT_TIMEOUT_S = 150
+ENTRANT_DEFAULT_CONCURRENCY = 3
+ENTRANT_DEFAULT_ITEM_TIMEOUT_S = 85
+ENTRANT_DEFAULT_MAX = 30
 # Never handed to node/Chromium or the Python scrapers (git gets only its own auth header).
 SECRET_VARS = (
     "GITHUB_TOKEN",
@@ -64,9 +81,9 @@ def install_sigterm_handler() -> None:
 
 def entrant_timeout() -> int:
     try:
-        return int(os.environ.get("ENTRANT_TIMEOUT_S") or 420)
+        return int(os.environ.get("ENTRANT_TIMEOUT_S") or ENTRANT_DEFAULT_TIMEOUT_S)
     except ValueError:
-        return 420
+        return ENTRANT_DEFAULT_TIMEOUT_S
 
 
 def load_profile() -> None:
@@ -203,15 +220,47 @@ def checkout(job: str, parent: Path) -> tuple[Path, dict[str, str]]:
         ],
         parent,
         env=env,
+        timeout=CLONE_TIMEOUT_S,
     )
-    command(["git", "sparse-checkout", "init", "--cone"], root, env=env)
-    command(["git", "sparse-checkout", "set", *SPARSE_PATHS[job]], root, env=env)
-    command(["git", "checkout", BRANCH], root, env=env)
-    command(["git", "config", "user.name", "lotto-azure-worker"], root, env=env)
     command(
-        ["git", "config", "user.email", "azure@users.noreply.github.com"], root, env=env
+        ["git", "sparse-checkout", "init", "--cone"],
+        root,
+        env=env,
+        timeout=GIT_STEP_TIMEOUT_S,
+    )
+    command(
+        ["git", "sparse-checkout", "set", *SPARSE_PATHS[job]],
+        root,
+        env=env,
+        timeout=GIT_STEP_TIMEOUT_S,
+    )
+    command(["git", "checkout", BRANCH], root, env=env, timeout=GIT_NETWORK_TIMEOUT_S)
+    command(
+        ["git", "config", "user.name", "lotto-azure-worker"],
+        root,
+        env=env,
+        timeout=GIT_STEP_TIMEOUT_S,
+    )
+    command(
+        ["git", "config", "user.email", "azure@users.noreply.github.com"],
+        root,
+        env=env,
+        timeout=GIT_STEP_TIMEOUT_S,
     )
     return root, env
+
+
+def git_status(
+    args: list[str], root: Path, env: dict[str, str], timeout: int, **options: object
+) -> int:
+    """Return a git step's exit code; a step that overruns its timeout counts as failed (124)."""
+    try:
+        return subprocess.run(
+            args, cwd=root, env=env, check=False, timeout=timeout, **options
+        ).returncode
+    except subprocess.TimeoutExpired:
+        print(f"Step timed out after {timeout}s: {' '.join(args[:2])}", flush=True)
+        return 124
 
 
 def push(root: Path, env: dict[str, str], message: str, paths: list[str]) -> bool:
@@ -219,11 +268,9 @@ def push(root: Path, env: dict[str, str], message: str, paths: list[str]) -> boo
     if not present:
         print("No generated paths exist", flush=True)
         return False
-    command(["git", "add", *present], root, env=env)
+    command(["git", "add", *present], root, env=env, timeout=GIT_STEP_TIMEOUT_S)
     if (
-        subprocess.run(
-            ["git", "diff", "--cached", "--quiet"], cwd=root, env=env, check=False
-        ).returncode
+        git_status(["git", "diff", "--cached", "--quiet"], root, env, GIT_STEP_TIMEOUT_S)
         == 0
     ):
         print("No generated changes", flush=True)
@@ -231,31 +278,31 @@ def push(root: Path, env: dict[str, str], message: str, paths: list[str]) -> boo
     if dry_run():
         print(f"DRY_RUN: would commit and push to {BRANCH}: {message}", flush=True)
         return False
-    command(["git", "commit", "-m", message], root, env=env)
+    command(["git", "commit", "-m", message], root, env=env, timeout=GIT_STEP_TIMEOUT_S)
     for attempt in range(1, 5):
-        pulled = subprocess.run(
-            ["git", "pull", "--rebase", "-X", "theirs", "origin", BRANCH],
-            cwd=root,
-            env=env,
-            check=False,
-        )
         if (
-            pulled.returncode == 0
-            and subprocess.run(
+            git_status(
+                ["git", "pull", "--rebase", "-X", "theirs", "origin", BRANCH],
+                root,
+                env,
+                GIT_NETWORK_TIMEOUT_S,
+            )
+            == 0
+            and git_status(
                 ["git", "push", "origin", f"HEAD:{BRANCH}"],
-                cwd=root,
-                env=env,
-                check=False,
-            ).returncode
+                root,
+                env,
+                GIT_NETWORK_TIMEOUT_S,
+            )
             == 0
         ):
             return True
-        subprocess.run(
+        git_status(
             ["git", "rebase", "--abort"],
-            cwd=root,
-            env=env,
+            root,
+            env,
+            GIT_STEP_TIMEOUT_S,
             capture_output=True,
-            check=False,
         )
         time.sleep(attempt * 5)
     raise RuntimeError("could not push generated data after four attempts")
@@ -272,26 +319,65 @@ def run_soft(args: list[str], cwd: Path, *, env: dict, timeout: int | None = Non
 def run_comps(root: Path, env: dict[str, str], profile_ok: bool = True) -> None:
     scrape = child_environment()
     try:
-        command([sys.executable, "-m", "workers.comps"], root, env=scrape)
+        command(
+            [sys.executable, "-m", "workers.comps", "--max", str(COMPS_MAX_NEW)],
+            root,
+            env=scrape,
+            timeout=COMPS_TIMEOUT_S,
+        )
         run_soft(
             [sys.executable, "-m", "workers.source_auscomps", "--max", "600"],
             root,
             env=scrape,
-            timeout=25 * 60,
+            timeout=15 * 60,
         )
         run_soft(
             [sys.executable, "-m", "workers.comp_terms"],
             root,
             env=scrape,
-            timeout=30 * 60,
+            timeout=20 * 60,
         )
-        command([sys.executable, "-m", "workers.comp_odds", "--tags"], root, env=scrape)
-        command([sys.executable, "-m", "analysis.skill_rank"], root, env=scrape)
+        # Same as comps.yml; shorter caps so every step fits the job's 5400 s replicaTimeout.
+        run_soft(
+            [sys.executable, "-m", "workers.entry_pages", "--max", "300"],
+            root,
+            env=scrape,
+            timeout=8 * 60,
+        )
+        run_soft(
+            [sys.executable, "-m", "workers.entry_pages", "--targets"],
+            root,
+            env=scrape,
+            timeout=COMPS_STEP_TIMEOUT_S,
+        )
+        run_soft(
+            ["node", "workers/link_check.mjs"],
+            root,
+            env=scrape,
+            timeout=10 * 60,
+        )
+        command(
+            [sys.executable, "-m", "workers.comp_odds", "--tags"],
+            root,
+            env=scrape,
+            timeout=COMPS_STEP_TIMEOUT_S,
+        )
+        command(
+            [sys.executable, "-m", "analysis.skill_rank"],
+            root,
+            env=scrape,
+            timeout=COMPS_STEP_TIMEOUT_S,
+        )
         if profile_ok:
             winners = dict(scrape)
             if os.environ.get("ENTRANT_LAST_NAME"):
                 winners["ENTRANT_LAST_NAME"] = os.environ["ENTRANT_LAST_NAME"]
-            run_soft([sys.executable, "-m", "workers.winners", "--check"], root, env=winners)
+            run_soft(
+                [sys.executable, "-m", "workers.winners", "--check"],
+                root,
+                env=winners,
+                timeout=COMPS_STEP_TIMEOUT_S,
+            )
         else:
             print("Profile is unusable; winners check skipped", flush=True)
     finally:
@@ -304,7 +390,12 @@ def run_comps(root: Path, env: dict[str, str], profile_ok: bool = True) -> None:
 
 
 def run_draws(root: Path, env: dict[str, str]) -> None:
-    command([sys.executable, "-m", "workers.draws"], root, env=child_environment())
+    command(
+        [sys.executable, "-m", "workers.draws"],
+        root,
+        env=child_environment(),
+        timeout=WORKER_TIMEOUT_S,
+    )
     push(
         root,
         env,
@@ -335,14 +426,16 @@ def run_jackpots(root: Path, env: dict[str, str]) -> None:
         [sys.executable, "-m", "workers.jackpots", "--alerts", str(alert_path)],
         root,
         env=child_environment(),
+        timeout=WORKER_TIMEOUT_S,
     )
-    create_alert_issues(json.loads(alert_path.read_text()))
+    # Data first: a slow or failing GitHub issues API must not lose the day's register.
     push(
         root,
         env,
         f"jackpots: Azure update {dt.datetime.now(dt.UTC):%Y-%m-%d}",
         ["data/jackpots"],
     )
+    create_alert_issues(json.loads(alert_path.read_text()))
 
 
 def entrant_environment(
@@ -357,6 +450,17 @@ def entrant_environment(
         }
     )
     out["NODE_PATH"] = "/opt/playwright/node_modules"
+    # Bounded by default so a run ends, and its log is committed, before Azure kills the replica.
+    timeout = entrant_timeout()
+    out.setdefault("ENTRANT_ITEM_TIMEOUT_S", str(ENTRANT_DEFAULT_ITEM_TIMEOUT_S))
+    try:
+        item = int(out["ENTRANT_ITEM_TIMEOUT_S"])
+    except ValueError:
+        item = ENTRANT_DEFAULT_ITEM_TIMEOUT_S
+        out["ENTRANT_ITEM_TIMEOUT_S"] = str(item)
+    out.setdefault("ENTRANT_CONCURRENCY", str(ENTRANT_DEFAULT_CONCURRENCY))
+    out.setdefault("ENTRANT_MAX", str(ENTRANT_DEFAULT_MAX))
+    out.setdefault("ENTRANT_BUDGET_S", str(max(timeout - item - 5, 5)))
     if dry_run():
         out["ENTRANT_LIVE"] = "0"
     if queue:
@@ -370,14 +474,34 @@ def commit_entries(root: Path, env: dict[str, str], message: str) -> None:
     if dry_run():
         print(f"DRY_RUN: would commit and push the entry log: {message}", flush=True)
         return
-    command(["bash", "workers/commit_entries.sh", message], root, env=env)
+    command(
+        ["bash", "workers/commit_entries.sh", message],
+        root,
+        env=env,
+        timeout=COMMIT_ENTRIES_TIMEOUT_S,
+    )
+
+
+def queue_is_empty(path: Path) -> bool:
+    """True when the entrant has nothing to enter, so node and Chromium need not start."""
+    try:
+        return not json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
 
 
 def run_entries(root: Path, env: dict[str, str]) -> None:
-    command([sys.executable, "-m", "workers.entry_queue"], root, env=child_environment())
+    command(
+        [sys.executable, "-m", "workers.entry_queue"],
+        root,
+        env=child_environment(),
+        timeout=QUEUE_TIMEOUT_S,
+    )
     run_env = entrant_environment(root)
     try:
-        if run_env.get("ENTRANT_EMAIL"):
+        if queue_is_empty(root / "data/entries/queue.json"):
+            print("Entry queue is empty; browser not started", flush=True)
+        elif run_env.get("ENTRANT_EMAIL"):
             command(
                 ["node", "workers/entrant.mjs"],
                 root,
@@ -411,21 +535,26 @@ def run_reenter(root: Path, env: dict[str, str]) -> None:
             check=True,
             capture_output=True,
             text=True,
+            timeout=REENTER_BUILD_TIMEOUT_S,
         )
         queue.write_text(result.stdout)
         run_env = entrant_environment(root, queue, reenter=True)
         try:
-            command(
-                ["node", "workers/entrant.mjs"],
-                root,
-                env=run_env,
-                timeout=entrant_timeout(),
-            )
+            if queue_is_empty(queue):
+                print("Nothing to re-enter; browser not started", flush=True)
+            else:
+                command(
+                    ["node", "workers/entrant.mjs"],
+                    root,
+                    env=run_env,
+                    timeout=entrant_timeout(),
+                )
         finally:
             command(
                 [sys.executable, "-m", "workers.entry_queue"],
                 root,
                 env=child_environment(),
+                timeout=QUEUE_TIMEOUT_S,
             )
             commit_entries(root, env, f"reenter: issue #{number}")
     except BaseException as exc:

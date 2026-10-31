@@ -1,0 +1,95 @@
+{
+  "name": "lotto-reenter",
+  "location": "Australia East",
+  "identity": {
+    "type": "UserAssigned",
+    "userAssignedIdentities": {
+      "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourcegroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq": {}
+    }
+  },
+  "properties": {
+    "configuration": {
+      "triggerType": "Manual",
+      "replicaTimeout": 600,
+      "replicaRetryLimit": 0,
+      "manualTriggerConfig": {
+        "parallelism": 1,
+        "replicaCompletionCount": 1
+      },
+      "registries": [
+        {
+          "identity": "",
+          "passwordSecretRef": "ghcr-token",
+          "server": "ghcr.io",
+          "username": "JesseAllomes"
+        }
+      ],
+      "secrets": [
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/ghcr-publish-token",
+          "name": "ghcr-token"
+        },
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/lotto-github-token",
+          "name": "github-token"
+        },
+        {
+          "identity": "/subscriptions/78e367c0-cd4d-4334-8c02-69fa04c8bffd/resourceGroups/rg-personal-automation-aue/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-personal-v5ethud2i3cfq",
+          "keyVaultUrl": "https://kv-personal-v5ethud2i3cf.vault.azure.net/secrets/entrant-profile-json",
+          "name": "entrant-profile"
+        }
+      ]
+    },
+    "template": {
+      "containers": [
+        {
+          "name": "worker",
+          "image": "IMAGE",
+          "args": [
+            "reenter"
+          ],
+          "env": [
+            {
+              "name": "GITHUB_REPOSITORY",
+              "value": "JesseAllomes/Lotto-project"
+            },
+            {
+              "name": "GITHUB_BRANCH",
+              "value": "main"
+            },
+            {
+              "name": "GITHUB_TOKEN",
+              "secretRef": "github-token"
+            },
+            {
+              "name": "ENTRANT_PROFILE_JSON",
+              "secretRef": "entrant-profile"
+            },
+            {
+              "name": "ENTRANT_LIVE",
+              "value": "1"
+            },
+            {
+              "name": "AZURE_JOBS_DISABLED",
+              "value": "1"
+            },
+            {
+              "name": "ENTRANT_CONCURRENCY",
+              "value": "3"
+            },
+            {
+              "name": "ENTRANT_TIMEOUT_S",
+              "value": "150"
+            }
+          ],
+          "resources": {
+            "cpu": 0.5,
+            "memory": "1Gi"
+          }
+        }
+      ]
+    }
+  }
+}

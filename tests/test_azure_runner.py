@@ -292,18 +292,20 @@ class Comps(unittest.TestCase):
 
     def test_continues_after_comp_terms_timeout_and_still_pushes(self):
         calls, push, error = self.run_comps("workers.comp_terms")
-        names = [c[0][2] for c in calls]
+        names = [c[0][2] if c[0][0] != "node" else c[0][1] for c in calls]
         self.assertEqual(names[-3:], ["workers.comp_odds", "analysis.skill_rank", "workers.winners"])
+        self.assertIn("workers/link_check.mjs", names)
         self.assertIsNone(error)
         push.assert_called_once()
-        timeouts = {c[0][2]: c[1]["timeout"] for c in calls}
-        self.assertEqual(timeouts["workers.source_auscomps"], 25 * 60)
-        self.assertEqual(timeouts["workers.comp_terms"], 30 * 60)
+        timeouts = {n: c[1]["timeout"] for n, c in zip(names, calls)}
+        self.assertEqual(timeouts["workers.source_auscomps"], 15 * 60)
+        self.assertEqual(timeouts["workers.comp_terms"], 20 * 60)
+        self.assertLessEqual(sum(c[1]["timeout"] for c in calls), 5400 - 300)
 
     def test_auscomps_failure_does_not_abort(self):
         calls, push, error = self.run_comps("workers.source_auscomps")
         self.assertIsNone(error)
-        self.assertEqual(len(calls), 6)
+        self.assertEqual(len(calls), 9)
         push.assert_called_once()
 
     def test_push_runs_even_when_a_hard_step_fails(self):
@@ -335,7 +337,7 @@ class Entries(unittest.TestCase):
         calls, error = self.run_entries()
         self.assertIsNotNone(error)
         node = [kw for args, kw in calls if args[0] == "node"][0]
-        self.assertEqual(node["timeout"], 420)
+        self.assertEqual(node["timeout"], 150)
         self.assertEqual(calls[-1][0][:2], ["bash", "workers/commit_entries.sh"])
         self.assertEqual(calls[-1][1]["env"], {"GIT": "1"})
 
@@ -359,7 +361,7 @@ class Reenter(unittest.TestCase):
         def fake_run(args, **kw):
             if args[0] == "node":
                 raise subprocess.CalledProcessError(1, args)
-            return subprocess.CompletedProcess(args, 0, "[]", "")
+            return subprocess.CompletedProcess(args, 0, '[{"id": 1}]', "")
 
         with tempfile.TemporaryDirectory() as tmp, patched_env(ISSUE_TITLE="reenter x", ISSUE_NUMBER="7"), \
                 mock.patch.object(runner.subprocess, "run", side_effect=fake_run), \
@@ -370,6 +372,123 @@ class Reenter(unittest.TestCase):
         self.assertEqual([p[0] for p in posted], ["POST", "PATCH"])
         self.assertIn("Re-entry failed", posted[0][2]["body"])
         self.assertEqual(posted[1][2], {"state": "closed"})
+
+
+class CostBounds(unittest.TestCase):
+    """The loop and runaway limits from the cost audit (risks 3, 11, 12, 14)."""
+
+    def test_issue_paging_is_capped(self):
+        self.assertLessEqual(runner.MAX_ISSUE_PAGES, 10)
+        pages = []
+
+        def fake_request(method, path, payload=None):
+            pages.append(path)
+            return [{"title": "x"}]            # never ends: only the cap stops the loop
+
+        with mock.patch.object(runner, "github_request", side_effect=fake_request):
+            runner.create_alert_issues([])
+        self.assertEqual(len(pages), runner.MAX_ISSUE_PAGES)
+
+    def test_jackpots_pushes_data_before_issue_work(self):
+        order = []
+
+        def fake_run(args, **kw):
+            Path(args[args.index("--alerts") + 1]).write_text("[]")
+            return ok()
+
+        with tempfile.TemporaryDirectory() as tmp, patched_env(), \
+                mock.patch.object(runner.subprocess, "run", side_effect=fake_run), \
+                mock.patch.object(runner, "push", side_effect=lambda *a: order.append("push")), \
+                mock.patch.object(runner, "create_alert_issues", side_effect=lambda a: order.append("issues")):
+            runner.run_jackpots(Path(tmp), {})
+        self.assertEqual(order, ["push", "issues"])
+
+    def test_comps_runs_with_a_cap_and_a_timeout(self):
+        calls = []
+        with patched_env(), mock.patch.object(runner.subprocess, "run", side_effect=lambda a, **kw: calls.append((a, kw)) or ok()), \
+                mock.patch.object(runner, "push"), redirect_stdout(io.StringIO()):
+            runner.run_comps(Path("."), {})
+        args, kw = [c for c in calls if "workers.comps" in c[0]][0]
+        self.assertEqual(args[args.index("--max") + 1], str(runner.COMPS_MAX_NEW))
+        self.assertIsNotNone(kw["timeout"])
+
+    def test_every_subprocess_step_has_a_timeout(self):
+        calls = []
+
+        def fake_run(args, **kw):
+            calls.append((args, kw))
+            return subprocess.CompletedProcess(args, 1 if args[:2] == ["git", "diff"] else 0, "[{}]", "")
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                patched_env(GITHUB_TOKEN="t", ENTRANT_EMAIL="e", ISSUE_TITLE="reenter 1", ISSUE_NUMBER="3"), \
+                mock.patch.object(runner.subprocess, "run", side_effect=fake_run), \
+                mock.patch.object(runner, "github_request", return_value=[]), \
+                mock.patch.object(runner.time, "sleep"), redirect_stdout(io.StringIO()):
+            (Path(tmp) / "repo").mkdir()                 # the mocked clone makes nothing
+            root, env = runner.checkout("entries", Path(tmp))
+            runner.run_draws(root, env)
+            runner.run_entries(root, env)
+            runner.run_reenter(root, env)
+        self.assertGreater(len(calls), 10)
+        for args, kw in calls:
+            self.assertIsNotNone(kw.get("timeout"), args)
+
+    def test_a_hung_push_counts_as_a_failed_attempt(self):
+        def fake_run(args, **kw):
+            if args[:2] == ["git", "diff"]:
+                return ok(1)
+            if args[:2] == ["git", "pull"]:
+                raise subprocess.TimeoutExpired(args, kw["timeout"])
+            return ok()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "data").mkdir()
+            with patched_env(), mock.patch.object(runner.subprocess, "run", side_effect=fake_run), \
+                    mock.patch.object(runner.time, "sleep"), redirect_stdout(io.StringIO()):
+                with self.assertRaises(RuntimeError):
+                    runner.push(Path(tmp), {}, "m", ["data"])
+
+
+class EntrantBounds(unittest.TestCase):
+    def test_entrant_environment_is_bounded_by_default(self):
+        with patched_env(ENTRANT_EMAIL="e"):
+            env = runner.entrant_environment(Path("."))
+        self.assertEqual(env["ENTRANT_CONCURRENCY"], "3")
+        self.assertEqual(env["ENTRANT_MAX"], str(runner.ENTRANT_DEFAULT_MAX))
+        budget, item = int(env["ENTRANT_BUDGET_S"]), int(env["ENTRANT_ITEM_TIMEOUT_S"])
+        self.assertLess(budget + item, runner.entrant_timeout())
+
+    def test_job_settings_win_over_defaults(self):
+        with patched_env(ENTRANT_CONCURRENCY="2", ENTRANT_TIMEOUT_S="100"):
+            env = runner.entrant_environment(Path("."))
+        self.assertEqual(env["ENTRANT_CONCURRENCY"], "2")
+        self.assertEqual(env["ENTRANT_BUDGET_S"], "10")
+
+    def test_default_timeout_fits_the_entries_job(self):
+        self.assertEqual(runner.entrant_timeout(), 150)
+
+    def test_empty_queue_skips_node(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as tmp, patched_env(ENTRANT_EMAIL="e"), \
+                mock.patch.object(runner.subprocess, "run", side_effect=lambda a, **kw: calls.append(a) or ok()), \
+                redirect_stdout(io.StringIO()):
+            root = Path(tmp)
+            (root / "data/entries").mkdir(parents=True)
+            (root / "data/entries/queue.json").write_text("[]")
+            runner.run_entries(root, {})
+        self.assertFalse(any(c[0] == "node" for c in calls))
+        self.assertTrue(any(c[:2] == ["bash", "workers/commit_entries.sh"] for c in calls))
+
+    def test_queue_with_items_runs_node(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as tmp, patched_env(ENTRANT_EMAIL="e"), \
+                mock.patch.object(runner.subprocess, "run", side_effect=lambda a, **kw: calls.append(a) or ok()), \
+                redirect_stdout(io.StringIO()):
+            root = Path(tmp)
+            (root / "data/entries").mkdir(parents=True)
+            (root / "data/entries/queue.json").write_text('[{"id": 1}]')
+            runner.run_entries(root, {})
+        self.assertTrue(any(c[0] == "node" for c in calls))
 
 
 if __name__ == "__main__":
