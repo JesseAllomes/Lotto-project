@@ -112,7 +112,7 @@ def why(reason):
     r = reason.replace("entrant blocked: ", "")
     if r.startswith("entry link "):
         return {"dead": "entry link dead", "moved": "entry link goes to the home page",
-                "home": "entry link is the shop's home page"}.get(r.split()[2], r)
+                "home": "entry link is the shop's home page", "wrong": "entry page is not this competition"}.get(r.split()[2], r)
     return {"captcha": "human check (CAPTCHA)", "human_check": "the site's bot check", "no_form": "form not reachable",
             "unfillable": "a field only you can answer", "login": "needs a login",
             "blocked": "the site blocks automated browsers",

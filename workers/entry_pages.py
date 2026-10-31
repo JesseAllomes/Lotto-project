@@ -36,7 +36,8 @@ ENTER_TEXT = r"(?i)\b(?:enter|entry form|enter now|win|giveaway|competition|sign
 
 
 BAD = {"dead": "the entry link is dead (page not found)", "moved": "the entry link now goes to the shop's home page",
-       "home": "the entry link is the shop's home page, not the competition"}
+       "home": "the entry link is the shop's home page, not the competition",
+       "wrong": "the entry page names neither this brand nor this prize"}
 
 
 def done_ids(store=STORE):
@@ -44,8 +45,7 @@ def done_ids(store=STORE):
     return {json.loads(l)["id"] for l in path.read_text().splitlines() if l.strip()} if path.exists() else set()
 
 
-def latest(store=STORE):
-    path = store / "entry_pages.jsonl"
+def _last(path):
     out = {}
     if path.exists():
         for l in path.read_text().splitlines():
@@ -53,6 +53,29 @@ def latest(store=STORE):
                 r = json.loads(l)
                 out[r["id"]] = r
     return out
+
+
+def latest(store=STORE):
+    """The latest check per listing. Where the browser check (workers/link_check.mjs, data/comps/link_checks.jsonl)
+    has looked at the page, its verdict wins: dead, home or wrong (the rendered page names neither the brand nor the
+    prize); a page it found fine is never reported dead or moved from the plain fetch."""
+    out = _last(store / "entry_pages.jsonl")
+    for i, b in _last(store / "link_checks.jsonl").items():
+        rec = dict(out.get(i, {"id": i, "url": b.get("url")}), browser=b["kind"])
+        if b["kind"] in ("dead", "home", "wrong"):
+            rec["kind"] = b["kind"]
+        elif b["kind"] == "ok" and rec.get("kind") in ("dead", "moved", "home", "error", None):
+            rec["kind"] = "page"
+        out[i] = rec
+    return out
+
+
+def write_link_targets(store=STORE, today=None):
+    """data/comps/link_targets.json: every open listing for the browser check."""
+    items = [{"id": r["id"], "entry_url": r["entry_url"], "title": r.get("title", ""), "brand": r.get("brand") or ""}
+             for r in targets(store, today)]
+    (store / "link_targets.json").write_text(json.dumps(items))
+    return len(items)
 
 
 def check(url, raw, prose, fetch_url=None):
@@ -166,7 +189,11 @@ def run(store=STORE, max_new=None, fetch=comp_terms.fetch_bytes, workers=12, now
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--max", type=int, dest="max_new")
+    ap.add_argument("--targets", action="store_true", help="only write data/comps/link_targets.json")
     a = ap.parse_args(argv)
+    if a.targets:
+        print(f"entry_pages: {write_link_targets()} link targets")
+        return
     run(max_new=a.max_new)
 
 

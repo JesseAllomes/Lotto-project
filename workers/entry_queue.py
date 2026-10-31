@@ -239,7 +239,7 @@ def build(store=STORE, entries=ENTRIES, now=None):
             reason = f"entry route {a['entry_route']}"
         elif banned and not ENTER_BANNED:
             reason = "terms ban automated entry"
-        elif pages.get(r["id"], {}).get("kind") in ("dead", "moved", "home"):
+        elif pages.get(r["id"], {}).get("kind") in ("dead", "moved", "home", "wrong"):
             reason = f"entry link {pages[r['id']]['kind']} (workers/entry_pages.py)"
         elif r["id"] in blocked and not (final and blocked[r["id"]].startswith(RETRY_ON_LAST_DAY)
                                          and tried.get(r["id"], "") < start_of_last_day):

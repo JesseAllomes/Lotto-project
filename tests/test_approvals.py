@@ -86,5 +86,18 @@ class EntryPages(unittest.TestCase):
                          "social")
 
 
+    def test_browser_verdict_wins(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d)
+            (store / "entry_pages.jsonl").write_text(
+                json.dumps({"id": 1, "kind": "dead", "status": 404}) + "\n" + json.dumps({"id": 2, "kind": "form"}) + "\n" +
+                json.dumps({"id": 3, "kind": "terms", "how": "To enter, reply."}) + "\n")
+            (store / "link_checks.jsonl").write_text(
+                json.dumps({"id": 1, "kind": "ok"}) + "\n" + json.dumps({"id": 2, "kind": "wrong"}) + "\n" +
+                json.dumps({"id": 3, "kind": "login"}) + "\n" + json.dumps({"id": 4, "kind": "dead"}) + "\n")
+            got = {i: r["kind"] for i, r in entry_pages.latest(store).items()}
+            self.assertEqual(got, {1: "page", 2: "wrong", 3: "terms", 4: "dead"})
+
+
 if __name__ == "__main__":
     unittest.main()
