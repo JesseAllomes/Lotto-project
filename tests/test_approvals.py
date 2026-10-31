@@ -66,5 +66,25 @@ class EntryPages(unittest.TestCase):
         self.assertEqual(entry_pages.check("https://shop.example/win", form, "Win a prize")["kind"], "form")
 
 
+    def test_dead_home_and_social_links(self):
+        import urllib.error
+        r = {"id": 1, "entry_url": "https://shop.example/pages/win-a-bag"}
+
+        def gone(url):
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        self.assertEqual(entry_pages.inspect(r, gone)["kind"], "dead")
+        home = lambda url: (b"<html><body>New season dresses. Free shipping.</body></html>", "text/html",
+                            "https://shop.example/")
+        self.assertEqual(entry_pages.inspect(r, home)["kind"], "moved")
+        r2 = {"id": 2, "entry_url": "https://shop.example/"}
+        self.assertEqual(entry_pages.inspect(r2, home)["kind"], "home")
+        win = lambda url: (b"<html><body>Loading</body></html>", "text/html", "https://win.shop.example/")
+        self.assertEqual(entry_pages.inspect({"id": 3, "entry_url": "https://win.shop.example/"}, win)["kind"], "page")
+        fb = lambda url: (b"<html><body>Log in to Facebook</body></html>", "text/html",
+                          "https://www.facebook.com/shop/posts/123")
+        self.assertEqual(entry_pages.inspect({"id": 4, "entry_url": "https://www.facebook.com/shop/posts/123"}, fb)["kind"],
+                         "social")
+
+
 if __name__ == "__main__":
     unittest.main()

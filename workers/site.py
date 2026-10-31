@@ -110,6 +110,9 @@ def group_of(reason, platform, url):
 
 def why(reason):
     r = reason.replace("entrant blocked: ", "")
+    if r.startswith("entry link "):
+        return {"dead": "entry link dead", "moved": "entry link goes to the home page",
+                "home": "entry link is the shop's home page"}.get(r.split()[2], r)
     return {"captcha": "human check (CAPTCHA)", "human_check": "the site's bot check", "no_form": "form not reachable",
             "unfillable": "a field only you can answer", "login": "needs a login",
             "blocked": "the site blocks automated browsers",
@@ -172,9 +175,11 @@ def items(entries=ENTRIES, today=None, recs=None, pages=None):
             continue
         pv, est = comps.prize_value(rec or r)
         pg = pages.get(int(r["id"]), {}) if str(r["id"]).isdigit() else {}
-        terms = pg.get("kind") == "terms"
+        terms, bad = pg.get("kind") == "terms", entry_pages.BAD.get(pg.get("kind"))
         out.append({"id": r["id"], "t": comps.clean_title(r["title"]), "b": r.get("brand") or "", "p": pv or 0, "pe": est,
-                    "c": closes, "ct": at, "u": (terms and pg.get("better_url")) or r["entry_url"],
+                    "c": closes, "ct": at,
+                    "u": (rec.get("url") if bad else None) or (terms and pg.get("better_url")) or r["entry_url"],
+                    "bad": bad or "", "orig": r["entry_url"] if bad else "",
                     "tu": r["entry_url"] if terms else "", "how": pg.get("how") if terms else "",
                     "w": why(r.get("reason") or ""),
                     "g": group_of(r.get("reason") or "", r.get("entry_platform") or "", r["entry_url"]),
@@ -408,8 +413,9 @@ function card(x) {
   return `<li class="card ${isDone ? "is-done" : ""}"><div class="top"><span class="prize">${money(x.p, x.pe)}</span><span class="meta">${when}</span></div>
     <a class="title" href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>
     <div class="meta">${chanceTag(x)}<span class="tag">${esc(x.k)}</span><span class="tag">${esc(D.groups[x.g] || x.g)}</span>${esc(x.b)} · ${esc(x.w)}</div>
+    ${x.bad ? `<div class="meta soon">Checked: ${esc(x.bad)}. The button opens the listing page instead; the competition may have ended early. <a href="${esc(x.orig)}" target="_blank" rel="noopener">Try link</a></div>` : ""}
     ${x.tu ? `<div class="meta">The listing links the terms${x.u !== x.tu ? "; the button opens the entry page they name" : ""}.${x.how ? " " + esc(x.how) : ""} <a href="${esc(x.tu)}" target="_blank" rel="noopener">Terms</a></div>` : ""}${ans}
-    <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">Open entry page</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
+    <div class="acts"><a class="go" href="${esc(x.u)}" target="_blank" rel="noopener">${x.bad ? "Open listing" : "Open entry page"}</a>${rmBtn(x)}<label class="done"><input type="checkbox" class="tick" data-id="${esc(x.id)}" ${isDone ? "checked" : ""}> Done</label></div></li>`;
 }
 function inBand(p) {   // prize range "lo-hi"; old saved "500" style values mean any
   const m = /^([\d.e]+)-([\d.e]+)$/.exec(S.min || ""); return !m || (p >= +m[1] && p < +m[2]);

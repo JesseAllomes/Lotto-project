@@ -218,6 +218,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
                 done_once.add(e["id"])                        # the form keeps one entry per email: no more
             else:
                 blocked.pop(e["id"], None)
+    from workers import entry_pages            # imports this module
+    pages = entry_pages.latest(store)
     queue, manual, last_day_ids = [], [], set()
     for r in (json.loads(l)["comp"] for l in comps.stored(store).values()):
         if not r.get("open_to_vic") or (closes_at(r) or now) < now:
@@ -237,6 +239,8 @@ def build(store=STORE, entries=ENTRIES, now=None):
             reason = f"entry route {a['entry_route']}"
         elif banned and not ENTER_BANNED:
             reason = "terms ban automated entry"
+        elif pages.get(r["id"], {}).get("kind") in ("dead", "moved", "home"):
+            reason = f"entry link {pages[r['id']]['kind']} (workers/entry_pages.py)"
         elif r["id"] in blocked and not (final and blocked[r["id"]].startswith(RETRY_ON_LAST_DAY)
                                          and tried.get(r["id"], "") < start_of_last_day):
             reason = f"entrant blocked: {blocked[r['id']]}"
@@ -269,8 +273,6 @@ def build(store=STORE, entries=ENTRIES, now=None):
             w = csv.DictWriter(fh, fields, extrasaction="ignore")
             w.writeheader()
             w.writerows(rows)
-    from workers import entry_pages            # imports this module
-    pages = entry_pages.latest(store)
     better = lambda q: pages.get(q["id"], {}).get("better_url") if pages.get(q["id"], {}).get("kind") == "terms" else None
     ready_items = [{"id": q["id"], "entry_url": better(q) or q["entry_url"], "answer": answers.get(str(q["id"]))}
                    for q in queue if not q["needs_answer"]]
