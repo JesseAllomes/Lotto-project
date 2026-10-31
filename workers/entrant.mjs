@@ -138,6 +138,8 @@ export function profile(env = process.env) {
 export function classify(desc, type) {
   const d = desc.toLowerCase().replace(/[_\-.[\]]+/g, " ");      // sw__login_name, contact[first-name] -> words
   if (type === "password") return "password";
+  // A survey question ("Where did you last buy furniture from?") is not a personal detail, whatever words it uses.
+  if (/\?|\b(where|how|which|why|did you|do you|have you)\b/.test(d) && !/name|e-?mail|phone|mobile|post ?code|birth|suburb|address/.test(d)) return null;
   if (/confirm.*e-?mail|e-?mail.*(confirm|again|repeat)/.test(d)) return "email";
   if (type === "email" || /e-?mail/.test(d)) return "email";
   if (/first|given|fname|forename/.test(d)) return "first";
@@ -354,6 +356,7 @@ export async function fillForm(page, item, who, live) {
   const form = root.locator("form").filter({ has: emailBox }).first();
   const scope = (await form.count()) ? form : root.locator("body");
   const filled = new Set();
+  let skippedAnswer = false;
   // Klaviyo embedded forms post to a.klaviyo.com, which DataDome fronts (data/analysis/ENTRY_ERRORS.md): a refusal there
   // comes back as the form's generic error line, so any such reply goes to the manual list, not a retry.
   const klaviyo = await scope.evaluate((e) => !!(e.closest("form.klaviyo-form") || e.querySelector("form.klaviyo-form, input[name='phone-number'][type='tel']"))).catch(() => false);
@@ -398,6 +401,7 @@ export async function fillForm(page, item, who, live) {
         continue;
       }
       if (info.required) return { result: "skipped", reason: "needs_answer", fields: [] };
+      skippedAnswer = true;                        // not marked required: the form may still insist after submit
       continue;
     }
     const kind = classify(info.desc, info.type);
@@ -474,6 +478,13 @@ export async function fillForm(page, item, who, live) {
       return { result: "skipped", reason: "captcha", fields: [...filled], said };       // the site's invisible check said no
     }
     const fieldError = /required|invalid|not valid|please (enter|provide|select|check|complete|fill)/i.test(said);
+    if (fieldError && skippedAnswer) return { result: "skipped", reason: "needs_answer", fields: [...filled], said };
+    // A Yes/No or multiple-choice question left open: answering it would invent a fact about the owner.
+    const openChoice = fieldError && await scope.evaluate((f) => {
+      const names = new Set([...f.querySelectorAll("input[type=radio]")].filter((r) => r.offsetParent).map((r) => r.name));
+      return [...names].some((n) => !f.querySelector(`input[type=radio][name="${CSS.escape(n)}"]:checked`));
+    }).catch(() => false);
+    if (openChoice) return { result: "skipped", reason: "unfillable", fields: [...filled, "multiple-choice question"], said };
     if (/blocked|suspicious|unusual|robot|automated|verify you are human/i.test(said) ||
         (!fieldError && (klaviyo || /an error occurred when submitting/i.test(said)))) {
       return { result: "skipped", reason: "human_check", fields: [...filled], said: klaviyo ? `klaviyo: ${said}` : said };   // a bot check said no (Klaviyo/DataDome, Shopify)

@@ -1,0 +1,5 @@
+<html><body><form onsubmit="event.preventDefault(); const ok = document.querySelector('input[name=heard]:checked'); document.getElementById('m').innerText = ok ? 'Thank you for entering!' : 'This field is required';">
+<input name="first_name" placeholder="First name"><input name="last_name" placeholder="Last name"><input type="email" name="email" placeholder="Email">
+<p>Have you heard of us before?*</p><label><input type="radio" name="heard" value="y"> Yes</label><label><input type="radio" name="heard" value="n"> No</label>
+<label for="where">Where did you last buy furniture from?*</label><input id="where" name="where_bought">
+<button type="submit">Sign up</button><p id="m"></p></form></body></html>

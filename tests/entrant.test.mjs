@@ -206,3 +206,13 @@ test("a terms page that names the entry page leads there; 'Prefer not to say' an
   assert.equal(b.result, "entered");
   assert.ok(b.fields.includes("declined") && b.fields.includes("answer") && b.fields.includes("postcode"), b.fields.join());
 });
+
+test("survey questions are not personal fields; an open Yes/No question or an unmarked answer box goes to the owner", async () => {
+  assert.equal(classify("where_bought Where did you last buy furniture from?", "text"), null);
+  assert.equal(classify("last_name Last name", "text"), "last");
+  assert.equal(classify("What is your email?", "email"), "email");
+  const out = await run({ queue: [{ id: 60, entry_url: url("survey.html") }, { id: 61, entry_url: url("question_unmarked.html") }],
+                          live: true, logPath: tmpLog() });
+  assert.deepEqual(out.map((r) => [r.result, r.reason]), [["skipped", "unfillable"], ["skipped", "needs_answer"]]);
+});
+
