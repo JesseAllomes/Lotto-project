@@ -69,6 +69,10 @@ manual 288, unknown 42) and automation_banned (from full terms when fetched). De
   (2) Sonnet audit running -> data/analysis/AUDIT_SONNET.md (sample scratchpad audit_sample.json): apply fixes;
   (3) link_check.mjs full run (data/comps/link_checks.jsonl) -> commit when done. Owner: terse replies, DrainClamp
   output contract, purge reminders at chunk boundaries.
+- OWNER RULES (2026-10-31): multi-step processes go to a Sonnet subagent (Agent, model sonnet) with one final report;
+  no step-by-step messages; owner's new messages take priority over running work. Terse replies (DrainClamp contract).
+  Pending: comps@asynym.dev via Cloudflare Email Routing once CLOUDFLARE_API_TOKEN is a GitHub secret (token kept in
+  Azure; needs Zone Email Routing Rules Edit, Zone DNS Edit, Account Email Routing Addresses Edit).
 - Never bypass CAPTCHAs/bot walls (owner asked; declined). c4 (skill-answer approval issues) not built yet.
 
 **Owner asks (2026-10-30)**: caps and every odds variable where possible; skill comps as a separate list ranked by effort,
