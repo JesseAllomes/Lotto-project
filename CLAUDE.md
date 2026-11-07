@@ -11,3 +11,7 @@
 - Be mindful of credits.
 - Push to main with `git push origin main`.
 - Keep API keys out of the repository.
+- **DrainClamp is compulsory** (owner, 2026-11-07): every session and multi-step task starts with
+  the `drainclamp-build-adhd` skill at Gate S and follows its gates; no ad-hoc drifting.
+- **product-ui is compulsory for every UI change** (`/home/user/jesseallomes/product-ui`):
+  prototypes first, no production UI until the owner says BUILD.
